@@ -32,6 +32,7 @@ var switches = [
     ['--registry URL', 'URL referring to the NPM packages registry. It defaults to the official NPM one, but can be overridden to support private registries'],
     ['--registry-scope SCOPE', 'scoped package'],
     ['--registry-auth-token TOKEN', 'An optional token to access private NPM registry'],
+    ['--use-impure-npm-cache', 'Specifies that node2nix expression generator should cache the packages fetched from npm. Should only be used while configuring new dependencies.'],
     ['--no-bypass-cache', 'Specifies that package builds do not need to bypass the content addressable cache (required for NPM 5.x)'],
     ['--no-copy-node-env', 'Do not create a copy of the Nix expression that builds NPM packages'],
     ['--use-fetchgit-private', 'Use fetchGitPrivate instead of fetchgit in the generated Nix expressions'],
@@ -56,6 +57,7 @@ var nodeEnvNix = "node-env.nix";
 var lockJSON;
 var registries = [];
 var nodePackage = "nodejs-12_x";
+var useImpureNpmCache = false;
 var noCopyNodeEnv = false;
 var bypassCache = true;
 var useFetchGitPrivate = false;
@@ -176,6 +178,10 @@ parser.on('registry-scope', function(arg, value) {
     registries[registryIndex].scope = value;
 });
 
+parser.on('use-impure-npm-cache', function(arg, value) {
+    useImpureNpmCache = true;
+});
+
 parser.on('no-bypass-cache', function(arg, value) {
     bypassCache = false;
 });
@@ -258,7 +264,7 @@ if(registries.length == 0) {
 }
 
 /* Perform the NPM to Nix conversion */
-node2nix.npmToNix(inputJSON, outputNix, compositionNix, nodeEnvNix, lockJSON, supplementJSON, supplementNix, production, includePeerDependencies, flatten, nodePackage, registries, noCopyNodeEnv, bypassCache, useFetchGitPrivate, stripOptionalDependencies, function(err) {
+node2nix.npmToNix(inputJSON, outputNix, compositionNix, nodeEnvNix, lockJSON, supplementJSON, supplementNix, production, includePeerDependencies, flatten, nodePackage, registries, noCopyNodeEnv, useImpureNpmCache, bypassCache, useFetchGitPrivate, stripOptionalDependencies, function(err) {
     if(err) {
         process.stderr.write(err + "\n");
         process.exit(1);
