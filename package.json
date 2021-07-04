@@ -1,19 +1,21 @@
 {
-  "name": "node2nix",
-  "version": "1.9.0",
-  "description": "Generate Nix expressions to build NPM packages",
-  "homepage": "https://github.com/svanderburg/node2nix",
+  "name": "jsnix",
+  "version": "0.0.1",
+  "description": "Toolkit for making javascript package management fun again with the power of nix",
+  "homepage": "https://github.com/hlolli/jsnix",
+  "type": "module",
   "author": {
-    "name": "Sander van der Burg",
-    "email": "svanderburg@gmail.com"
+    "name": "Hlöðver Sigurðsson",
+    "email": "hlolli@gmail.com"
   },
   "bin": {
-    "node2nix": "bin/node2nix.js"
+    "node2nix": "bin/jsnix.js"
   },
-  "main": "./lib/node2nix",
+  "main": "./src/jsnix.js",
   "dependencies": {
     "base64-js": "1.5.x",
     "cachedir": "2.3.x",
+    "commander": "8.x",
     "findit": "2.0.x",
     "fs.extra": "1.3.x",
     "nijs": "0.0.25",
@@ -21,18 +23,20 @@
     "npmconf": "2.1.x",
     "npmlog": "4.1.x",
     "optparse": "1.0.x",
+    "rambda": "^6.7.0",
     "semver": "7.3.x",
     "slasp": "0.0.4",
     "spdx-license-ids": "3.0.x",
     "tar": "6.1.x",
-    "temp": "0.9.x"
+    "temp": "0.9.x",
+    "web-tree-sitter": "0.19.4"
   },
   "devDependencies": {
     "jsdoc": "*"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/svanderburg/node2nix"
+    "url": "https://github.com/hlolli/jsnix"
   },
   "license": "MIT"
 }
