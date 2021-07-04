@@ -13,16 +13,17 @@ function treeToJson(treeCursor, context = { out: {} }, treePath = []) {
     startIndex,
     endIndex,
   } = treeCursor;
-  console.log({
-    treePath,
-    nodeType,
-    nodeText,
-    nodeIsNamed,
-    startPosition,
-    endPosition,
-    startIndex,
-    endIndex,
-  });
+
+  // console.log({
+  //   treePath,
+  //   nodeType,
+  //   nodeText,
+  //   nodeIsNamed,
+  //   startPosition,
+  //   endPosition,
+  //   startIndex,
+  //   endIndex,
+  // });
 
   switch (nodeType) {
     case "ERROR": {
@@ -132,7 +133,6 @@ export async function fromFile(userPath) {
   const src = fs.readFileSync(srcPath).toString();
   const tree = parser.parse(src);
   const json = treeToJson(tree.rootNode.walk());
-  console.log("OUT", json);
   return json;
 }
 
