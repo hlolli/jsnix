@@ -243,7 +243,9 @@ export class Package extends nijs.NixASTNode {
       mkdir -p $out/bin
       find "$(cd ..; pwd)" -type f \\( -perm -u=x -o -perm -g=x -o -perm -o=x \\) -not -path "$(pwd)/node_modules/*" \\
         -exec ln -s {} $out/bin \\; -print
-      chmod +x $out/bin/*
+      if [ -f "$out/bin" ]; then
+        chmod +x $out/bin/*
+      fi
       runHook postInstall
     ''`);
     ast.preInstall = new nijs.NixValue(

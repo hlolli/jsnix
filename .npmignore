@@ -1,7 +1,0 @@
-.gitignore
-bootstrap.sh
-default.nix
-doc/
-node-packages.nix
-release.nix
-tests/
