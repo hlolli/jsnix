@@ -2,6 +2,7 @@ import fs from "fs";
 import nijs from "nijs";
 import path from "path";
 import { Source } from "./Source.js";
+import { getBodyLens } from "./common.js";
 
 /**
  * Prevent (potentially) harmful filesystem lookups
@@ -19,7 +20,7 @@ export class LocalSource extends Source {
   }
 
   composeSourcePath(resolvedPath) {
-    const srcPath =
+    let srcPath =
       resolvedPath.substr(0, 5) === "file:"
         ? resolvedPath.substr(5)
         : resolvedPath;
@@ -44,33 +45,37 @@ export class LocalSource extends Source {
   }
 
   async fetch() {
-    if (!pathIsInScope(this.baseDir)) {
+    if (
+      this.isTransitive ||
+      this.parent.isTransitive ||
+      !pathIsInScope(this.baseDir)
+    ) {
       return undefined;
     }
 
     process.stderr.write(
       "fetching local directory: " +
-        self.versionSpec +
+        this.versionSpec +
         " from " +
-        self.baseDir +
+        this.baseDir +
         "\n"
     );
 
     const resolvedPath = path.resolve(this.baseDir, this.versionSpec);
-    self.srcPath = self.composeSourcePath(resolvedPath);
+    this.srcPath = this.composeSourcePath(resolvedPath);
     const packageJSON = fs.readFileSync(
       path.join(resolvedPath, "package.json"),
       { encoding: "utf-8" }
     );
 
     this.config = JSON.parse(packageJSON);
-    this.identifier = self.config.name + "-" + self.versionSpec;
+    this.identifier = this.config.name + "-" + this.versionSpec;
     this.baseDir = resolvedPath;
   }
 
   toNixAST() {
     const ast = this.toNixAST.call(this);
-    const lens = ast.body !== undefined ? ast.body.paramExpr : ast;
+    const lens = getBodyLens(ast);
 
     if (this.srcPath === "./") {
       lens.src = new nijs.NixFile({ value: "./." }); // ./ is not valid in the Nix expression language

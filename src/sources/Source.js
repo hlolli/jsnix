@@ -1,4 +1,5 @@
 import base64js from "base64-js";
+import gitUrlParse from "git-url-parse";
 import url from "url";
 import semver from "semver";
 import nijs from "nijs";
@@ -18,6 +19,7 @@ export class Source extends nijs.NixASTNode {
 
   constructSource(
     parent,
+    isTransitive,
     registries,
     baseDir,
     outputDir,
@@ -25,6 +27,8 @@ export class Source extends nijs.NixASTNode {
     versionSpec,
     sourceTypes
   ) {
+    this.isTransitive = isTransitive;
+
     // Assign modules here, to prevent cycles in the include process
     this.GitSource = sourceTypes.GitSource;
     this.HTTPSource = sourceTypes.HTTPSource;
@@ -32,97 +36,38 @@ export class Source extends nijs.NixASTNode {
     this.NPMRegistrySource = sourceTypes.NPMRegistrySource;
 
     this.parent = parent;
-    console.log(dependencyName, versionSpec);
+
     const parsedVersionSpec = semver.validRange(versionSpec, true);
-    const parsedUrl = url.parse(versionSpec);
 
-    if (parsedUrl.protocol == "github:") {
-      // If the version is a GitHub repository, compose the corresponding Git URL and do a Git checkout
-      const gitSrc = new this.GitSource(
-        baseDir,
-        dependencyName,
-        this.GitSource.prototype.composeGitURL(
-          this,
-          "git://github.com",
-          parsedUrl
-        )
-      );
-      Object.keys(this).forEach((k) => {
-        gitSrc[k] = this[k];
-      });
-      return gitSrc;
-    } else if (parsedUrl.protocol == "gist:") {
-      // If the version is a GitHub gist repository, compose the corresponding Git URL and do a Git checkout
-      const gitSrc = new this.GitSource(
-        baseDir,
-        dependencyName,
-        this.GitSource.prototype.composeGitURL(
-          "https://gist.github.com",
-          parsedUrl
-        )
-      );
-      Object.keys(this).forEach((k) => {
-        gitSrc[k] = this[k];
-      });
-      return gitSrc;
-    } else if (parsedUrl.protocol == "bitbucket:") {
-      // If the version is a Bitbucket repository, compose the corresponding Git URL and do a Git checkout
-      const gitSrc = new this.GitSource(
-        baseDir,
-        dependencyName,
-        this.GitSource.composeGitURL("git://bitbucket.org", parsedUrl)
-      );
+    let parsedUrl;
 
-      Object.keys(this).forEach((k) => {
-        gitSrc[k] = this[k];
-      });
-
-      return gitSrc;
-    } else if (parsedUrl.protocol == "gitlab:") {
-      // If the version is a Gitlab repository, compose the corresponding Git URL and do a Git checkout
-      const gitSrc = new this.GitSource(
-        baseDir,
-        dependencyName,
-        this.GitSource.composeGitURL("https://gitlab.com", parsedUrl)
-      );
-      Object.keys(this).forEach((k) => {
-        gitSrc[k] = this[k];
-      });
-      return gitSrc;
-    } else if (
-      typeof parsedUrl.protocol == "string" &&
-      parsedUrl.protocol.substr(0, 3) == "git"
+    if (
+      !versionSpec ||
+      typeof versionSpec !== "string" ||
+      !versionSpec.trim() ||
+      versionSpec.trim() === "@"
     ) {
-      // If the version is a Git URL do a Git checkout
+      parsedUrl = url.parse(versionSpec);
+    } else {
+      try {
+        parsedUrl = gitUrlParse(versionSpec);
+      } catch (error) {
+        parsedUrl = url.parse("*");
+      }
+    }
+
+    if (
+      !parsedVersionSpec &&
+      parsedUrl.protocol !== "file" &&
+      parsedUrl.source !== "file"
+    ) {
+      // If the version is a GitHub repository, compose the corresponding Git URL and do a Git checkout
       const gitSrc = new this.GitSource(baseDir, dependencyName, versionSpec);
       Object.keys(this).forEach((k) => {
         gitSrc[k] = this[k];
       });
       return gitSrc;
-    } else if (
-      parsedUrl.protocol == "http:" ||
-      parsedUrl.protocol == "https:"
-    ) {
-      // If the version is an HTTP URL do a download
-      const httpSrc = new this.HTTPSource(baseDir, dependencyName, versionSpec);
-      Object.keys(this).forEach((k) => {
-        httpSrc[k] = this[k];
-      });
-      return httpSrc;
-    } else if (
-      versionSpec.match(/^[a-zA-Z0-9_\-]+\/[a-zA-Z0-9\.]+[#[a-zA-Z0-9_\-]+]?$/)
-    ) {
-      // If the version is a GitHub repository, compose the corresponding Git URL and do a Git checkout
-      const gitSrc = new this.GitSource(
-        baseDir,
-        dependencyName,
-        "git://github.com/" + versionSpec
-      );
-      Object.keys(this).forEach((k) => {
-        gitSrc[k] = this[k];
-      });
-      return gitSrc;
-    } else if (parsedUrl.protocol == "file:") {
+    } else if (parsedUrl.resource === "file" || parsedUrl.source === "file") {
       // If the version is a file URL, simply compose a Nix path
       const localSrc = new this.LocalSource(
         baseDir,
@@ -183,7 +128,7 @@ export class Source extends nijs.NixASTNode {
     const pkgName = this.config.name
       .replace("@", "_at_")
       .replace("/", "_slash_");
-    return this.useImpureNpmCache
+    return this.isTransitive
       ? new nijs.NixFunction({
           argSpec: { dependencies: [] },
           body: new nijs.NixFunInvocation({
@@ -199,6 +144,8 @@ export class Source extends nijs.NixASTNode {
                 mkdir -p $out/lib/node_modules/${this.config.name}
                 cd $out/lib/node_modules/${this.config.name}
                 cp -rfT "$packageDir" "$(pwd)"
+                mkdir -p node_modules
+                \${linkNodeModules { inherit dependencies; }}
               ''`),
             },
           }),

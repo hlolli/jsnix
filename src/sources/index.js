@@ -13,13 +13,13 @@ export class Sources extends nijs.NixASTNode {
   }
 
   toNixAST() {
-    const ast = {};
+    const ast = new nijs.NixRecursiveAttrSet({});
 
     Object.keys(this.sources)
       .sort()
       .forEach((identifier) => {
         var source = this.sources[identifier];
-        ast[identifier] = source.toNixAST();
+        ast.value[identifier] = source.toNixAST();
       });
 
     return ast;

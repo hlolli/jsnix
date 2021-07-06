@@ -6,6 +6,7 @@ import npmconf from "npmconf";
 import path from "path";
 import semver from "semver";
 import { Source } from "./Source.js";
+import { getBodyLens } from "./common.js";
 import * as R from "rambda";
 
 export class NPMRegistrySource extends Source {
@@ -119,6 +120,28 @@ export class NPMRegistrySource extends Source {
 
     this.identifier = this.config.name + "-" + this.config.version;
 
+    if (
+      this.config &&
+      this.config.optionalDependencies !== undefined &&
+      this.config.dependencies !== undefined
+    ) {
+      /*
+       * The NPM registry has a weird oddity -- if a package has
+       * optionalDependencies, then these dependencies are added
+       * to the regular dependencies as well. We must deduct them
+       * so that we only work with the mandatory dependencies.
+       * Otherwise, certain builds may fail, because optional
+       * dependencies can be broken.
+       *
+       * I'm actually quite curious to learn about the rationale
+       * of this from the NPM developers.
+       */
+
+      for (var dependencyName in this.config.optionalDependencies) {
+        delete this.config.dependencies[dependencyName];
+      }
+    }
+
     // prevent infinite loop when a package depends on itself
     delete (this.config.dependencies || {})[this.config.name];
     if (this.config.dist.integrity) {
@@ -136,7 +159,7 @@ export class NPMRegistrySource extends Source {
 
   toNixAST() {
     const ast = super.toNixAST.call(this);
-    const lens = ast.body !== undefined ? ast.body.paramExpr : ast;
+    const lens = getBodyLens(ast);
 
     const paramExpr = {
       url: this.config.dist.tarball,

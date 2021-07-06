@@ -1,7 +1,10 @@
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import Parser from "../wasm/tree-sitter.cjs";
 import * as R from "rambda";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function treeToJson(treeCursor, context = { out: {} }, treePath = []) {
   const {
@@ -33,12 +36,14 @@ function treeToJson(treeCursor, context = { out: {} }, treePath = []) {
     }
     case "source_expression":
     case "function":
+    case "select":
     case "attrset": {
       if (treeCursor.gotoFirstChild()) {
         return treeToJson(treeCursor, context, treePath);
       }
       break;
     }
+    case "app":
     case ";": {
       if (treeCursor.gotoParent() && treeCursor.gotoNextSibling()) {
         return treeToJson(treeCursor, context, R.dropLast(1, treePath));
@@ -65,7 +70,7 @@ function treeToJson(treeCursor, context = { out: {} }, treePath = []) {
       const tp = R.pipe(
         R.when(
           () => context.isBinding,
-          (c) => R.append((treeCursor.nodeText || "").replaceAll('"', ""), c)
+          (c) => R.append((treeCursor.nodeText || "").replace(/"/g, ""), c)
         )
       )(treePath);
       const ctx = R.pipe(R.assoc("isBinding", false))(context);
@@ -112,7 +117,9 @@ function treeToJson(treeCursor, context = { out: {} }, treePath = []) {
 async function initParser() {
   await Parser.init();
   const parser = new Parser();
-  const Nix = await Parser.Language.load("./wasm/tree-sitter-nix.wasm");
+  const Nix = await Parser.Language.load(
+    path.resolve(__dirname, "../wasm/tree-sitter-nix.wasm")
+  );
   parser.setLanguage(Nix);
   return parser;
 }
@@ -133,6 +140,7 @@ export async function fromFile(userPath) {
   const src = fs.readFileSync(srcPath).toString();
   const tree = parser.parse(src);
   const json = treeToJson(tree.rootNode.walk());
+  console.log(json);
   return json;
 }
 

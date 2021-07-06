@@ -18,6 +18,8 @@ export async function jsnix(opts) {
 
   const expr = new NixExpression(opts, baseDir, dependencies);
   await expr.resolveDependencies();
+
   const nixExpr = nijs.jsToNix(expr, true);
+  fs.writeFileSync(path.join(opts.outputDir, "package-lock.nix"), nixExpr);
   console.log(opts, nixExpr);
 }

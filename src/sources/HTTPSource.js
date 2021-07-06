@@ -6,6 +6,7 @@ import path from "path";
 import tar from "tar";
 import url from "url";
 import zlib from "zlib";
+import { getBodyLens } from "./common.js";
 import { Source } from "./Source.js";
 
 export class HTTPSource extends Source {
@@ -50,7 +51,7 @@ export class HTTPSource extends Source {
         } else {
           // Otherwise extract the package.json and compute the corresponding hash
           this.url = parsedUrl.href;
-          process.stderr.write("fetching: " + self.url + "\n");
+          process.stderr.write("fetching: " + this.url + "\n");
 
           const gunzip = zlib.createGunzip();
 
@@ -74,7 +75,7 @@ export class HTTPSource extends Source {
               });
 
               entry.on("end", () => {
-                self.config = JSON.parse(packageJSON);
+                this.config = JSON.parse(packageJSON);
               });
             } else {
               // For other files, simply skip them. We need these dummy callbacks because there is some kind of quirk in the API that terminates the program.
@@ -98,8 +99,8 @@ export class HTTPSource extends Source {
           res.on("end", () => {
             gunzip.end();
 
-            self.hashType = "sha256";
-            self.sha256 = computeHash.digest("hex");
+            this.hashType = "sha256";
+            this.sha256 = computeHash.digest("hex");
           });
 
           res.on("error", (err) => {
@@ -108,7 +109,7 @@ export class HTTPSource extends Source {
         }
       });
       request.on("error", function (err) {
-        reject("Error while GETting " + self.url + ": " + err);
+        reject("Error while GETting " + this.url + ": " + err);
       });
     }).catch((error) => {
       console.error(error);
@@ -118,7 +119,7 @@ export class HTTPSource extends Source {
 
   toNixAST = function () {
     const ast = this.toNixAST.call(this);
-    const lens = ast.body !== undefined ? ast.body.paramExpr : ast;
+    const lens = getBodyLens(ast);
 
     const paramExpr = {
       name:

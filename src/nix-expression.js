@@ -4,6 +4,16 @@ import { inherit } from "nijs/lib/ast/util/inherit.js";
 import { Package } from "./Package.js";
 import { Sources } from "./sources/index.js";
 
+const linkNodeModulesExpr = `{dependencies ? []}:
+    (lib.lists.foldr (dep: acc: acc + "mkdir -p node_modules/\${dep.packageName};
+     ln -s \${dep}/lib/node_modules/\${dep.packageName}/* node_modules/\${dep.packageName};")
+     "" dependencies)`;
+
+const copyNodeModulesExpr = `{dependencies ? []}:
+    (lib.lists.foldr (dep: acc: acc + "mkdir -p node_modules/\${dep.packageName};
+     cp -rT \${dep}/lib/node_modules/\${dep.packageName} node_modules/\${dep.packageName};")
+     "" dependencies)`;
+
 class OutputExpression extends nijs.NixASTNode {
   constructor() {
     super();
@@ -17,17 +27,26 @@ class OutputExpression extends nijs.NixASTNode {
   toNixAST() {
     return new nijs.NixFunction({
       argSpec: {
-        nodejs: undefined,
-        nodeEnv: undefined,
-        fetchurl: undefined,
-        fetchgit: undefined,
-        "nix-gitignore": undefined,
+        pkgs: undefined,
         stdenv: undefined,
         lib: undefined,
-        globalBuildInputs: [],
+        nodejs: undefined,
+        fetchurl: undefined,
+        fetchgit: undefined,
+        "... ": undefined,
+        // nodeEnv: undefined,
+        // "nix-gitignore": undefined,
+        // globalBuildInputs: [],
       },
       body: new nijs.NixLet({
         value: {
+          // buildNodePackage:
+          packageNix: new nijs.NixImport(
+            new nijs.NixFile({ value: "./package.nix" })
+          ),
+          linkNodeModules: new nijs.NixValue(linkNodeModulesExpr),
+          copyNodeModules: new nijs.NixValue(copyNodeModulesExpr),
+
           sources: this.sourcesCache,
         },
       }),
@@ -39,6 +58,7 @@ export class NixExpression extends OutputExpression {
   constructor(jsnixConfig, baseDir, dependencies) {
     super();
     this.packages = {};
+    this.jsnixConfig = jsnixConfig;
     if (Array.isArray(dependencies)) {
       for (const dependenySpec of dependencies) {
         const dependency =
@@ -103,20 +123,43 @@ export class NixExpression extends OutputExpression {
 
     for (const identifier in this.packages) {
       const pkg = this.packages[identifier];
-
-      packagesExpr[identifier] = new nijs.NixFunInvocation({
-        funExpr: new nijs.NixAttrReference({
-          attrSetExpr: new nijs.NixExpression("nodeEnv"),
-          refExpr: new nijs.NixExpression("buildNodePackage"),
+      packagesExpr[identifier] = new nijs.NixLet({
+        value: { dependencies: pkg.generateDependencyAST() },
+        body: new nijs.NixFunInvocation({
+          funExpr: new nijs.NixExpression("stdenv.mkDerivation"),
+          paramExpr: pkg,
         }),
-        paramExpr: pkg,
       });
     }
-
-    // Attach sub expression to the function body
-    ast.body.body = new nijs.NixMergeAttrs({
+    ast.body.value.nixjsDeps = new nijs.NixMergeAttrs({
       left: new nijs.NixExpression("sources"),
       right: packagesExpr,
+    });
+
+    ast.body.body = new nijs.NixMergeAttrs({
+      left: new nijs.NixExpression("nixjsDeps"),
+      right: new nijs.NixIf({
+        ifExpr: new nijs.NixFunInvocation({
+          funExpr: new nijs.NixExpression("builtins.hasAttr"),
+          paramExpr: new nijs.NixExpression('"packageDerivation" packageNix'),
+        }),
+        thenExpr: {
+          "${packageNix.name}": new nijs.NixFunInvocation({
+            funExpr: new nijs.NixExpression("stdenv.mkDerivation"),
+            paramExpr: new nijs.NixFunInvocation({
+              funExpr: new nijs.NixExpression("packageNix.packageDerivation"),
+              paramExpr: new nijs.NixMergeAttrs({
+                left: new nijs.NixExpression("pkgs"),
+                right: {
+                  nixjsDeps: new nijs.NixInherit(),
+                },
+              }),
+            }),
+          }),
+        },
+
+        elseExpr: {},
+      }),
     });
 
     return ast;

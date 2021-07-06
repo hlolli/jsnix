@@ -8,6 +8,7 @@ import { GitSource } from "./sources/GitSource.js";
 import { HTTPSource } from "./sources/HTTPSource.js";
 import { NPMRegistrySource } from "./sources/NPMRegistrySource.js";
 import { LocalSource } from "./sources/LocalSource.js";
+import { resolveCompat } from "../compat/index.js";
 
 export class Package extends nijs.NixASTNode {
   constructor(
@@ -22,21 +23,23 @@ export class Package extends nijs.NixASTNode {
     super();
     this.jsnixConfig = jsnixConfig;
     this.parent = parent;
-    this.name = name;
-    this.versionSpec = versionSpec;
+    const compat = resolveCompat({ name, versionSpec });
+    this.name = compat.name;
+    this.versionSpec = compat.versionSpec;
     this.sourcesCache = sourcesCache;
 
     this.isTransitive = isTransitive;
-    const newSrc = new Source(baseDir, name, versionSpec);
+    const newSrc = new Source(baseDir, compat.name, compat.versionSpec);
 
     this.source = newSrc.constructSource.call(
       newSrc,
       parent,
+      isTransitive,
       jsnixConfig.registries,
       path.resolve("."),
       jsnixConfig.outputDir,
-      name,
-      versionSpec,
+      compat.name,
+      compat.versionSpec,
       { GitSource, HTTPSource, NPMRegistrySource, LocalSource }
     );
 
@@ -63,9 +66,9 @@ export class Package extends nijs.NixASTNode {
         return null;
       } else {
         if (
+          // If we found a dependency with the same name, see if the version fits
           semver.satisfies(dependency.source.config.version, versionSpec, true)
         ) {
-          // If we found a dependency with the same name, see if the version fits
           return dependency;
         } else {
           return null; // If there is a version mismatch, then a conflicting version has been encountered
@@ -120,7 +123,7 @@ export class Package extends nijs.NixASTNode {
 
         if (this.isBundledDependency(dependencyName)) {
           delete this.requiredDependencies[dependencyName];
-        } else if (!parentDependency) {
+        } else if (parentDependency === null) {
           const pkg = new Package(
             this.jsnixConfig,
             this,
@@ -134,22 +137,6 @@ export class Package extends nijs.NixASTNode {
           this.sourcesCache.addSource(pkg.source);
           this.bundleDependency(dependencyName, pkg);
           resolvedDependencies[dependencyName] = pkg;
-
-          // slasp.sequence(
-          //     [
-          //       function (callback) {
-          //         pkg.source.fetch(callback);
-          //       },
-
-          //       function (callback) {
-          //         self.sourcesCache.addSource(pkg.source);
-          //         self.bundleDependency(dependencyName, pkg);
-          //         resolvedDependencies[dependencyName] = pkg;
-          //         callback();
-          //       },
-          //     ],
-          //     callback
-          //   );
         } else {
           this.requiredDependencies[dependencyName] = parentDependency; // If there is a parent package that provides the requested dependency -> use it
         }
@@ -166,15 +153,16 @@ export class Package extends nijs.NixASTNode {
       this.source.config.dependencies
     );
 
-    await this.bundleDependencies(
-      resolvedDependencies,
-      this.source.config.devDependencies
-    );
-
-    await this.bundleDependencies(
-      resolvedDependencies,
-      this.source.config.peerDependencies
-    );
+    if (!this.isTransitive) {
+      await this.bundleDependencies(
+        resolvedDependencies,
+        this.source.config.devDependencies
+      );
+      await this.bundleDependencies(
+        resolvedDependencies,
+        this.source.config.peerDependencies
+      );
+    }
 
     for (const dependencyName in resolvedDependencies) {
       const dependency = resolvedDependencies[dependencyName];
@@ -213,7 +201,7 @@ export class Package extends nijs.NixASTNode {
     }
 
     if (dependencies.length == 0) {
-      return undefined;
+      return [];
     } else {
       return dependencies;
     }
@@ -230,8 +218,31 @@ export class Package extends nijs.NixASTNode {
     }
 
     const ast = this.source.toNixAST();
-    ast.dependencies = this.generateDependencyAST();
-    ast.buildInputs = new nijs.NixExpression("globalBuildInputs");
+    // ast.dependencies = this.generateDependencyAST();
+    ast.buildInputs = [new nijs.NixExpression("nodejs")];
+    ast.buildPhase = new nijs.NixValue(`''
+      \${copyNodeModules { inherit dependencies; }}
+      patchShebangs .
+      export HOME=$TMPDIR
+      NODE_PATH="$NODE_PATH":$(pwd)/node_modules \\
+      npm --offline --no-bin-links \\
+          \${if builtins.hasAttr "npmFlags" packageNix then packageNix.npmFlags else ""} \\
+          "--production" \\
+          rebuild || \\
+        echo npm rebuild failed, and it may or may not matter
+    ''`);
+    ast.installPhase = new nijs.NixValue(`''
+      export packageDir="$(pwd)"
+      mkdir -p $out/lib/node_modules/${this.source.config.name}
+      cd $out/lib/node_modules/${this.source.config.name}
+      cp -rfT "$packageDir" "$(pwd)"
+      # Create symlink to the deployed executable folder
+      mkdir -p $out/bin
+      find "$(cd ..; pwd)" -type f \( -perm -u=x -o -perm -g=x -o -perm -o=x \) -not -path "$(pwd)/node_modules/*" \
+        -exec ln -s {} $out/bin \; -print
+      chmod +x $out/bin/*
+    ''`);
+    ast.dontStrip = true;
     ast.meta = {
       description: this.source.config.description,
       license: this.source.config.license,

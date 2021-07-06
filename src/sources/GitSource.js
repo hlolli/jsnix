@@ -5,53 +5,59 @@ import fs from "fs-extra";
 import nijs from "nijs";
 import os from "os";
 import path from "path";
-import url from "url";
+import gitUrlParse from "git-url-parse";
 import { Source } from "./Source.js";
+import { getBodyLens } from "./common.js";
 
 export class GitSource extends Source {
   constructor(baseDir, dependencyName, versionSpec) {
     super();
     this.rev = "";
     this.hash = "";
-    this.identifier = dependencyName + "-" + versionSpec;
+    this.identifier =
+      (dependencyName || "") + (versionSpec ? "-" + versionSpec : "");
     this.baseDir = path.join(baseDir, dependencyName);
   }
 
-  composeGitURL(baseURL, parsedUrl) {
-    const hashComponent = parsedUrl.hash || "";
-    return baseURL + "/" + parsedUrl.host + parsedUrl.path + hashComponent;
-  }
+  // composeGitURL(baseURL, parsedUrl) {
+  //   const hashComponent = parsedUrl.hash || "";
+  //   return baseURL + "/" + parsedUrl.host + parsedUrl.path + hashComponent;
+  // }
 
-  async fetch(callback) {
-    /* Parse the URL specifier, extract useful bits out of it and rewrite it into a usable git URL */
-    const parsedUrl = url.parse(this.versionSpec);
+  async fetch() {
+    console.log("checking", this.versionSpec, "identifier", this.identifier);
 
-    switch (parsedUrl.protocol) {
-      case "git+ssh:":
-        parsedUrl.protocol = "ssh:";
-        break;
-      case "git+http:":
-        parsedUrl.protocol = "http:";
-        break;
-      case "git+https:":
-        parsedUrl.protocol = "https:";
-        break;
-      default:
-        parsedUrl.protocol = "git:";
-        break;
+    if (!this.versionSpec.includes(":")) {
+      this.versionSpec = "github:" + this.versionSpec;
     }
 
+    const parsedUrl = gitUrlParse(this.versionSpec);
+
     /* Compose the commitIsh out of the hash suffix, if applicable */
-    const commitIsh = parsedUrl.hash && parsedUrl.hash.substr(1);
+    const commitIsh = parsedUrl.hash;
 
     delete parsedUrl.hash;
 
-    /* Compose a Git URL out of the parsed object */
-    this.url = parsedUrl.format();
+    const providerFixup = {
+      github: "github.com",
+      git: "github.com",
+    };
 
-    /* Look out for bad git protocols and default to github as npm does */
-    if (!/\/\//i.test(this.url)) {
-      this.url = this.url.replace(/.*:/i, "https://github.com/");
+    if (parsedUrl.pathname.includes("/tarball")) {
+      parsedUrl.pathname = parsedUrl.pathname.replace(/\/tarball.*/, "");
+    }
+
+    /* Compose a Git URL out of the parsed object */
+    this.url = `https://${providerFixup[parsedUrl.source] || parsedUrl.source}${
+      parsedUrl.pathname
+    }`;
+
+    if (!this.url.endsWith(".git")) {
+      this.url += ".git";
+    }
+
+    if (this.versionSpec.startsWith("git://")) {
+      this.versionSpec = this.url;
     }
 
     const filesToDelete = [];
@@ -111,9 +117,7 @@ export class GitSource extends Source {
           resolve(dir);
         }
       });
-      // finder.on("stop", () => {
-      //   resolve("");
-      // });
+
       finder.on("end", () => {
         reject("Cannot find a checkout directory in the temp folder");
       });
@@ -143,15 +147,33 @@ export class GitSource extends Source {
         process.stderr.write(data);
       });
       gitRevParse.on("close", (code) => {
-        if (code != 0) this.rev = ""; // If git rev-parse fails, we consider the commitIsh a branch/tag.
-
+        if (code !== 0) this.rev = ""; // If git rev-parse fails, we consider the commitIsh a branch/tag.
         resolve();
       });
     });
 
     if (!this.rev) {
+      /* Some powerusers like Sindre Sorhus have renamed master to main, so let's give the default branch a try */
+      await new Promise((resolve, reject) => {
+        const gitRevParse = child_process.spawn("git", ["rev-parse", "HEAD"], {
+          cwd: repositoryDir,
+        });
+
+        gitRevParse.stdout.on("data", (data) => {
+          this.rev += data;
+        });
+        gitRevParse.stderr.on("data", (data) => {
+          process.stderr.write(data);
+        });
+        gitRevParse.on("close", (code) => {
+          resolve();
+        });
+      });
+    }
+
+    if (!this.rev) {
       cleanUp();
-      throw new Error(`Couldn't resolve git revision from ${this.url}`);
+      console.warn(`Couldn't resolve specified git revision from ${this.url}`);
       process.exit(1);
     }
 
@@ -281,7 +303,7 @@ export class GitSource extends Source {
 
   toNixAST() {
     const ast = super.toNixAST.call(this);
-    const lens = ast.body !== undefined ? ast.body.paramExpr : ast;
+    const lens = getBodyLens(ast);
 
     lens.src = new nijs.NixFunInvocation({
       funExpr: new nijs.NixExpression("fetchgit"),
