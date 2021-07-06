@@ -1,10 +1,8 @@
 import fs from "fs";
 import path from "path";
-// import slasp from "slasp";
 import nijs from "nijs";
 import * as nix2json from "./nix-to-json.js";
 import * as R from "rambda";
-// import { DeploymentConfig } from "./DeploymentConfig.js";
 
 import { NixExpression } from "./nix-expression.js";
 import { Registry } from "./Registry.js";

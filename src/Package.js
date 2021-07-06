@@ -221,6 +221,7 @@ export class Package extends nijs.NixASTNode {
     // ast.dependencies = this.generateDependencyAST();
     ast.buildInputs = [new nijs.NixExpression("nodejs")];
     ast.buildPhase = new nijs.NixValue(`''
+      runHook preBuild
       \${copyNodeModules { inherit dependencies; }}
       patchShebangs .
       export HOME=$TMPDIR
@@ -230,18 +231,34 @@ export class Package extends nijs.NixASTNode {
           "--production" \\
           rebuild || \\
         echo npm rebuild failed, and it may or may not matter
+      runHook postBuild
     ''`);
     ast.installPhase = new nijs.NixValue(`''
+      runHook preInstall
       export packageDir="$(pwd)"
       mkdir -p $out/lib/node_modules/${this.source.config.name}
       cd $out/lib/node_modules/${this.source.config.name}
       cp -rfT "$packageDir" "$(pwd)"
       # Create symlink to the deployed executable folder
       mkdir -p $out/bin
-      find "$(cd ..; pwd)" -type f \( -perm -u=x -o -perm -g=x -o -perm -o=x \) -not -path "$(pwd)/node_modules/*" \
-        -exec ln -s {} $out/bin \; -print
+      find "$(cd ..; pwd)" -type f \\( -perm -u=x -o -perm -g=x -o -perm -o=x \\) -not -path "$(pwd)/node_modules/*" \\
+        -exec ln -s {} $out/bin \\; -print
       chmod +x $out/bin/*
+      runHook postInstall
     ''`);
+    ast.preInstall = new nijs.NixValue(
+      `(mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "${this.source.config.name}"; })`
+    );
+    ast.postInstall = new nijs.NixValue(
+      `(mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "${this.source.config.name}"; })`
+    );
+    ast.preBuild = new nijs.NixValue(
+      `(mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "${this.source.config.name}"; })`
+    );
+    ast.postBuild = new nijs.NixValue(
+      `(mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "${this.source.config.name}"; })`
+    );
+
     ast.dontStrip = true;
     ast.meta = {
       description: this.source.config.description,

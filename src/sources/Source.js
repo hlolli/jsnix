@@ -137,16 +137,23 @@ export class Source extends nijs.NixASTNode {
               name: pkgName, // Escape characters from scoped package names that aren't allowed
               packageName: this.config.name,
               version: this.config.version,
-              buildInputs: [new nijs.NixExpression("nodejs")],
-              buildPhase: "true", // dont build transitive deps
-              installPhase: new nijs.NixValue(`''
-                export packageDir="$(pwd)"
-                mkdir -p $out/lib/node_modules/${this.config.name}
-                cd $out/lib/node_modules/${this.config.name}
-                cp -rfT "$packageDir" "$(pwd)"
-                mkdir -p node_modules
-                \${linkNodeModules { inherit dependencies; }}
+              buildInputs: [
+                new nijs.NixExpression("jq"),
+                new nijs.NixExpression("nodejs"),
+              ],
+              unpackPhase: new nijs.NixValue(
+                `transitiveDepUnpackPhase { inherit dependencies; pkgName = "${this.config.name}"; }`
+              ),
+
+              patchPhase: new nijs.NixValue(`''
+                if [ -f "package.json" ]; then
+                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                fi
               ''`),
+              buildPhase: "true", // dont build transitive deps
+              installPhase: new nijs.NixValue(
+                `transitiveDepInstallPhase { inherit dependencies; pkgName = "${this.config.name}"; }`
+              ),
             },
           }),
         })

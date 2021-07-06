@@ -4,15 +4,59 @@ import { inherit } from "nijs/lib/ast/util/inherit.js";
 import { Package } from "./Package.js";
 import { Sources } from "./sources/index.js";
 
+// essential for developing local packages
+const gitignoreSource = `
+    (import (fetchFromGitHub {
+      owner = "hercules-ci";
+      repo = "gitignore.nix";
+      rev = "211907489e9f198594c0eb0ca9256a1949c9d412";
+      sha256 = "sha256-qHu3uZ/o9jBHiA3MEKHJ06k7w4heOhA+4HCSIvflRxo=";
+    }) { inherit lib; }).gitignoreSource`;
+
+const getNodeDepFromList = `packageName: dependencies:
+    (builtins.head
+      (builtins.filter (p: p.packageName == packageName) dependencies))`;
+
 const linkNodeModulesExpr = `{dependencies ? []}:
-    (lib.lists.foldr (dep: acc: acc + "mkdir -p node_modules/\${dep.packageName};
-     ln -s \${dep}/lib/node_modules/\${dep.packageName}/* node_modules/\${dep.packageName};")
+    (lib.lists.foldr (dep: acc: acc + ''mkdir -p "node_modules/\${dep.packageName}";
+     ln -s "\${dep}/lib/node_modules/\${dep.packageName}/*" "node_modules/\${dep.packageName}"
+     '')
      "" dependencies)`;
 
 const copyNodeModulesExpr = `{dependencies ? []}:
-    (lib.lists.foldr (dep: acc: acc + "mkdir -p node_modules/\${dep.packageName};
-     cp -rT \${dep}/lib/node_modules/\${dep.packageName} node_modules/\${dep.packageName};")
+    (lib.lists.foldr (dep: acc: acc + ''mkdir -p node_modules/\${dep.packageName};
+     cp -rT "\${dep}/lib/node_modules/\${dep.packageName}" "node_modules/\${dep.packageName}"
+     find "\${dep}/lib/node_modules/\${dep.packageName}" \\
+       -not -path "\${dep}/lib/node_modules/\${dep.packageName}/node_modules/*" \\
+       -type f -exec chmod +rw {} \\; 2>/dev/null
+     '')
      "" dependencies)`;
+
+const transitiveDepUnpackPhase = `{dependencies ? [], pkgName}: ''
+     unpackFile "$src";
+     # not ideal, but some perms are fubar
+     chmod -R +777 . || true
+     packageDir="$(find . -maxdepth 1 -type d | tail -1)"
+     cd "$packageDir"
+   ''`;
+
+const transitiveDepInstallPhase = `{dependencies ? [], pkgName}: ''
+    export packageDir="$(pwd)"
+    mkdir -p $out/lib/node_modules/\${pkgName}
+    cd $out/lib/node_modules/\${pkgName}
+    cp -rfT "$packageDir" "$(pwd)"
+    mkdir -p node_modules
+    \${linkNodeModules { inherit dependencies; }} ''`;
+
+const mkPhase = new nijs.NixValue(`pkgs_: {phase, pkgName}:
+     lib.optionalString ((builtins.hasAttr "\${pkgName}" packageNix.dependencies) &&
+                         (builtins.typeOf packageNix.dependencies."\${pkgName}" == "set") &&
+                         (builtins.hasAttr "\${phase}" packageNix.dependencies."\${pkgName}"))
+      (if builtins.typeOf packageNix.dependencies."\${pkgName}"."\${phase}" == "string"
+       then
+         packageNix.dependencies."\${pkgName}"."\${phase}"
+       else
+         (packageNix.dependencies."\${pkgName}"."\${phase}" pkgs_))`);
 
 class OutputExpression extends nijs.NixASTNode {
   constructor() {
@@ -33,6 +77,8 @@ class OutputExpression extends nijs.NixASTNode {
         nodejs: undefined,
         fetchurl: undefined,
         fetchgit: undefined,
+        fetchFromGitHub: undefined,
+        jq: undefined,
         "... ": undefined,
         // nodeEnv: undefined,
         // "nix-gitignore": undefined,
@@ -40,13 +86,18 @@ class OutputExpression extends nijs.NixASTNode {
       },
       body: new nijs.NixLet({
         value: {
-          // buildNodePackage:
           packageNix: new nijs.NixImport(
             new nijs.NixFile({ value: "./package.nix" })
           ),
           linkNodeModules: new nijs.NixValue(linkNodeModulesExpr),
           copyNodeModules: new nijs.NixValue(copyNodeModulesExpr),
-
+          gitignoreSource: new nijs.NixValue(gitignoreSource),
+          transitiveDepInstallPhase: new nijs.NixValue(
+            transitiveDepInstallPhase
+          ),
+          transitiveDepUnpackPhase: new nijs.NixValue(transitiveDepUnpackPhase),
+          getNodeDepFromList: new nijs.NixValue(getNodeDepFromList),
+          mkPhase,
           sources: this.sourcesCache,
         },
       }),
@@ -86,11 +137,15 @@ export class NixExpression extends OutputExpression {
       }
     } else if (dependencies && dependencies instanceof Object) {
       for (const dependencyName in dependencies) {
+        const depData = dependencies[dependencyName];
+        const version =
+          (typeof depData === "string" ? depData : depData["version"]) ||
+          "latest";
         this.packages[dependencyName] = new Package(
           jsnixConfig,
           undefined,
           dependencyName,
-          dependencies[dependencyName],
+          version,
           baseDir,
           this.sourcesCache,
           false
@@ -151,7 +206,11 @@ export class NixExpression extends OutputExpression {
               paramExpr: new nijs.NixMergeAttrs({
                 left: new nijs.NixExpression("pkgs"),
                 right: {
+                  copyNodeModules: new nijs.NixInherit(),
+                  linkNodeModules: new nijs.NixInherit(),
+                  gitignoreSource: new nijs.NixInherit(),
                   nixjsDeps: new nijs.NixInherit(),
+                  getNodeDepFromList: new nijs.NixInherit(),
                 },
               }),
             }),

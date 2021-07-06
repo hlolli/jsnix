@@ -22,6 +22,8 @@ install.alias("i");
 
 install.action(
   async (packageNixPath) =>
+    // console.log(await nix2json.fromFile(packageNixPath)) ||
+    // process.exit(1) ||
     await jsnix({
       ...(await nix2json.fromFile(packageNixPath)),
       outputDir: path.dirname(path.resolve("./", packageNixPath)),

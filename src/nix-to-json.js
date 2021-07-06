@@ -35,7 +35,6 @@ function treeToJson(treeCursor, context = { out: {} }, treePath = []) {
       break;
     }
     case "source_expression":
-    case "function":
     case "select":
     case "attrset": {
       if (treeCursor.gotoFirstChild()) {
@@ -43,16 +42,28 @@ function treeToJson(treeCursor, context = { out: {} }, treePath = []) {
       }
       break;
     }
+
     case "app":
+    case "function":
     case ";": {
       if (treeCursor.gotoParent() && treeCursor.gotoNextSibling()) {
         return treeToJson(treeCursor, context, R.dropLast(1, treePath));
       }
+      // if (treeCursor.gotoNextSibling()) {
+      //   return treeToJson(treeCursor, context, treePath);
+      // } else
       break;
     }
+    case "}": {
+      if (treeCursor.gotoParent() && treeCursor.gotoNextSibling()) {
+        return treeToJson(treeCursor, context, treePath);
+      }
+      break;
+    }
+
+    case "comment":
     case "formals":
     case ":":
-    case "}":
     case "{": {
       if (treeCursor.gotoNextSibling()) {
         return treeToJson(treeCursor, context, treePath);
@@ -67,6 +78,11 @@ function treeToJson(treeCursor, context = { out: {} }, treePath = []) {
       break;
     }
     case "attrpath": {
+      if (treeCursor.nodeText === "packageDerivation") {
+        if (treeCursor.gotoParent() && treeCursor.gotoNextSibling()) {
+          return treeToJson(treeCursor, context, R.dropLast(1, treePath));
+        }
+      }
       const tp = R.pipe(
         R.when(
           () => context.isBinding,
@@ -79,7 +95,8 @@ function treeToJson(treeCursor, context = { out: {} }, treePath = []) {
       }
       break;
     }
-    case "string": {
+    case "string":
+    case "indented_string": {
       const tp = R.pipe(
         R.when(
           () => context.isBinding,
@@ -88,7 +105,13 @@ function treeToJson(treeCursor, context = { out: {} }, treePath = []) {
       )(treePath);
       const ctx = R.pipe(
         R.when(R.prop("isAssigning"), (c) =>
-          R.assocPath(["out"].concat(tp), JSON.parse(treeCursor.nodeText), c)
+          R.assocPath(
+            ["out"].concat(tp),
+            nodeType === "indented_string"
+              ? treeCursor.nodeText.replace("''", "")
+              : JSON.parse(treeCursor.nodeText),
+            c
+          )
         ),
         R.assoc("isBinding", false),
         R.assoc("isAssigning", false)
@@ -140,7 +163,7 @@ export async function fromFile(userPath) {
   const src = fs.readFileSync(srcPath).toString();
   const tree = parser.parse(src);
   const json = treeToJson(tree.rootNode.walk());
-  console.log(json);
+  // console.log(json);
   return json;
 }
 
