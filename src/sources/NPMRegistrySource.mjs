@@ -5,8 +5,8 @@ import npmFetch from "npm-registry-fetch";
 import npmconf from "npmconf";
 import path from "path";
 import semver from "semver";
-import { Source } from "./Source.js";
-import { getBodyLens } from "./common.js";
+import { Source } from "./Source.mjs";
+import { getBodyLens } from "./common.mjs";
 import * as R from "rambda";
 
 export class NPMRegistrySource extends Source {

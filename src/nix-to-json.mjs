@@ -108,7 +108,7 @@ function treeToJson(treeCursor, context = { out: {} }, treePath = []) {
           R.assocPath(
             ["out"].concat(tp),
             nodeType === "indented_string"
-              ? treeCursor.nodeText.replace("''", "")
+              ? treeCursor.nodeText.replace(/''/g, "").replace(/\n/g, "").trim()
               : JSON.parse(treeCursor.nodeText),
             c
           )
@@ -147,6 +147,20 @@ async function initParser() {
   return parser;
 }
 
+export async function fromString(jsonString) {
+  let parser;
+  try {
+    parser = await initParser();
+  } catch (error) {
+    console.error("Error while initializing wasm", error);
+    process.exit(1);
+  }
+
+  const tree = parser.parse(jsonString);
+  const json = treeToJson(tree.rootNode.walk());
+  return json;
+}
+
 export async function fromFile(userPath) {
   let parser;
   try {
@@ -163,7 +177,6 @@ export async function fromFile(userPath) {
   const src = fs.readFileSync(srcPath).toString();
   const tree = parser.parse(src);
   const json = treeToJson(tree.rootNode.walk());
-  // console.log(json);
   return json;
 }
 

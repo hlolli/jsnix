@@ -1,5 +1,5 @@
-import { archivedPackages } from "./archived.js";
-import { resolutions } from "./resolutions.js";
+import { archivedPackages } from "./archived.mjs";
+import { resolutions } from "./resolutions.mjs";
 import semver from "semver";
 import * as R from "rambda";
 

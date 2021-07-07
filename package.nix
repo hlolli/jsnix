@@ -1,0 +1,41 @@
+{
+  name = "nixjs";
+  version = "0.0.0-alpha1";
+  description = ''
+    Toolkit for making javascript package management fun again with the power of nix
+  '';
+  homepage = "https://github.com/hlolli/jsnix";
+  type = "module";
+  author = {
+    name = "Hlöðver Sigurðsson";
+    email = "hlolli@gmail.com";
+  };
+  bin = {
+    node2nix = "bin/jsnix.js";
+  };
+  main = "./src/jsnix.js";
+  dependencies = {
+    base64-js = "1.5.x";
+    cachedir = "2.3.x";
+    commander = "8.x";
+    findit = "2.0.x";
+    fs-extra = "10.x";
+    git-url-parse = "11.5.x";
+    nijs = "0.0.25";
+    npm-registry-fetch = "11.0.x";
+    npmconf = "2.1.x";
+    npmlog = "4.1.x";
+    optparse = "1.0.x";
+    rambda = "^6.7.0";
+    semver = "7.3.x";
+    slasp = "0.0.4";
+    spdx-license-ids = "3.0.x";
+    tar = "6.1.x";
+    web-tree-sitter = "0.19.4";
+  };
+  repository = {
+    type = "git";
+    url = "https://github.com/hlolli/jsnix";
+  };
+  license = "MIT";
+}

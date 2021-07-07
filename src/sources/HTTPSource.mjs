@@ -6,8 +6,8 @@ import path from "path";
 import tar from "tar";
 import url from "url";
 import zlib from "zlib";
-import { getBodyLens } from "./common.js";
-import { Source } from "./Source.js";
+import { getBodyLens } from "./common.mjs";
+import { Source } from "./Source.mjs";
 
 export class HTTPSource extends Source {
   constructor(baseDir, dependencyName, versionSpec) {

@@ -1,8 +1,8 @@
 import fs from "fs";
 import nijs from "nijs";
 import path from "path";
-import { Source } from "./Source.js";
-import { getBodyLens } from "./common.js";
+import { Source } from "./Source.mjs";
+import { getBodyLens } from "./common.mjs";
 
 /**
  * Prevent (potentially) harmful filesystem lookups

@@ -1,8 +1,9 @@
 import fs from "fs";
 import path from "path";
 import { Command } from "commander";
-import * as nix2json from "../src/nix-to-json.js";
-import { jsnix } from "../src/jsnix.js";
+import * as nix2json from "../src/nix-to-json.mjs";
+import { generatePackageJson } from "../src/generate-package-json.mjs";
+import jsnix from "../src/jsnix.mjs";
 
 const program = new Command();
 
@@ -21,7 +22,7 @@ install.description(
 install.alias("i");
 
 install.action(
-  async (packageNixPath) =>
+  async (packageNixPath = "./package.nix") =>
     // console.log(await nix2json.fromFile(packageNixPath)) ||
     // process.exit(1) ||
     await jsnix({
@@ -33,21 +34,15 @@ install.action(
 
 const debug = new Command("debug");
 
-program.addCommand(install);
-program.addCommand(debug);
+const pkgJsonCommand = new Command("package-json");
 
-const pkgJson = fs.readFileSync(path.resolve("./package.json"), {
+const pkgNix = fs.readFileSync(path.resolve("./package.nix"), {
   encoding: "utf-8",
 });
 
-program.version(pkgJson.version);
-
-// program
-//   .option(
-//     "i, install [path]",
-//     "resolves the dependencies in package.nix and (re)generates package-lock.nix"
-//   )
-//   .action(async (pick) => console.log("pick", pick));
+program.addCommand(install);
+program.addCommand(debug);
+program.addCommand(pkgJsonCommand);
 
 debug
   .command(
@@ -59,7 +54,15 @@ debug
 const options = program.opts();
 
 async function main() {
-  await program.parseAsync(process.argv);
+  const pkgJson = await nix2json.fromString(pkgNix);
+
+  pkgJsonCommand.action((opts) =>
+    console.log(JSON.stringify(generatePackageJson(pkgJson), null, 2))
+  );
+
+  program.version(pkgJson.version);
+
+  const result = await program.parseAsync(process.argv);
 }
 
 (async () => await main())();

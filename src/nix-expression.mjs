@@ -1,8 +1,7 @@
 import slasp from "slasp";
 import nijs from "nijs";
-import { inherit } from "nijs/lib/ast/util/inherit.js";
-import { Package } from "./Package.js";
-import { Sources } from "./sources/index.js";
+import { Package } from "./Package.mjs";
+import { Sources } from "./sources/index.mjs";
 
 // essential for developing local packages
 const gitignoreSource = `

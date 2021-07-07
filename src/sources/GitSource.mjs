@@ -6,8 +6,8 @@ import nijs from "nijs";
 import os from "os";
 import path from "path";
 import gitUrlParse from "git-url-parse";
-import { Source } from "./Source.js";
-import { getBodyLens } from "./common.js";
+import { Source } from "./Source.mjs";
+import { getBodyLens } from "./common.mjs";
 
 export class GitSource extends Source {
   constructor(baseDir, dependencyName, versionSpec) {

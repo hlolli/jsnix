@@ -3,12 +3,12 @@ import path from "path";
 import semver from "semver";
 import slasp from "slasp";
 import nijs from "nijs";
-import { Source } from "./sources/Source.js";
-import { GitSource } from "./sources/GitSource.js";
-import { HTTPSource } from "./sources/HTTPSource.js";
-import { NPMRegistrySource } from "./sources/NPMRegistrySource.js";
-import { LocalSource } from "./sources/LocalSource.js";
-import { resolveCompat } from "../compat/index.js";
+import { Source } from "./sources/Source.mjs";
+import { GitSource } from "./sources/GitSource.mjs";
+import { HTTPSource } from "./sources/HTTPSource.mjs";
+import { NPMRegistrySource } from "./sources/NPMRegistrySource.mjs";
+import { LocalSource } from "./sources/LocalSource.mjs";
+import { resolveCompat } from "../compat/index.mjs";
 
 export class Package extends nijs.NixASTNode {
   constructor(
