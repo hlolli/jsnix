@@ -1,4 +1,3 @@
-import slasp from "slasp";
 import nijs from "nijs";
 import { Package } from "./Package.mjs";
 import { Sources } from "./sources/index.mjs";
@@ -57,6 +56,57 @@ const mkPhase = new nijs.NixValue(`pkgs_: {phase, pkgName}:
        else
          (packageNix.dependencies."\${pkgName}"."\${phase}" pkgs_))`);
 
+const toPackageJson = new nijs.NixValue(`{ jsnixDeps ? {} }:
+    let
+      packageNixDeps = if (builtins.hasAttr "dependencies" packageNix)
+                       then packageNix.dependencies
+                       else {};
+      packagesSpec = lib.lists.foldr
+        (depName: acc: acc // {
+          "\${depName}" = (if ((builtins.typeOf packageNixDeps."\${depName}") == "string")
+                          then packageNixDeps."\${depName}"
+                          else
+                            if (((builtins.typeOf packageNixDeps."\${depName}") == "set") &&
+                                ((builtins.typeOf packageNixDeps."\${depName}".version) == "string"))
+                          then packageNixDeps."\${depName}".version
+                          else "latest");}) {} (builtins.attrNames packageNixDeps);
+      safePkgNix = lib.lists.foldr (key: acc:
+        if ((builtins.typeOf packageNix."\${key}") != "lambda")
+        then (acc // { "\${key}" =  packageNix."\${key}"; })
+        else acc)
+        {} (builtins.attrNames packageNix);
+    in lib.strings.escapeNixString
+      (builtins.toJSON (safePkgNix // { dependencies = packagesSpec; }))`);
+
+const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
+    drv.overrideAttrs({
+      dontUnpackPackageJson ? false,
+      unpackPhase ? "",
+      name ? packageNix.name,
+      version ? packageNix.version,
+      ...
+    } : {
+      inherit name version;
+      unpackPhase =
+        if (dontUnpackPackageJson != true)
+                    then ''
+                          \${if (builtins.stringLength unpackPhase) == 0 then
+                                "runHook preUnpack" else ""}
+                           \${unpackPhase}
+                           chmod -R +rw ./ || true
+                           echo \${toPackageJson { inherit jsnixDeps; }} | \${jq}/bin/jq > package.json
+                           \${if (builtins.stringLength unpackPhase) == 0 then
+                                "runHook postUnpack" else ""}
+                         ''
+                    else ''\${if (builtins.stringLength unpackPhase) == 0 then
+                                "runHook preUnpack" else ""}
+                            \${unpackPhase}
+                            chmod -R +rw ./ || true
+                           \${if (builtins.stringLength unpackPhase) == 0 then
+                                "runHook postUnpack" else ""}
+                         '';
+  })`);
+
 class OutputExpression extends nijs.NixASTNode {
   constructor() {
     super();
@@ -96,6 +146,8 @@ class OutputExpression extends nijs.NixASTNode {
           ),
           transitiveDepUnpackPhase: new nijs.NixValue(transitiveDepUnpackPhase),
           getNodeDepFromList: new nijs.NixValue(getNodeDepFromList),
+          jsnixDrvOverrides,
+          toPackageJson,
           mkPhase,
           sources: this.sourcesCache,
         },
@@ -185,13 +237,13 @@ export class NixExpression extends OutputExpression {
         }),
       });
     }
-    ast.body.value.nixjsDeps = new nijs.NixMergeAttrs({
+    ast.body.value.jsnixDeps = new nijs.NixMergeAttrs({
       left: new nijs.NixExpression("sources"),
       right: packagesExpr,
     });
 
     ast.body.body = new nijs.NixMergeAttrs({
-      left: new nijs.NixExpression("nixjsDeps"),
+      left: new nijs.NixExpression("jsnixDeps"),
       right: new nijs.NixIf({
         ifExpr: new nijs.NixFunInvocation({
           funExpr: new nijs.NixExpression("builtins.hasAttr"),
@@ -199,20 +251,28 @@ export class NixExpression extends OutputExpression {
         }),
         thenExpr: {
           "${packageNix.name}": new nijs.NixFunInvocation({
-            funExpr: new nijs.NixExpression("stdenv.mkDerivation"),
-            paramExpr: new nijs.NixFunInvocation({
-              funExpr: new nijs.NixExpression("packageNix.packageDerivation"),
-              paramExpr: new nijs.NixMergeAttrs({
-                left: new nijs.NixExpression("pkgs"),
-                right: {
-                  copyNodeModules: new nijs.NixInherit(),
-                  linkNodeModules: new nijs.NixInherit(),
-                  gitignoreSource: new nijs.NixInherit(),
-                  nixjsDeps: new nijs.NixInherit(),
-                  getNodeDepFromList: new nijs.NixInherit(),
-                },
+            funExpr: new nijs.NixExpression("jsnixDrvOverrides"),
+            paramExpr: {
+              jsnixDeps: new nijs.NixInherit(),
+              drv: new nijs.NixFunInvocation({
+                funExpr: new nijs.NixExpression("stdenv.mkDerivation"),
+                paramExpr: new nijs.NixFunInvocation({
+                  funExpr: new nijs.NixExpression(
+                    "packageNix.packageDerivation"
+                  ),
+                  paramExpr: new nijs.NixMergeAttrs({
+                    left: new nijs.NixExpression("pkgs"),
+                    right: {
+                      copyNodeModules: new nijs.NixInherit(),
+                      linkNodeModules: new nijs.NixInherit(),
+                      gitignoreSource: new nijs.NixInherit(),
+                      jsnixDeps: new nijs.NixInherit(),
+                      getNodeDepFromList: new nijs.NixInherit(),
+                    },
+                  }),
+                }),
               }),
-            }),
+            },
           }),
         },
 

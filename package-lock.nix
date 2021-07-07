@@ -39,6 +39,55 @@ let
   getNodeDepFromList = packageName: dependencies:
     (builtins.head
       (builtins.filter (p: p.packageName == packageName) dependencies));
+  jsnixDrvOverrides = { drv, jsnixDeps ? {} }:
+    drv.overrideAttrs({
+      dontUnpackPackageJson ? false,
+      unpackPhase ? "",
+      name ? packageNix.name,
+      version ? packageNix.version,
+      ...
+    } : {
+      inherit name version;
+      unpackPhase =
+        if (dontUnpackPackageJson != true)
+                    then ''
+                          ${if (builtins.stringLength unpackPhase) == 0 then
+                                "runHook preUnpack" else ""}
+                           ${unpackPhase}
+                           chmod -R +rw ./ || true
+                           echo ${toPackageJson { inherit jsnixDeps; }} | ${jq}/bin/jq > package.json
+                           ${if (builtins.stringLength unpackPhase) == 0 then
+                                "runHook postUnpack" else ""}
+                         ''
+                    else ''${if (builtins.stringLength unpackPhase) == 0 then
+                                "runHook preUnpack" else ""}
+                            ${unpackPhase}
+                            chmod -R +rw ./ || true
+                           ${if (builtins.stringLength unpackPhase) == 0 then
+                                "runHook postUnpack" else ""}
+                         '';
+  });
+  toPackageJson = { jsnixDeps ? {} }:
+    let
+      packageNixDeps = if (builtins.hasAttr "dependencies" packageNix)
+                       then packageNix.dependencies
+                       else {};
+      packagesSpec = lib.lists.foldr
+        (depName: acc: acc // {
+          "${depName}" = (if ((builtins.typeOf packageNixDeps."${depName}") == "string")
+                          then packageNixDeps."${depName}"
+                          else
+                            if (((builtins.typeOf packageNixDeps."${depName}") == "set") &&
+                                ((builtins.typeOf packageNixDeps."${depName}".version) == "string"))
+                          then packageNixDeps."${depName}".version
+                          else "latest");}) {} (builtins.attrNames packageNixDeps);
+      safePkgNix = lib.lists.foldr (key: acc:
+        if ((builtins.typeOf packageNix."${key}") != "lambda")
+        then (acc // { "${key}" =  packageNix."${key}"; })
+        else acc)
+        {} (builtins.attrNames packageNix);
+    in lib.strings.escapeNixString
+      (builtins.toJSON (safePkgNix // { dependencies = packagesSpec; }));
   mkPhase = pkgs_: {phase, pkgName}:
      lib.optionalString ((builtins.hasAttr "${pkgName}" packageNix.dependencies) &&
                          (builtins.typeOf packageNix.dependencies."${pkgName}" == "set") &&
@@ -8881,12 +8930,12 @@ let
         sha512 = "u2HiBzrRWquCSDvRhbKeNA87pSDqCH2ptTDZ9+LtVvA11B48sIw5JPcADVRsggrMZsL8AqgihJ4j8GcjtfCAfA==";
       };
     };
-    "caniuse-lite-1.0.30001242" = {dependencies ? []}:
+    "caniuse-lite-1.0.30001243" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "caniuse-lite";
       packageName = "caniuse-lite";
-      version = "1.0.30001242";
+      version = "1.0.30001243";
       buildInputs = [
         jq
         nodejs
@@ -8900,8 +8949,8 @@ let
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "caniuse-lite"; };
       src = fetchurl {
-        url = "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001242.tgz";
-        sha512 = "KvNuZ/duufelMB3w2xtf9gEWCSxJwUgoxOx5b6ScLXC4kPc9xsczUVCPrQU26j5kOsHM4pSUL54tAZt5THQKug==";
+        url = "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001243.tgz";
+        sha512 = "vNxw9mkTBtkmLFnJRv/2rhs1yufpDfCkBZexG3Y0xdOH2Z/eE/85E4Dl5j1YUN34nZVsSp6vVRFQRrez9wJMRA==";
       };
     };
     "capture-exit-2.0.0" = {dependencies ? []}:
@@ -12630,12 +12679,12 @@ let
         sha1 = "3a83a904e54353287874c564b7549386849a98c9";
       };
     };
-    "electron-to-chromium-1.3.768" = {dependencies ? []}:
+    "electron-to-chromium-1.3.769" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "electron-to-chromium";
       packageName = "electron-to-chromium";
-      version = "1.3.768";
+      version = "1.3.769";
       buildInputs = [
         jq
         nodejs
@@ -12649,8 +12698,8 @@ let
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "electron-to-chromium"; };
       src = fetchurl {
-        url = "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.3.768.tgz";
-        sha512 = "I4UMZHhVSK2pwt8jOIxTi3GIuc41NkddtKT/hpuxp9GO5UWJgDKTBa4TACppbVAuKtKbMK6BhQZvT5tFF1bcNA==";
+        url = "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.3.769.tgz";
+        sha512 = "B+3hW8D76/uoTPSobWI3D/CFn2S4jPn88dVJ+BkD88Lz6LijQpL+hfdzIFJGTQK4KdE0XwmNbjUQFH1OQVwKdQ==";
       };
     };
     "elliptic-6.5.4" = {dependencies ? []}:
@@ -39817,7 +39866,7 @@ let
       };
     };
   };
-  nixjsDeps = sources // {
+  jsnixDeps = sources // {
     base64-js = let
       dependencies = [
         (sources."@babel/code-frame-7.14.5" {
@@ -40127,7 +40176,7 @@ let
         (sources."camelcase-4.1.0" {
           dependencies = [];
         })
-        (sources."caniuse-lite-1.0.30001242" {
+        (sources."caniuse-lite-1.0.30001243" {
           dependencies = [];
         })
         (sources."chalk-2.4.2" {
@@ -40238,7 +40287,7 @@ let
         (sources."duplexer2-0.1.4" {
           dependencies = [];
         })
-        (sources."electron-to-chromium-1.3.768" {
+        (sources."electron-to-chromium-1.3.769" {
           dependencies = [];
         })
         (sources."elliptic-6.5.4" {
@@ -41167,10 +41216,10 @@ let
       fi
       runHook postInstall
     '';
-      preInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "base64-js"; });
-      postInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "base64-js"; });
-      preBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "base64-js"; });
-      postBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "base64-js"; });
+      preInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "base64-js"; });
+      postInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "base64-js"; });
+      preBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "base64-js"; });
+      postBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "base64-js"; });
       dontStrip = true;
       meta = {
         description = "Base64 encoding/decoding in pure JS";
@@ -41998,10 +42047,10 @@ let
       fi
       runHook postInstall
     '';
-      preInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "cachedir"; });
-      postInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "cachedir"; });
-      preBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "cachedir"; });
-      postBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "cachedir"; });
+      preInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "cachedir"; });
+      postInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "cachedir"; });
+      preBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "cachedir"; });
+      postBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "cachedir"; });
       dontStrip = true;
       meta = {
         description = "Provides a directory where the OS wants you to store cached files.";
@@ -42509,7 +42558,7 @@ let
         (sources."camelcase-keys-6.2.2" {
           dependencies = [];
         })
-        (sources."caniuse-lite-1.0.30001242" {
+        (sources."caniuse-lite-1.0.30001243" {
           dependencies = [];
         })
         (sources."chalk-4.1.1" {
@@ -42620,7 +42669,7 @@ let
             })
           ];
         })
-        (sources."electron-to-chromium-1.3.768" {
+        (sources."electron-to-chromium-1.3.769" {
           dependencies = [];
         })
         (sources."emittery-0.8.1" {
@@ -44198,10 +44247,10 @@ let
       fi
       runHook postInstall
     '';
-      preInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "commander"; });
-      postInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "commander"; });
-      preBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "commander"; });
-      postBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "commander"; });
+      preInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "commander"; });
+      postInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "commander"; });
+      preBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "commander"; });
+      postBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "commander"; });
       dontStrip = true;
       meta = {
         description = "the complete solution for node.js command-line programs";
@@ -44319,10 +44368,10 @@ let
       fi
       runHook postInstall
     '';
-      preInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "findit"; });
-      postInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "findit"; });
-      preBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "findit"; });
-      postBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "findit"; });
+      preInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "findit"; });
+      postInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "findit"; });
+      preBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "findit"; });
+      postBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "findit"; });
       dontStrip = true;
       meta = {
         description = "walk a directory tree recursively with events";
@@ -44509,7 +44558,7 @@ let
         (sources."camelcase-5.3.1" {
           dependencies = [];
         })
-        (sources."caniuse-lite-1.0.30001242" {
+        (sources."caniuse-lite-1.0.30001243" {
           dependencies = [];
         })
         (sources."caseless-0.12.0" {
@@ -44613,7 +44662,7 @@ let
         (sources."ecc-jsbn-0.1.2" {
           dependencies = [];
         })
-        (sources."electron-to-chromium-1.3.768" {
+        (sources."electron-to-chromium-1.3.769" {
           dependencies = [];
         })
         (sources."emoji-regex-8.0.0" {
@@ -45669,10 +45718,10 @@ let
       fi
       runHook postInstall
     '';
-      preInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "fs-extra"; });
-      postInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "fs-extra"; });
-      preBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "fs-extra"; });
-      postBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "fs-extra"; });
+      preInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "fs-extra"; });
+      postInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "fs-extra"; });
+      preBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "fs-extra"; });
+      postBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "fs-extra"; });
       dontStrip = true;
       meta = {
         description = "fs-extra contains methods that aren't included in the vanilla Node.js fs package. Such as recursive mkdir, copy, and remove.";
@@ -46308,10 +46357,10 @@ let
       fi
       runHook postInstall
     '';
-      preInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "git-url-parse"; });
-      postInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "git-url-parse"; });
-      preBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "git-url-parse"; });
-      postBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "git-url-parse"; });
+      preInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "git-url-parse"; });
+      postInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "git-url-parse"; });
+      preBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "git-url-parse"; });
+      postBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "git-url-parse"; });
       dontStrip = true;
       meta = {
         description = "A high level git url parser for common git providers.";
@@ -46440,10 +46489,10 @@ let
       fi
       runHook postInstall
     '';
-      preInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "nijs"; });
-      postInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "nijs"; });
-      preBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "nijs"; });
-      postBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "nijs"; });
+      preInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "nijs"; });
+      postInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "nijs"; });
+      preBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "nijs"; });
+      postBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "nijs"; });
       dontStrip = true;
       meta = {
         description = "An internal DSL for the Nix package manager in JavaScript";
@@ -46675,7 +46724,7 @@ let
         (sources."camelcase-5.3.1" {
           dependencies = [];
         })
-        (sources."caniuse-lite-1.0.30001242" {
+        (sources."caniuse-lite-1.0.30001243" {
           dependencies = [];
         })
         (sources."caseless-0.12.0" {
@@ -46775,7 +46824,7 @@ let
         (sources."ecc-jsbn-0.1.2" {
           dependencies = [];
         })
-        (sources."electron-to-chromium-1.3.768" {
+        (sources."electron-to-chromium-1.3.769" {
           dependencies = [];
         })
         (sources."emoji-regex-8.0.0" {
@@ -47516,10 +47565,10 @@ let
       fi
       runHook postInstall
     '';
-      preInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "npm-registry-fetch"; });
-      postInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "npm-registry-fetch"; });
-      preBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "npm-registry-fetch"; });
-      postBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "npm-registry-fetch"; });
+      preInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "npm-registry-fetch"; });
+      postInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "npm-registry-fetch"; });
+      preBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "npm-registry-fetch"; });
+      postBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "npm-registry-fetch"; });
       dontStrip = true;
       meta = {
         description = "Fetch-based http client for use with npm registry APIs";
@@ -48109,10 +48158,10 @@ let
       fi
       runHook postInstall
     '';
-      preInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "npmconf"; });
-      postInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "npmconf"; });
-      preBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "npmconf"; });
-      postBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "npmconf"; });
+      preInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "npmconf"; });
+      postInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "npmconf"; });
+      preBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "npmconf"; });
+      postBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "npmconf"; });
       dontStrip = true;
       meta = {
         description = "The config module for npm circa npm@1 and npm@2";
@@ -48943,10 +48992,10 @@ let
       fi
       runHook postInstall
     '';
-      preInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "npmlog"; });
-      postInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "npmlog"; });
-      preBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "npmlog"; });
-      postBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "npmlog"; });
+      preInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "npmlog"; });
+      postInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "npmlog"; });
+      preBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "npmlog"; });
+      postBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "npmlog"; });
       dontStrip = true;
       meta = {
         description = "logger for npm";
@@ -48996,10 +49045,10 @@ let
       fi
       runHook postInstall
     '';
-      preInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "optparse"; });
-      postInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "optparse"; });
-      preBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "optparse"; });
-      postBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "optparse"; });
+      preInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "optparse"; });
+      postInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "optparse"; });
+      preBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "optparse"; });
+      postBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "optparse"; });
       dontStrip = true;
       meta = {
         description = "Command-line option parser";
@@ -49835,7 +49884,7 @@ let
         (sources."camelcase-5.3.1" {
           dependencies = [];
         })
-        (sources."caniuse-lite-1.0.30001242" {
+        (sources."caniuse-lite-1.0.30001243" {
           dependencies = [];
         })
         (sources."capture-exit-2.0.0" {
@@ -50063,7 +50112,7 @@ let
         (sources."ecc-jsbn-0.1.2" {
           dependencies = [];
         })
-        (sources."electron-to-chromium-1.3.768" {
+        (sources."electron-to-chromium-1.3.769" {
           dependencies = [];
         })
         (sources."emittery-0.7.2" {
@@ -52025,10 +52074,10 @@ let
       fi
       runHook postInstall
     '';
-      preInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "rambda"; });
-      postInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "rambda"; });
-      preBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "rambda"; });
-      postBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "rambda"; });
+      preInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "rambda"; });
+      postInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "rambda"; });
+      preBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "rambda"; });
+      postBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "rambda"; });
       dontStrip = true;
       meta = {
         description = "Lightweight and faster alternative to Ramda";
@@ -52918,68 +52967,15 @@ let
       fi
       runHook postInstall
     '';
-      preInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "semver"; });
-      postInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "semver"; });
-      preBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "semver"; });
-      postBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "semver"; });
+      preInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "semver"; });
+      postInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "semver"; });
+      preBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "semver"; });
+      postBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "semver"; });
       dontStrip = true;
       meta = {
         description = "The semantic version parser used by npm.";
         license = "ISC";
         homepage = "https://github.com/npm/node-semver#readme";
-      };
-    };
-    slasp = let
-      dependencies = [];
-    in
-    stdenv.mkDerivation {
-      name = "slasp";
-      packageName = "slasp";
-      version = "0.0.4";
-      src = fetchurl {
-        url = "https://registry.npmjs.org/slasp/-/slasp-0.0.4.tgz";
-        sha1 = "9adc26ee729a0f95095851a5489f87a5258d57a9";
-      };
-      buildInputs = [
-        nodejs
-      ];
-      buildPhase = ''
-      runHook preBuild
-      ${copyNodeModules { inherit dependencies; }}
-      patchShebangs .
-      export HOME=$TMPDIR
-      NODE_PATH="$NODE_PATH":$(pwd)/node_modules \
-      npm --offline --no-bin-links \
-          ${if builtins.hasAttr "npmFlags" packageNix then packageNix.npmFlags else ""} \
-          "--production" \
-          rebuild || \
-        echo npm rebuild failed, and it may or may not matter
-      runHook postBuild
-    '';
-      installPhase = ''
-      runHook preInstall
-      export packageDir="$(pwd)"
-      mkdir -p $out/lib/node_modules/slasp
-      cd $out/lib/node_modules/slasp
-      cp -rfT "$packageDir" "$(pwd)"
-      # Create symlink to the deployed executable folder
-      mkdir -p $out/bin
-      find "$(cd ..; pwd)" -type f \( -perm -u=x -o -perm -g=x -o -perm -o=x \) -not -path "$(pwd)/node_modules/*" \
-        -exec ln -s {} $out/bin \; -print
-      if [ -f "$out/bin" ]; then
-        chmod +x $out/bin/*
-      fi
-      runHook postInstall
-    '';
-      preInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "slasp"; });
-      postInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "slasp"; });
-      preBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "slasp"; });
-      postBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "slasp"; });
-      dontStrip = true;
-      meta = {
-        description = "SugarLess Asynchronous Structured Programming library with Object Oriented Programming Support";
-        license = "MIT";
-        homepage = "https://github.com/svanderburg/slasp";
       };
     };
     spdx-license-ids = let
@@ -53675,10 +53671,10 @@ let
       fi
       runHook postInstall
     '';
-      preInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "spdx-license-ids"; });
-      postInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "spdx-license-ids"; });
-      preBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "spdx-license-ids"; });
-      postBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "spdx-license-ids"; });
+      preInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "spdx-license-ids"; });
+      postInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "spdx-license-ids"; });
+      preBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "spdx-license-ids"; });
+      postBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "spdx-license-ids"; });
       dontStrip = true;
       meta = {
         description = "A list of SPDX license identifiers";
@@ -55111,10 +55107,10 @@ let
       fi
       runHook postInstall
     '';
-      preInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "tar"; });
-      postInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "tar"; });
-      preBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "tar"; });
-      postBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "tar"; });
+      preInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "tar"; });
+      postInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "tar"; });
+      preBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "tar"; });
+      postBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "tar"; });
       dontStrip = true;
       meta = {
         description = "tar for node";
@@ -55515,10 +55511,10 @@ let
       fi
       runHook postInstall
     '';
-      preInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "web-tree-sitter"; });
-      postInstall = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "web-tree-sitter"; });
-      preBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "web-tree-sitter"; });
-      postBuild = (mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "web-tree-sitter"; });
+      preInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "web-tree-sitter"; });
+      postInstall = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "web-tree-sitter"; });
+      preBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "web-tree-sitter"; });
+      postBuild = (mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "web-tree-sitter"; });
       dontStrip = true;
       meta = {
         description = "Tree-sitter bindings for the web";
@@ -55528,8 +55524,11 @@ let
     };
   };
 in
-nixjsDeps // (if builtins.hasAttr "packageDerivation" packageNix then {
-  "${packageNix.name}" = stdenv.mkDerivation (packageNix.packageDerivation (pkgs // {
-    inherit copyNodeModules linkNodeModules gitignoreSource nixjsDeps getNodeDepFromList;
-  }));
+jsnixDeps // (if builtins.hasAttr "packageDerivation" packageNix then {
+  "${packageNix.name}" = jsnixDrvOverrides {
+    inherit jsnixDeps;
+    drv = stdenv.mkDerivation (packageNix.packageDerivation (pkgs // {
+      inherit copyNodeModules linkNodeModules gitignoreSource jsnixDeps getNodeDepFromList;
+    }));
+  };
 } else {})

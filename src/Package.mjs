@@ -1,7 +1,6 @@
 import fs from "fs";
 import path from "path";
 import semver from "semver";
-import slasp from "slasp";
 import nijs from "nijs";
 import { Source } from "./sources/Source.mjs";
 import { GitSource } from "./sources/GitSource.mjs";
@@ -249,16 +248,16 @@ export class Package extends nijs.NixASTNode {
       runHook postInstall
     ''`);
     ast.preInstall = new nijs.NixValue(
-      `(mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "${this.source.config.name}"; })`
+      `(mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "${this.source.config.name}"; })`
     );
     ast.postInstall = new nijs.NixValue(
-      `(mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "${this.source.config.name}"; })`
+      `(mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "${this.source.config.name}"; })`
     );
     ast.preBuild = new nijs.NixValue(
-      `(mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "${this.source.config.name}"; })`
+      `(mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "${this.source.config.name}"; })`
     );
     ast.postBuild = new nijs.NixValue(
-      `(mkPhase (pkgs // { inherit nixjsDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "${this.source.config.name}"; })`
+      `(mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "${this.source.config.name}"; })`
     );
 
     ast.dontStrip = true;

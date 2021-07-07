@@ -13,16 +13,17 @@ export const resolveCompat = ({ versionSpec, name }) => {
   if (allCompatabilityPkgsNames[name]) {
     const maybeCompat = allCompatabilityPkgsNames[name];
     const badCompatVer = maybeCompat.split("@")[1];
-    console.log(
-      "SATISFI",
-      (versionSpec || "").replace(/^\^/, ""),
-      badCompatVer,
-      semver.satisfies(
-        (versionSpec || "").replace(/^\^/, ""),
-        badCompatVer,
-        true
-      )
-    );
+    // console.log(
+    //   "SATISFI",
+    //   (versionSpec || "").replace(/^\^/, ""),
+    //   badCompatVer,
+    //   semver.satisfies(
+    //     (versionSpec || "").replace(/^\^/, ""),
+    //     badCompatVer,
+    //     true
+    //   )
+    // );
+
     if (
       badCompatVer === "*" ||
       badCompatVer === versionSpec ||

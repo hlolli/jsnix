@@ -1,4 +1,3 @@
-import slasp from "slasp";
 import nijs from "nijs";
 
 export class Sources extends nijs.NixASTNode {

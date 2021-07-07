@@ -1,5 +1,5 @@
-{
-  name = "nixjs";
+rec {
+  name = "jsnix";
   version = "0.0.0-alpha1";
   description = ''
     Toolkit for making javascript package management fun again with the power of nix
@@ -16,7 +16,7 @@
   main = "./src/jsnix.js";
   dependencies = {
     base64-js = "1.5.x";
-    cachedir = "2.3.x";
+    cachedir = { version = "2.3.x"; };
     commander = "8.x";
     findit = "2.0.x";
     fs-extra = "10.x";
@@ -28,10 +28,33 @@
     optparse = "1.0.x";
     rambda = "^6.7.0";
     semver = "7.3.x";
-    slasp = "0.0.4";
     spdx-license-ids = "3.0.x";
     tar = "6.1.x";
     web-tree-sitter = "0.19.4";
+  };
+  packageDerivation = { lib, gitignoreSource, jsnixDeps, ... }@pkgs: {
+    name = "jsnix";
+    src = gitignoreSource ./.;
+    nativeBuildInputs = with pkgs; [
+      makeWrapper
+    ];
+    dontStrip = true;
+    unpackPhase = "cp -r $src jsnix && cd jsnix";
+    buildPhase = ''
+      ${pkgs.copyNodeModules {
+        dependencies = builtins.map
+          (dep: jsnixDeps."${dep}")
+          (builtins.attrNames dependencies);
+      }}
+    '';
+    installPhase = ''
+      mkdir -p $out/lib/node_modules/jsnix
+      mkdir -p $out/bin
+      cp -rf ./ $out/lib/node_modules/jsnix
+
+      makeWrapper '${pkgs.nodejs}/bin/node' "$out/bin/jsnix" \
+        --add-flags "$out/lib/node_modules/jsnix/bin/jsnix.mjs"
+    '';
   };
   repository = {
     type = "git";
