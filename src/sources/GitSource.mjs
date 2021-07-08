@@ -25,7 +25,7 @@ export class GitSource extends Source {
   // }
 
   async fetch() {
-    console.log("checking", this.versionSpec, "identifier", this.identifier);
+    // console.log("checking", this.versionSpec, "identifier", this.identifier);
 
     if (!this.versionSpec.includes(":")) {
       this.versionSpec = "github:" + this.versionSpec;
@@ -60,245 +60,50 @@ export class GitSource extends Source {
       this.versionSpec = this.url;
     }
 
-    const filesToDelete = [];
-    const dirsToDelete = [];
-    const tmpDir = path.join(
-      os.tmpdir(),
-      "node2nix-git-checkout-" + this.dependencyName.replace("/", "_slash_")
-    );
+    const gitData = await new Promise((resolve, reject) => {
+      let unparsedJson = "";
+      let errOut = "";
+      const requestedRev = commitIsh ? `--rev ${commitIsh}` : "";
 
-    if (await fs.pathExists(tmpDir)) {
-      await fs.remove(tmpDir);
-    }
-    await fs.mkdir(tmpDir);
-
-    const cleanUp = async () => {
-      for (const f of filesToDelete) {
-        if (await fs.pathExists(f)) {
-          await fs.remove(f);
-        }
-      }
-
-      for (const d of dirsToDelete) {
-        if (await fs.pathExists(d)) {
-          await fs.remove(d);
-        }
-      }
-      if (await fs.pathExists(tmpDir)) {
-        await fs.remove(tmpDir);
-      }
-    };
-
-    process.stderr.write("Cloning git repository: " + this.url + "\n");
-
-    await new Promise((resolve, reject) => {
-      const gitClone = child_process.spawn("git", ["clone", this.url], {
-        cwd: tmpDir,
-        stdio: "inherit",
-      });
-      gitClone.on("close", (code) => {
-        if (code == 0) {
-          resolve();
-        } else {
-          reject("git clone exited with status: " + code);
-        }
-      });
-    }).catch(async (error) => {
-      await cleanUp();
-      console.error(error);
-      process.exit(1);
-    });
-
-    const repositoryDir = await new Promise((resolve, reject) => {
-      const finder = findit(tmpDir);
-      finder.on("directory", (dir, stat) => {
-        if (dir != tmpDir) {
-          finder.stop();
-          resolve(dir);
-        }
-      });
-
-      finder.on("end", () => {
-        reject("Cannot find a checkout directory in the temp folder");
-      });
-      finder.on("error", (err) => {
-        reject(err);
-      });
-    }).catch(async (error) => {
-      await cleanUp();
-      console.error(error);
-      process.exit(1);
-    });
-
-    const branch = !commitIsh ? "HEAD" : commitIsh;
-
-    process.stderr.write("Parsing the revision of commitish: " + branch + "\n");
-
-    /* Check whether the given commitish corresponds to a hash */
-    await new Promise((resolve, reject) => {
-      const gitRevParse = child_process.spawn("git", ["rev-parse", branch], {
-        cwd: repositoryDir,
-      });
-
-      gitRevParse.stdout.on("data", (data) => {
-        this.rev += data;
-      });
-      gitRevParse.stderr.on("data", (data) => {
-        process.stderr.write(data);
-      });
-      gitRevParse.on("close", (code) => {
-        if (code !== 0) this.rev = ""; // If git rev-parse fails, we consider the commitIsh a branch/tag.
-        resolve();
-      });
-    });
-
-    if (!this.rev) {
-      /* Some powerusers like Sindre Sorhus have renamed master to main, so let's give the default branch a try */
-      await new Promise((resolve, reject) => {
-        const gitRevParse = child_process.spawn("git", ["rev-parse", "HEAD"], {
-          cwd: repositoryDir,
-        });
-
-        gitRevParse.stdout.on("data", (data) => {
-          this.rev += data;
-        });
-        gitRevParse.stderr.on("data", (data) => {
-          process.stderr.write(data);
-        });
-        gitRevParse.on("close", (code) => {
-          resolve();
-        });
-      });
-    }
-
-    if (!this.rev) {
-      cleanUp();
-      console.warn(`Couldn't resolve specified git revision from ${this.url}`);
-      process.exit(1);
-    }
-
-    /* When we have resolved a revision, do a checkout of it */
-    this.rev = this.rev.substr(0, this.rev.length - 1);
-
-    process.stderr.write("Checking out revision: " + this.rev + "\n");
-
-    /* Check out the corresponding revision */
-    await new Promise((resolve, reject) => {
-      const gitCheckout = child_process.spawn("git", ["checkout", this.rev], {
-        cwd: repositoryDir,
-        stdio: "inherit",
-      });
-
-      gitCheckout.on("close", function (code) {
-        if (code === 0) {
-          resolve();
-        } else {
-          reject("git checkout exited with status: " + code);
-        }
-      });
-    }).catch(async (error) => {
-      await cleanUp();
-      console.error(error);
-      process.exit(1);
-    });
-
-    /* Initialize all sub modules */
-    process.stderr.write("Initializing git sub modules\n");
-
-    await new Promise((resolve, reject) => {
-      const gitSubmoduleUpdate = child_process.spawn(
-        "git",
-        ["submodule", "update", "--init", "--recursive"],
-        {
-          cwd: repositoryDir,
-          stdio: "inherit",
-        }
-      );
-
-      gitSubmoduleUpdate.on("close", (code) => {
-        if (code == 0) {
-          resolve();
-        } else {
-          reject("git submodule exited with status: " + code);
-        }
-      });
-    }).catch(async (error) => {
-      await cleanUp();
-      console.error(error);
-      process.exit(1);
-    });
-
-    try {
-      this.config = JSON.parse(
-        await fs.readFile(path.join(repositoryDir, "package.json"))
-      );
-    } catch (error) {
-      await cleanUp();
-      console.error(`Couldn't parse package.json ${error}`);
-      process.exit(1);
-    }
-
-    await new Promise((resolve, reject) => {
-      const finder = findit(repositoryDir);
-      finder.on("directory", (dir, stat) => {
-        const base = path.basename(dir);
-        if (base == ".git") {
-          dirsToDelete.push(dir);
-        }
-      });
-      finder.on("file", (file, stat) => {
-        const base = path.basename(file);
-        if (base == ".git") {
-          filesToDelete.push(file);
-        }
-      });
-      finder.on("end", () => {
-        resolve();
-      });
-      finder.on("error", (err) => {
-        reject(err);
-      });
-    }).catch(async (error) => {
-      await cleanUp();
-      console.error(error);
-      process.exit(1);
-    });
-
-    try {
-      this.config = JSON.parse(
-        fs.readFileSync(path.join(repositoryDir, "package.json"))
-      );
-    } catch (error) {
-      await cleanUp();
-      console.error(`Couldn't parse package.json ${error}`);
-      process.exit(1);
-    }
-
-    await new Promise((resolve, reject) => {
-      const nixHash = child_process.spawn("nix-hash", [
-        "--type",
-        "sha256",
-        repositoryDir,
+      const gitPrefetch = child_process.spawn("nix-shell", [
+        "-p",
+        "nix-prefetch-git",
+        "--command",
+        `nix-prefetch-git ${this.url} --quiet ${requestedRev}`,
       ]);
-
-      nixHash.stdout.on("data", (data) => {
-        this.hash += data;
+      gitPrefetch.stdout.on("data", (data) => {
+        unparsedJson += data;
       });
-      nixHash.stderr.on("data", (data) => {
-        process.stderr.write(data);
+      gitPrefetch.stderr.on("data", (data) => {
+        errOut += data;
       });
-      nixHash.on("close", (code) => {
+      gitPrefetch.on("close", (code) => {
         if (code == 0) {
-          resolve();
+          try {
+            resolve(JSON.parse(unparsedJson));
+          } catch (error) {
+            reject(error);
+          }
         } else {
-          reject("nix-hash exited with status: " + code);
+          reject("git clone exited with status: " + code, errOut);
         }
       });
     }).catch(async (error) => {
-      await cleanUp();
       console.error(error);
       process.exit(1);
     });
+
+    this.hash = gitData.sha256;
+    this.rev = gitData.rev;
+    if (fs.existsSync(path.join(gitData.path, "package.json"))) {
+      this.config = JSON.parse(
+        fs.readFileSync(path.join(gitData.path, "package.json"), {
+          encoding: "utf-8",
+        })
+      );
+    } else {
+      this.config = { name: this.identifier };
+    }
   }
 
   toNixAST() {
@@ -310,7 +115,7 @@ export class GitSource extends Source {
       paramExpr: {
         url: this.url,
         rev: this.rev,
-        sha256: this.hash.substr(0, this.hash.length - 1),
+        sha256: this.hash,
       },
     });
 

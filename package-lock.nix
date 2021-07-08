@@ -114,6 +114,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@arrows/array"; };
       src = fetchurl {
@@ -137,6 +138,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@arrows/composition"; };
       src = fetchurl {
@@ -160,6 +162,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@arrows/dispatch"; };
       src = fetchurl {
@@ -183,6 +186,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@arrows/error"; };
       src = fetchurl {
@@ -206,6 +210,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@arrows/multimethod"; };
       src = fetchurl {
@@ -229,6 +234,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/code-frame"; };
       src = fetchurl {
@@ -252,6 +258,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/code-frame"; };
       src = fetchurl {
@@ -275,6 +282,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/compat-data"; };
       src = fetchurl {
@@ -298,6 +306,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/core"; };
       src = fetchurl {
@@ -321,6 +330,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/core"; };
       src = fetchurl {
@@ -344,6 +354,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/generator"; };
       src = fetchurl {
@@ -367,6 +378,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-annotate-as-pure"; };
       src = fetchurl {
@@ -390,6 +402,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-builder-binary-assignment-operator-visitor"; };
       src = fetchurl {
@@ -413,6 +426,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-compilation-targets"; };
       src = fetchurl {
@@ -436,6 +450,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-create-class-features-plugin"; };
       src = fetchurl {
@@ -459,6 +474,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-create-regexp-features-plugin"; };
       src = fetchurl {
@@ -482,6 +498,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-explode-assignable-expression"; };
       src = fetchurl {
@@ -505,6 +522,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-function-name"; };
       src = fetchurl {
@@ -528,6 +546,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-get-function-arity"; };
       src = fetchurl {
@@ -551,6 +570,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-hoist-variables"; };
       src = fetchurl {
@@ -574,6 +594,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-member-expression-to-functions"; };
       src = fetchurl {
@@ -597,6 +618,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-module-imports"; };
       src = fetchurl {
@@ -620,6 +642,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-module-transforms"; };
       src = fetchurl {
@@ -643,6 +666,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-optimise-call-expression"; };
       src = fetchurl {
@@ -666,6 +690,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-plugin-utils"; };
       src = fetchurl {
@@ -689,6 +714,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-remap-async-to-generator"; };
       src = fetchurl {
@@ -712,6 +738,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-replace-supers"; };
       src = fetchurl {
@@ -735,6 +762,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-simple-access"; };
       src = fetchurl {
@@ -758,6 +786,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-skip-transparent-expression-wrappers"; };
       src = fetchurl {
@@ -781,6 +810,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-split-export-declaration"; };
       src = fetchurl {
@@ -804,6 +834,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-validator-identifier"; };
       src = fetchurl {
@@ -827,6 +858,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-validator-option"; };
       src = fetchurl {
@@ -850,6 +882,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-wrap-function"; };
       src = fetchurl {
@@ -873,6 +906,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helpers"; };
       src = fetchurl {
@@ -896,6 +930,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/highlight"; };
       src = fetchurl {
@@ -919,6 +954,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/parser"; };
       src = fetchurl {
@@ -942,6 +978,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-async-generator-functions"; };
       src = fetchurl {
@@ -965,6 +1002,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-class-properties"; };
       src = fetchurl {
@@ -988,6 +1026,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-dynamic-import"; };
       src = fetchurl {
@@ -1011,6 +1050,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-export-namespace-from"; };
       src = fetchurl {
@@ -1034,6 +1074,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-json-strings"; };
       src = fetchurl {
@@ -1057,6 +1098,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-logical-assignment-operators"; };
       src = fetchurl {
@@ -1080,6 +1122,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-nullish-coalescing-operator"; };
       src = fetchurl {
@@ -1103,6 +1146,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-numeric-separator"; };
       src = fetchurl {
@@ -1126,6 +1170,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-object-rest-spread"; };
       src = fetchurl {
@@ -1149,6 +1194,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-object-rest-spread"; };
       src = fetchurl {
@@ -1172,6 +1218,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-optional-catch-binding"; };
       src = fetchurl {
@@ -1195,6 +1242,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-optional-chaining"; };
       src = fetchurl {
@@ -1218,6 +1266,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-private-methods"; };
       src = fetchurl {
@@ -1241,6 +1290,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-unicode-property-regex"; };
       src = fetchurl {
@@ -1264,6 +1314,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-async-generators"; };
       src = fetchurl {
@@ -1287,6 +1338,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-bigint"; };
       src = fetchurl {
@@ -1310,6 +1362,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-class-properties"; };
       src = fetchurl {
@@ -1333,6 +1386,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-dynamic-import"; };
       src = fetchurl {
@@ -1356,6 +1410,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-export-namespace-from"; };
       src = fetchurl {
@@ -1379,6 +1434,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-import-meta"; };
       src = fetchurl {
@@ -1402,6 +1458,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-json-strings"; };
       src = fetchurl {
@@ -1425,6 +1482,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-jsx"; };
       src = fetchurl {
@@ -1448,6 +1506,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-logical-assignment-operators"; };
       src = fetchurl {
@@ -1471,6 +1530,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-nullish-coalescing-operator"; };
       src = fetchurl {
@@ -1494,6 +1554,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-numeric-separator"; };
       src = fetchurl {
@@ -1517,6 +1578,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-object-rest-spread"; };
       src = fetchurl {
@@ -1540,6 +1602,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-optional-catch-binding"; };
       src = fetchurl {
@@ -1563,6 +1626,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-optional-chaining"; };
       src = fetchurl {
@@ -1586,6 +1650,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-top-level-await"; };
       src = fetchurl {
@@ -1609,6 +1674,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-typescript"; };
       src = fetchurl {
@@ -1632,6 +1698,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-arrow-functions"; };
       src = fetchurl {
@@ -1655,6 +1722,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-async-to-generator"; };
       src = fetchurl {
@@ -1678,6 +1746,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-block-scoped-functions"; };
       src = fetchurl {
@@ -1701,6 +1770,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-block-scoping"; };
       src = fetchurl {
@@ -1724,6 +1794,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-classes"; };
       src = fetchurl {
@@ -1747,6 +1818,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-computed-properties"; };
       src = fetchurl {
@@ -1770,6 +1842,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-destructuring"; };
       src = fetchurl {
@@ -1793,6 +1866,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-dotall-regex"; };
       src = fetchurl {
@@ -1816,6 +1890,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-duplicate-keys"; };
       src = fetchurl {
@@ -1839,6 +1914,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-exponentiation-operator"; };
       src = fetchurl {
@@ -1862,6 +1938,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-for-of"; };
       src = fetchurl {
@@ -1885,6 +1962,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-function-name"; };
       src = fetchurl {
@@ -1908,6 +1986,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-literals"; };
       src = fetchurl {
@@ -1931,6 +2010,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-member-expression-literals"; };
       src = fetchurl {
@@ -1954,6 +2034,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-modules-amd"; };
       src = fetchurl {
@@ -1977,6 +2058,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-modules-commonjs"; };
       src = fetchurl {
@@ -2000,6 +2082,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-modules-systemjs"; };
       src = fetchurl {
@@ -2023,6 +2106,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-modules-umd"; };
       src = fetchurl {
@@ -2046,6 +2130,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-named-capturing-groups-regex"; };
       src = fetchurl {
@@ -2069,6 +2154,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-new-target"; };
       src = fetchurl {
@@ -2092,6 +2178,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-object-super"; };
       src = fetchurl {
@@ -2115,6 +2202,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-parameters"; };
       src = fetchurl {
@@ -2138,6 +2226,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-property-literals"; };
       src = fetchurl {
@@ -2161,6 +2250,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-react-jsx"; };
       src = fetchurl {
@@ -2184,6 +2274,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-regenerator"; };
       src = fetchurl {
@@ -2207,6 +2298,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-reserved-words"; };
       src = fetchurl {
@@ -2230,6 +2322,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-shorthand-properties"; };
       src = fetchurl {
@@ -2253,6 +2346,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-spread"; };
       src = fetchurl {
@@ -2276,6 +2370,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-sticky-regex"; };
       src = fetchurl {
@@ -2299,6 +2394,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-template-literals"; };
       src = fetchurl {
@@ -2322,6 +2418,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-typeof-symbol"; };
       src = fetchurl {
@@ -2345,6 +2442,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-unicode-escapes"; };
       src = fetchurl {
@@ -2368,6 +2466,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-unicode-regex"; };
       src = fetchurl {
@@ -2391,6 +2490,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/preset-env"; };
       src = fetchurl {
@@ -2414,6 +2514,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/preset-modules"; };
       src = fetchurl {
@@ -2437,6 +2538,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/runtime"; };
       src = fetchurl {
@@ -2460,6 +2562,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/template"; };
       src = fetchurl {
@@ -2483,6 +2586,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/traverse"; };
       src = fetchurl {
@@ -2506,6 +2610,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/types"; };
       src = fetchurl {
@@ -2529,6 +2634,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@bcoe/v8-coverage"; };
       src = fetchurl {
@@ -2552,6 +2658,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@cnakazawa/watch"; };
       src = fetchurl {
@@ -2575,6 +2682,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@definitelytyped/header-parser"; };
       src = fetchurl {
@@ -2598,6 +2706,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@definitelytyped/typescript-versions"; };
       src = fetchurl {
@@ -2621,6 +2730,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@definitelytyped/utils"; };
       src = fetchurl {
@@ -2644,6 +2754,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@eslint/eslintrc"; };
       src = fetchurl {
@@ -2667,6 +2778,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@eslint/eslintrc"; };
       src = fetchurl {
@@ -2690,6 +2802,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@humanwhocodes/config-array"; };
       src = fetchurl {
@@ -2713,6 +2826,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@humanwhocodes/object-schema"; };
       src = fetchurl {
@@ -2736,6 +2850,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@istanbuljs/load-nyc-config"; };
       src = fetchurl {
@@ -2759,6 +2874,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@istanbuljs/schema"; };
       src = fetchurl {
@@ -2782,6 +2898,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/console"; };
       src = fetchurl {
@@ -2805,6 +2922,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/console"; };
       src = fetchurl {
@@ -2828,6 +2946,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/console"; };
       src = fetchurl {
@@ -2851,6 +2970,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/core"; };
       src = fetchurl {
@@ -2874,6 +2994,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/core"; };
       src = fetchurl {
@@ -2897,6 +3018,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/environment"; };
       src = fetchurl {
@@ -2920,6 +3042,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/environment"; };
       src = fetchurl {
@@ -2943,6 +3066,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/fake-timers"; };
       src = fetchurl {
@@ -2966,6 +3090,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/fake-timers"; };
       src = fetchurl {
@@ -2989,6 +3114,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/globals"; };
       src = fetchurl {
@@ -3012,6 +3138,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/globals"; };
       src = fetchurl {
@@ -3035,6 +3162,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/reporters"; };
       src = fetchurl {
@@ -3058,6 +3186,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/reporters"; };
       src = fetchurl {
@@ -3081,6 +3210,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/source-map"; };
       src = fetchurl {
@@ -3104,6 +3234,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/source-map"; };
       src = fetchurl {
@@ -3127,6 +3258,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/source-map"; };
       src = fetchurl {
@@ -3150,6 +3282,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/test-result"; };
       src = fetchurl {
@@ -3173,6 +3306,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/test-result"; };
       src = fetchurl {
@@ -3196,6 +3330,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/test-result"; };
       src = fetchurl {
@@ -3219,6 +3354,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/test-sequencer"; };
       src = fetchurl {
@@ -3242,6 +3378,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/test-sequencer"; };
       src = fetchurl {
@@ -3265,6 +3402,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/transform"; };
       src = fetchurl {
@@ -3288,6 +3426,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/transform"; };
       src = fetchurl {
@@ -3311,6 +3450,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/types"; };
       src = fetchurl {
@@ -3334,6 +3474,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/types"; };
       src = fetchurl {
@@ -3357,6 +3498,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/types"; };
       src = fetchurl {
@@ -3380,6 +3522,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@nodelib/fs.scandir"; };
       src = fetchurl {
@@ -3403,6 +3546,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@nodelib/fs.stat"; };
       src = fetchurl {
@@ -3410,12 +3554,12 @@ let
         sha512 = "RkhPPp2zrqDAQA/2jNhnztcPAlv64XdhIp7a7454A5ovI7Bukxgt7MX7udwAu3zg1DcpPU0rz3VV1SeaqvY4+A==";
       };
     };
-    "@nodelib/fs.walk-1.2.7" = {dependencies ? []}:
+    "@nodelib/fs.walk-1.2.8" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "_at_nodelib_slash_fs.walk";
       packageName = "@nodelib/fs.walk";
-      version = "1.2.7";
+      version = "1.2.8";
       buildInputs = [
         jq
         nodejs
@@ -3426,11 +3570,12 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@nodelib/fs.walk"; };
       src = fetchurl {
-        url = "https://registry.npmjs.org/@nodelib/fs.walk/-/fs.walk-1.2.7.tgz";
-        sha512 = "BTIhocbPBSrRmHxOAJFtR18oLhxTtAFDAvL8hY1S3iU8k+E60W/YFs4jrixGzQjMpF4qPXxIQHcjVD9dz1C2QA==";
+        url = "https://registry.npmjs.org/@nodelib/fs.walk/-/fs.walk-1.2.8.tgz";
+        sha512 = "oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==";
       };
     };
     "@npmcli/lint-1.0.1" = {dependencies ? []}:
@@ -3449,6 +3594,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@npmcli/lint"; };
       src = fetchurl {
@@ -3472,6 +3618,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@npmcli/move-file"; };
       src = fetchurl {
@@ -3495,6 +3642,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@rollup/plugin-babel"; };
       src = fetchurl {
@@ -3518,6 +3666,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@rollup/plugin-commonjs"; };
       src = fetchurl {
@@ -3541,6 +3690,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@rollup/plugin-json"; };
       src = fetchurl {
@@ -3564,6 +3714,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@rollup/plugin-node-resolve"; };
       src = fetchurl {
@@ -3587,6 +3738,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@rollup/plugin-replace"; };
       src = fetchurl {
@@ -3610,6 +3762,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@rollup/pluginutils"; };
       src = fetchurl {
@@ -3633,6 +3786,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@shinnn/eslint-config"; };
       src = fetchurl {
@@ -3656,6 +3810,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@sinonjs/commons"; };
       src = fetchurl {
@@ -3679,6 +3834,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@sinonjs/fake-timers"; };
       src = fetchurl {
@@ -3702,6 +3858,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@sinonjs/fake-timers"; };
       src = fetchurl {
@@ -3725,6 +3882,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@tootallnate/once"; };
       src = fetchurl {
@@ -3748,6 +3906,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@tsd/typescript"; };
       src = fetchurl {
@@ -3771,6 +3930,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/babel__core"; };
       src = fetchurl {
@@ -3794,6 +3954,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/babel__generator"; };
       src = fetchurl {
@@ -3817,6 +3978,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/babel__template"; };
       src = fetchurl {
@@ -3824,12 +3986,12 @@ let
         sha512 = "azBFKemX6kMg5Io+/rdGT0dkGreboUVR0Cdm3fz9QJWpaQGJRQXl7C+6hOTCZcMll7KFyEQpgbYI2lHdsS4U7g==";
       };
     };
-    "@types/babel__traverse-7.14.1" = {dependencies ? []}:
+    "@types/babel__traverse-7.14.2" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "_at_types_slash_babel__traverse";
       packageName = "@types/babel__traverse";
-      version = "7.14.1";
+      version = "7.14.2";
       buildInputs = [
         jq
         nodejs
@@ -3840,11 +4002,12 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/babel__traverse"; };
       src = fetchurl {
-        url = "https://registry.npmjs.org/@types/babel__traverse/-/babel__traverse-7.14.1.tgz";
-        sha512 = "DomsDK/nX3XXHs6jlQ8/YYE6jZAuhmoGAFfcYi1h1jbBNGS7Efdx74FKLTO3HCCyLqQyLlNbql87xqa7C3M/FQ==";
+        url = "https://registry.npmjs.org/@types/babel__traverse/-/babel__traverse-7.14.2.tgz";
+        sha512 = "K2waXdXBi2302XUdcHcR1jCeU0LL4TD9HRs/gk0N2Xvrht+G/BfJa4QObBQZfhMdxiCpV3COl5Nfq4uKTeTnJA==";
       };
     };
     "@types/eslint-7.2.14" = {dependencies ? []}:
@@ -3863,6 +4026,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/eslint"; };
       src = fetchurl {
@@ -3886,6 +4050,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/estree"; };
       src = fetchurl {
@@ -3909,6 +4074,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/estree"; };
       src = fetchurl {
@@ -3932,6 +4098,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/graceful-fs"; };
       src = fetchurl {
@@ -3955,6 +4122,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/istanbul-lib-coverage"; };
       src = fetchurl {
@@ -3978,6 +4146,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/istanbul-lib-report"; };
       src = fetchurl {
@@ -4001,6 +4170,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/istanbul-reports"; };
       src = fetchurl {
@@ -4024,6 +4194,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/istanbul-reports"; };
       src = fetchurl {
@@ -4047,6 +4218,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/jest"; };
       src = fetchurl {
@@ -4070,6 +4242,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/jest"; };
       src = fetchurl {
@@ -4093,6 +4266,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/json-schema"; };
       src = fetchurl {
@@ -4116,6 +4290,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/minimist"; };
       src = fetchurl {
@@ -4123,12 +4298,12 @@ let
         sha512 = "jhuKLIRrhvCPLqwPcx6INqmKeiA5EWrsCOPhrlFSrbrmU4ZMPjj5Ul/oLCMDO98XRUIwVm78xICz4EPCektzeQ==";
       };
     };
-    "@types/node-14.17.4" = {dependencies ? []}:
+    "@types/node-14.17.5" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "_at_types_slash_node";
       packageName = "@types/node";
-      version = "14.17.4";
+      version = "14.17.5";
       buildInputs = [
         jq
         nodejs
@@ -4139,19 +4314,20 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/node"; };
       src = fetchurl {
-        url = "https://registry.npmjs.org/@types/node/-/node-14.17.4.tgz";
-        sha512 = "8kQ3+wKGRNN0ghtEn7EGps/B8CzuBz1nXZEIGGLP2GnwbqYn4dbTs7k+VKLTq1HvZLRCIDtN3Snx1Ege8B7L5A==";
+        url = "https://registry.npmjs.org/@types/node/-/node-14.17.5.tgz";
+        sha512 = "bjqH2cX/O33jXT/UmReo2pM7DIJREPMnarixbQ57DOOzzFaI6D2+IcwaJQaJpv0M1E9TIhPCYVxrkcityLjlqA==";
       };
     };
-    "@types/node-16.0.0" = {dependencies ? []}:
+    "@types/node-16.0.1" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "_at_types_slash_node";
       packageName = "@types/node";
-      version = "16.0.0";
+      version = "16.0.1";
       buildInputs = [
         jq
         nodejs
@@ -4162,19 +4338,20 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/node"; };
       src = fetchurl {
-        url = "https://registry.npmjs.org/@types/node/-/node-16.0.0.tgz";
-        sha512 = "TmCW5HoZ2o2/z2EYi109jLqIaPIi9y/lc2LmDCWzuCi35bcaQ+OtUh6nwBiFK7SOu25FAU5+YKdqFZUwtqGSdg==";
+        url = "https://registry.npmjs.org/@types/node/-/node-16.0.1.tgz";
+        sha512 = "hBOx4SUlEPKwRi6PrXuTGw1z6lz0fjsibcWCM378YxsSu/6+C30L6CR49zIBKHiwNWCYIcOLjg4OHKZaFeLAug==";
       };
     };
-    "@types/normalize-package-data-2.4.0" = {dependencies ? []}:
+    "@types/normalize-package-data-2.4.1" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "_at_types_slash_normalize-package-data";
       packageName = "@types/normalize-package-data";
-      version = "2.4.0";
+      version = "2.4.1";
       buildInputs = [
         jq
         nodejs
@@ -4185,11 +4362,12 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/normalize-package-data"; };
       src = fetchurl {
-        url = "https://registry.npmjs.org/@types/normalize-package-data/-/normalize-package-data-2.4.0.tgz";
-        sha512 = "f5j5b/Gf71L+dbqxIpQ4Z2WlmI/mPJ0fOkGGmFgtb6sAu97EPczzbS3/tJKxmcYDj55OX6ssqwDAWOHIYDRDGA==";
+        url = "https://registry.npmjs.org/@types/normalize-package-data/-/normalize-package-data-2.4.1.tgz";
+        sha512 = "Gj7cI7z+98M282Tqmp2K5EIsoouUEzbBJhQQzDE3jSIRk6r9gsz0oUokqIUR4u1R3dMHo0pDHM7sNOHyhulypw==";
       };
     };
     "@types/parsimmon-1.10.6" = {dependencies ? []}:
@@ -4208,6 +4386,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/parsimmon"; };
       src = fetchurl {
@@ -4215,12 +4394,12 @@ let
         sha512 = "FwAQwMRbkhx0J6YELkwIpciVzCcgEqXEbIrIn3a2P5d3kGEHQ3wVhlN3YdVepYP+bZzCYO6OjmD4o9TGOZ40rA==";
       };
     };
-    "@types/prettier-2.3.1" = {dependencies ? []}:
+    "@types/prettier-2.3.2" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "_at_types_slash_prettier";
       packageName = "@types/prettier";
-      version = "2.3.1";
+      version = "2.3.2";
       buildInputs = [
         jq
         nodejs
@@ -4231,11 +4410,12 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/prettier"; };
       src = fetchurl {
-        url = "https://registry.npmjs.org/@types/prettier/-/prettier-2.3.1.tgz";
-        sha512 = "NVkb4p4YjI8E3O6+1m8I+8JlMpFZwfSbPGdaw0wXuyPRTEz0SLKwBUWNSO7Maoi8tQMPC8JLZNWkrcKPI7/sLA==";
+        url = "https://registry.npmjs.org/@types/prettier/-/prettier-2.3.2.tgz";
+        sha512 = "eI5Yrz3Qv4KPUa/nSIAi0h+qX0XyewOliug5F2QAtuRg6Kjg6jfmxe1GIwoIRhZspD1A0RP8ANrPwvEXXtRFog==";
       };
     };
     "@types/ramda-0.27.38" = {dependencies ? []}:
@@ -4254,6 +4434,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/ramda"; };
       src = fetchurl {
@@ -4277,6 +4458,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/resolve"; };
       src = fetchurl {
@@ -4300,6 +4482,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/stack-utils"; };
       src = fetchurl {
@@ -4323,6 +4506,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/stack-utils"; };
       src = fetchurl {
@@ -4346,6 +4530,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/tinycolor2"; };
       src = fetchurl {
@@ -4369,6 +4554,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/yargs"; };
       src = fetchurl {
@@ -4392,6 +4578,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/yargs"; };
       src = fetchurl {
@@ -4415,6 +4602,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/yargs"; };
       src = fetchurl {
@@ -4438,6 +4626,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/yargs-parser"; };
       src = fetchurl {
@@ -4461,6 +4650,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@typescript-eslint/eslint-plugin"; };
       src = fetchurl {
@@ -4484,6 +4674,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@typescript-eslint/experimental-utils"; };
       src = fetchurl {
@@ -4507,6 +4698,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@typescript-eslint/parser"; };
       src = fetchurl {
@@ -4530,6 +4722,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@typescript-eslint/scope-manager"; };
       src = fetchurl {
@@ -4553,6 +4746,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@typescript-eslint/types"; };
       src = fetchurl {
@@ -4576,6 +4770,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@typescript-eslint/typescript-estree"; };
       src = fetchurl {
@@ -4599,6 +4794,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@typescript-eslint/visitor-keys"; };
       src = fetchurl {
@@ -4622,6 +4818,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@ungap/promise-all-settled"; };
       src = fetchurl {
@@ -4645,6 +4842,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "JSONStream"; };
       src = fetchurl {
@@ -4668,6 +4866,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "abab"; };
       src = fetchurl {
@@ -4691,6 +4890,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "abbrev"; };
       src = fetchurl {
@@ -4714,6 +4914,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "abbrev"; };
       src = fetchurl {
@@ -4737,6 +4938,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "acorn"; };
       src = fetchurl {
@@ -4760,6 +4962,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "acorn"; };
       src = fetchurl {
@@ -4783,6 +4986,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "acorn"; };
       src = fetchurl {
@@ -4806,6 +5010,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "acorn"; };
       src = fetchurl {
@@ -4829,6 +5034,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "acorn-globals"; };
       src = fetchurl {
@@ -4852,6 +5058,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "acorn-jsx"; };
       src = fetchurl {
@@ -4875,6 +5082,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "acorn-jsx"; };
       src = fetchurl {
@@ -4898,6 +5106,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "acorn-node"; };
       src = fetchurl {
@@ -4921,6 +5130,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "acorn-walk"; };
       src = fetchurl {
@@ -4944,6 +5154,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "agent-base"; };
       src = fetchurl {
@@ -4967,6 +5178,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "agentkeepalive"; };
       src = fetchurl {
@@ -4990,6 +5202,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "aggregate-error"; };
       src = fetchurl {
@@ -5013,6 +5226,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ajv"; };
       src = fetchurl {
@@ -5036,6 +5250,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ajv"; };
       src = fetchurl {
@@ -5059,6 +5274,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ajv"; };
       src = fetchurl {
@@ -5082,6 +5298,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ajv-keywords"; };
       src = fetchurl {
@@ -5105,6 +5322,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-align"; };
       src = fetchurl {
@@ -5128,6 +5346,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-colors"; };
       src = fetchurl {
@@ -5151,6 +5370,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-colors"; };
       src = fetchurl {
@@ -5174,6 +5394,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-escapes"; };
       src = fetchurl {
@@ -5197,6 +5418,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-escapes"; };
       src = fetchurl {
@@ -5220,6 +5442,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-escapes"; };
       src = fetchurl {
@@ -5243,6 +5466,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-regex"; };
       src = fetchurl {
@@ -5266,6 +5490,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-regex"; };
       src = fetchurl {
@@ -5289,6 +5514,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-regex"; };
       src = fetchurl {
@@ -5312,6 +5538,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-regex"; };
       src = fetchurl {
@@ -5335,6 +5562,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-styles"; };
       src = fetchurl {
@@ -5358,6 +5586,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-styles"; };
       src = fetchurl {
@@ -5381,6 +5610,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-styles"; };
       src = fetchurl {
@@ -5404,6 +5634,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-styles"; };
       src = fetchurl {
@@ -5427,6 +5658,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansy"; };
       src = fetchurl {
@@ -5450,6 +5682,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "anymatch"; };
       src = fetchurl {
@@ -5473,6 +5706,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "anymatch"; };
       src = fetchurl {
@@ -5496,6 +5730,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "append-transform"; };
       src = fetchurl {
@@ -5519,6 +5754,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "append-transform"; };
       src = fetchurl {
@@ -5542,6 +5778,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "append-type"; };
       src = fetchurl {
@@ -5565,6 +5802,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "aproba"; };
       src = fetchurl {
@@ -5588,6 +5826,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "archy"; };
       src = fetchurl {
@@ -5611,6 +5850,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "are-we-there-yet"; };
       src = fetchurl {
@@ -5634,6 +5874,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "arg"; };
       src = fetchurl {
@@ -5657,6 +5898,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "argparse"; };
       src = fetchurl {
@@ -5680,6 +5922,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "argparse"; };
       src = fetchurl {
@@ -5703,6 +5946,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "arr-diff"; };
       src = fetchurl {
@@ -5726,6 +5970,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "arr-flatten"; };
       src = fetchurl {
@@ -5749,6 +5994,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "arr-union"; };
       src = fetchurl {
@@ -5772,6 +6018,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "array-includes"; };
       src = fetchurl {
@@ -5795,6 +6042,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "array-to-sentence"; };
       src = fetchurl {
@@ -5818,6 +6066,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "array-union"; };
       src = fetchurl {
@@ -5841,6 +6090,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "array-unique"; };
       src = fetchurl {
@@ -5864,6 +6114,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "array.prototype.flat"; };
       src = fetchurl {
@@ -5887,6 +6138,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "array.prototype.flatmap"; };
       src = fetchurl {
@@ -5910,6 +6162,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "arrify"; };
       src = fetchurl {
@@ -5933,6 +6186,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "asn1"; };
       src = fetchurl {
@@ -5956,6 +6210,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "asn1.js"; };
       src = fetchurl {
@@ -5979,6 +6234,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "assert"; };
       src = fetchurl {
@@ -6002,6 +6258,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "assert-plus"; };
       src = fetchurl {
@@ -6025,6 +6282,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "assert-plus"; };
       src = fetchurl {
@@ -6048,6 +6306,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "assert-valid-glob-opts"; };
       src = fetchurl {
@@ -6071,6 +6330,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "assertion-error"; };
       src = fetchurl {
@@ -6094,6 +6354,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "assign-symbols"; };
       src = fetchurl {
@@ -6117,6 +6378,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "astral-regex"; };
       src = fetchurl {
@@ -6140,6 +6402,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "astral-regex"; };
       src = fetchurl {
@@ -6163,6 +6426,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "async"; };
       src = fetchurl {
@@ -6186,6 +6450,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "async"; };
       src = fetchurl {
@@ -6209,6 +6474,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "async-hook-domain"; };
       src = fetchurl {
@@ -6232,6 +6498,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "async-hook-domain"; };
       src = fetchurl {
@@ -6255,6 +6522,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "asynckit"; };
       src = fetchurl {
@@ -6278,6 +6546,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "at-least-node"; };
       src = fetchurl {
@@ -6301,6 +6570,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "atob"; };
       src = fetchurl {
@@ -6324,6 +6594,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "available-typed-arrays"; };
       src = fetchurl {
@@ -6347,6 +6618,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "aws-sign2"; };
       src = fetchurl {
@@ -6370,6 +6642,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "aws-sign2"; };
       src = fetchurl {
@@ -6393,6 +6666,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "aws4"; };
       src = fetchurl {
@@ -6416,6 +6690,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-code-frame"; };
       src = fetchurl {
@@ -6439,6 +6714,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-helper-evaluate-path"; };
       src = fetchurl {
@@ -6462,6 +6738,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-helper-flip-expressions"; };
       src = fetchurl {
@@ -6485,6 +6762,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-helper-is-nodes-equiv"; };
       src = fetchurl {
@@ -6508,6 +6786,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-helper-is-void-0"; };
       src = fetchurl {
@@ -6531,6 +6810,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-helper-mark-eval-scopes"; };
       src = fetchurl {
@@ -6554,6 +6834,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-helper-remove-or-void"; };
       src = fetchurl {
@@ -6577,6 +6858,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-helper-to-multiple-sequence-expressions"; };
       src = fetchurl {
@@ -6600,6 +6882,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-jest"; };
       src = fetchurl {
@@ -6623,6 +6906,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-jest"; };
       src = fetchurl {
@@ -6646,6 +6930,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-minify"; };
       src = fetchurl {
@@ -6669,6 +6954,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-dynamic-import-node"; };
       src = fetchurl {
@@ -6692,6 +6978,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-istanbul"; };
       src = fetchurl {
@@ -6715,6 +7002,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-jest-hoist"; };
       src = fetchurl {
@@ -6738,6 +7026,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-jest-hoist"; };
       src = fetchurl {
@@ -6761,6 +7050,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-minify-builtins"; };
       src = fetchurl {
@@ -6784,6 +7074,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-minify-constant-folding"; };
       src = fetchurl {
@@ -6807,6 +7098,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-minify-dead-code-elimination"; };
       src = fetchurl {
@@ -6830,6 +7122,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-minify-flip-comparisons"; };
       src = fetchurl {
@@ -6853,6 +7146,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-minify-guarded-expressions"; };
       src = fetchurl {
@@ -6876,6 +7170,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-minify-infinity"; };
       src = fetchurl {
@@ -6899,6 +7194,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-minify-mangle-names"; };
       src = fetchurl {
@@ -6922,6 +7218,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-minify-numeric-literals"; };
       src = fetchurl {
@@ -6945,6 +7242,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-minify-replace"; };
       src = fetchurl {
@@ -6968,6 +7266,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-minify-simplify"; };
       src = fetchurl {
@@ -6991,6 +7290,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-minify-type-constructors"; };
       src = fetchurl {
@@ -7014,6 +7314,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-transform-inline-consecutive-adds"; };
       src = fetchurl {
@@ -7037,6 +7338,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-transform-member-expression-literals"; };
       src = fetchurl {
@@ -7060,6 +7362,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-transform-merge-sibling-variables"; };
       src = fetchurl {
@@ -7083,6 +7386,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-transform-minify-booleans"; };
       src = fetchurl {
@@ -7106,6 +7410,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-transform-property-literals"; };
       src = fetchurl {
@@ -7129,6 +7434,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-transform-regexp-constructors"; };
       src = fetchurl {
@@ -7152,6 +7458,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-transform-remove-console"; };
       src = fetchurl {
@@ -7175,6 +7482,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-transform-remove-debugger"; };
       src = fetchurl {
@@ -7198,6 +7506,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-transform-remove-undefined"; };
       src = fetchurl {
@@ -7221,6 +7530,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-transform-simplify-comparison-operators"; };
       src = fetchurl {
@@ -7244,6 +7554,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-transform-undefined-to-void"; };
       src = fetchurl {
@@ -7267,6 +7578,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-preset-current-node-syntax"; };
       src = fetchurl {
@@ -7290,6 +7602,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-preset-jest"; };
       src = fetchurl {
@@ -7313,6 +7626,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-preset-jest"; };
       src = fetchurl {
@@ -7336,6 +7650,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-preset-minify"; };
       src = fetchurl {
@@ -7359,6 +7674,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "balanced-match"; };
       src = fetchurl {
@@ -7382,6 +7698,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "base"; };
       src = fetchurl {
@@ -7405,6 +7722,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "base64-js"; };
       src = fetchurl {
@@ -7428,6 +7746,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bcrypt-pbkdf"; };
       src = fetchurl {
@@ -7451,6 +7770,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "benchmark"; };
       src = fetchurl {
@@ -7474,6 +7794,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "benny"; };
       src = fetchurl {
@@ -7497,6 +7818,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "binary-extensions"; };
       src = fetchurl {
@@ -7520,6 +7842,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bind-obj-methods"; };
       src = fetchurl {
@@ -7543,6 +7866,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bind-obj-methods"; };
       src = fetchurl {
@@ -7566,6 +7890,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bl"; };
       src = fetchurl {
@@ -7589,6 +7914,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bl"; };
       src = fetchurl {
@@ -7612,6 +7938,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bl"; };
       src = fetchurl {
@@ -7635,6 +7962,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "block-stream"; };
       src = fetchurl {
@@ -7658,6 +7986,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bluebird"; };
       src = fetchurl {
@@ -7681,6 +8010,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bn.js"; };
       src = fetchurl {
@@ -7704,6 +8034,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bn.js"; };
       src = fetchurl {
@@ -7727,6 +8058,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "boom"; };
       src = fetchurl {
@@ -7750,6 +8082,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "boxen"; };
       src = fetchurl {
@@ -7773,6 +8106,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "brace-expansion"; };
       src = fetchurl {
@@ -7796,6 +8130,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "braces"; };
       src = fetchurl {
@@ -7819,6 +8154,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "braces"; };
       src = fetchurl {
@@ -7842,6 +8178,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "brorand"; };
       src = fetchurl {
@@ -7865,6 +8202,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browser-pack"; };
       src = fetchurl {
@@ -7888,6 +8226,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browser-process-hrtime"; };
       src = fetchurl {
@@ -7911,6 +8250,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browser-resolve"; };
       src = fetchurl {
@@ -7934,6 +8274,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browser-stdout"; };
       src = fetchurl {
@@ -7957,6 +8298,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browserify"; };
       src = fetchurl {
@@ -7980,6 +8322,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browserify-aes"; };
       src = fetchurl {
@@ -8003,6 +8346,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browserify-cipher"; };
       src = fetchurl {
@@ -8026,6 +8370,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browserify-des"; };
       src = fetchurl {
@@ -8049,6 +8394,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browserify-rsa"; };
       src = fetchurl {
@@ -8072,6 +8418,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browserify-sign"; };
       src = fetchurl {
@@ -8095,6 +8442,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browserify-zlib"; };
       src = fetchurl {
@@ -8118,6 +8466,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browserslist"; };
       src = fetchurl {
@@ -8141,6 +8490,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bs-logger"; };
       src = fetchurl {
@@ -8164,6 +8514,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bser"; };
       src = fetchurl {
@@ -8187,6 +8538,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "buffer"; };
       src = fetchurl {
@@ -8210,6 +8562,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "buffer"; };
       src = fetchurl {
@@ -8233,6 +8586,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "buffer-alloc"; };
       src = fetchurl {
@@ -8256,6 +8610,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "buffer-alloc-unsafe"; };
       src = fetchurl {
@@ -8279,6 +8634,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "buffer-equal"; };
       src = fetchurl {
@@ -8302,6 +8658,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "buffer-fill"; };
       src = fetchurl {
@@ -8325,6 +8682,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "buffer-from"; };
       src = fetchurl {
@@ -8348,6 +8706,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "buffer-xor"; };
       src = fetchurl {
@@ -8371,6 +8730,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "builtin-modules"; };
       src = fetchurl {
@@ -8394,6 +8754,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "builtin-modules"; };
       src = fetchurl {
@@ -8417,6 +8778,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "builtin-status-codes"; };
       src = fetchurl {
@@ -8440,6 +8802,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "builtins"; };
       src = fetchurl {
@@ -8463,6 +8826,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bunker"; };
       src = fetchurl {
@@ -8486,6 +8850,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "burrito"; };
       src = fetchurl {
@@ -8509,6 +8874,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cacache"; };
       src = fetchurl {
@@ -8532,6 +8898,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cache-base"; };
       src = fetchurl {
@@ -8555,6 +8922,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cached-path-relative"; };
       src = fetchurl {
@@ -8578,6 +8946,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "caching-transform"; };
       src = fetchurl {
@@ -8601,6 +8970,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "caching-transform"; };
       src = fetchurl {
@@ -8624,6 +8994,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "call-bind"; };
       src = fetchurl {
@@ -8647,6 +9018,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "caller"; };
       src = fetchurl {
@@ -8670,6 +9042,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "caller-callsite"; };
       src = fetchurl {
@@ -8693,6 +9066,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "caller-path"; };
       src = fetchurl {
@@ -8716,6 +9090,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "caller-path"; };
       src = fetchurl {
@@ -8739,6 +9114,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "callsites"; };
       src = fetchurl {
@@ -8762,6 +9138,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "callsites"; };
       src = fetchurl {
@@ -8785,6 +9162,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "callsites"; };
       src = fetchurl {
@@ -8808,6 +9186,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "camelcase"; };
       src = fetchurl {
@@ -8831,6 +9210,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "camelcase"; };
       src = fetchurl {
@@ -8854,6 +9234,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "camelcase"; };
       src = fetchurl {
@@ -8877,6 +9258,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "camelcase"; };
       src = fetchurl {
@@ -8900,6 +9282,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "camelcase-keys"; };
       src = fetchurl {
@@ -8923,6 +9306,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "camelo"; };
       src = fetchurl {
@@ -8946,6 +9330,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "caniuse-lite"; };
       src = fetchurl {
@@ -8969,6 +9354,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "capture-exit"; };
       src = fetchurl {
@@ -8992,6 +9378,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "caseless"; };
       src = fetchurl {
@@ -9015,6 +9402,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "caseless"; };
       src = fetchurl {
@@ -9038,6 +9426,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "caseless"; };
       src = fetchurl {
@@ -9061,6 +9450,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "catharsis"; };
       src = fetchurl {
@@ -9084,6 +9474,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cfonts"; };
       src = fetchurl {
@@ -9107,6 +9498,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "chai"; };
       src = fetchurl {
@@ -9130,6 +9522,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "chalk"; };
       src = fetchurl {
@@ -9153,6 +9546,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "chalk"; };
       src = fetchurl {
@@ -9176,6 +9570,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "chalk"; };
       src = fetchurl {
@@ -9199,6 +9594,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "chalk"; };
       src = fetchurl {
@@ -9222,6 +9618,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "char-regex"; };
       src = fetchurl {
@@ -9245,6 +9642,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "chardet"; };
       src = fetchurl {
@@ -9268,6 +9666,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "charm"; };
       src = fetchurl {
@@ -9291,6 +9690,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "charm"; };
       src = fetchurl {
@@ -9314,6 +9714,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "check-error"; };
       src = fetchurl {
@@ -9337,6 +9738,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "chmodr"; };
       src = fetchurl {
@@ -9360,6 +9762,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "chokidar"; };
       src = fetchurl {
@@ -9383,6 +9786,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "chokidar"; };
       src = fetchurl {
@@ -9406,6 +9810,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "chownr"; };
       src = fetchurl {
@@ -9429,6 +9834,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "chownr"; };
       src = fetchurl {
@@ -9452,6 +9858,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ci-info"; };
       src = fetchurl {
@@ -9475,6 +9882,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ci-info"; };
       src = fetchurl {
@@ -9498,6 +9906,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cipher-base"; };
       src = fetchurl {
@@ -9521,6 +9930,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cjs-module-lexer"; };
       src = fetchurl {
@@ -9544,6 +9954,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cjs-module-lexer"; };
       src = fetchurl {
@@ -9567,6 +9978,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "class-utils"; };
       src = fetchurl {
@@ -9590,6 +10002,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "clean-stack"; };
       src = fetchurl {
@@ -9613,6 +10026,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "clean-yaml-object"; };
       src = fetchurl {
@@ -9636,6 +10050,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cli-boxes"; };
       src = fetchurl {
@@ -9659,6 +10074,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cli-cursor"; };
       src = fetchurl {
@@ -9682,6 +10098,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cli-cursor"; };
       src = fetchurl {
@@ -9705,6 +10122,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cli-cursor"; };
       src = fetchurl {
@@ -9728,6 +10146,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cli-width"; };
       src = fetchurl {
@@ -9751,6 +10170,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cli-width"; };
       src = fetchurl {
@@ -9774,6 +10194,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cliui"; };
       src = fetchurl {
@@ -9797,6 +10218,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cliui"; };
       src = fetchurl {
@@ -9820,6 +10242,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cliui"; };
       src = fetchurl {
@@ -9843,6 +10266,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cliui"; };
       src = fetchurl {
@@ -9866,6 +10290,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cliui"; };
       src = fetchurl {
@@ -9889,6 +10314,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "clone"; };
       src = fetchurl {
@@ -9912,6 +10338,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "co"; };
       src = fetchurl {
@@ -9935,6 +10362,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "code-point-at"; };
       src = fetchurl {
@@ -9958,6 +10386,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "codecov.io"; };
       src = fetchurl {
@@ -9981,6 +10410,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "collect-v8-coverage"; };
       src = fetchurl {
@@ -10004,6 +10434,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "collection-visit"; };
       src = fetchurl {
@@ -10027,6 +10458,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "color-convert"; };
       src = fetchurl {
@@ -10050,6 +10482,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "color-convert"; };
       src = fetchurl {
@@ -10073,6 +10506,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "color-it"; };
       src = fetchurl {
@@ -10096,6 +10530,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "color-name"; };
       src = fetchurl {
@@ -10119,6 +10554,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "color-name"; };
       src = fetchurl {
@@ -10142,6 +10578,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "color-support"; };
       src = fetchurl {
@@ -10165,6 +10602,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "colorette"; };
       src = fetchurl {
@@ -10188,6 +10626,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "combinate"; };
       src = fetchurl {
@@ -10211,6 +10650,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "combine-source-map"; };
       src = fetchurl {
@@ -10234,6 +10674,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "combined-stream"; };
       src = fetchurl {
@@ -10257,6 +10698,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "command-exists"; };
       src = fetchurl {
@@ -10280,6 +10722,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "commander"; };
       src = fetchurl {
@@ -10303,6 +10746,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "commander"; };
       src = fetchurl {
@@ -10326,6 +10770,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "commander"; };
       src = fetchurl {
@@ -10349,6 +10794,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "commondir"; };
       src = fetchurl {
@@ -10372,6 +10818,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "component-emitter"; };
       src = fetchurl {
@@ -10395,6 +10842,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "concat-map"; };
       src = fetchurl {
@@ -10418,6 +10866,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "concat-stream"; };
       src = fetchurl {
@@ -10441,6 +10890,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "config-chain"; };
       src = fetchurl {
@@ -10464,6 +10914,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "console-browserify"; };
       src = fetchurl {
@@ -10487,6 +10938,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "console-control-strings"; };
       src = fetchurl {
@@ -10510,6 +10962,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "constants-browserify"; };
       src = fetchurl {
@@ -10533,6 +10986,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "contains-path"; };
       src = fetchurl {
@@ -10556,6 +11010,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "convert-source-map"; };
       src = fetchurl {
@@ -10579,6 +11034,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "convert-source-map"; };
       src = fetchurl {
@@ -10602,6 +11058,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "copy-descriptor"; };
       src = fetchurl {
@@ -10625,6 +11082,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "core-js-compat"; };
       src = fetchurl {
@@ -10648,6 +11106,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "core-util-is"; };
       src = fetchurl {
@@ -10671,6 +11130,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "couleurs"; };
       src = fetchurl {
@@ -10694,6 +11154,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "coveralls"; };
       src = fetchurl {
@@ -10717,6 +11178,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "coveralls"; };
       src = fetchurl {
@@ -10740,6 +11202,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cp-file"; };
       src = fetchurl {
@@ -10763,6 +11226,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "create-ecdh"; };
       src = fetchurl {
@@ -10786,6 +11250,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "create-hash"; };
       src = fetchurl {
@@ -10809,6 +11274,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "create-hmac"; };
       src = fetchurl {
@@ -10832,6 +11298,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cross-env"; };
       src = fetchurl {
@@ -10855,6 +11322,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cross-spawn"; };
       src = fetchurl {
@@ -10878,6 +11346,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cross-spawn"; };
       src = fetchurl {
@@ -10901,6 +11370,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cross-spawn"; };
       src = fetchurl {
@@ -10924,6 +11394,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cryptiles"; };
       src = fetchurl {
@@ -10947,6 +11418,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "crypto-browserify"; };
       src = fetchurl {
@@ -10970,6 +11442,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cssom"; };
       src = fetchurl {
@@ -10993,6 +11466,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cssom"; };
       src = fetchurl {
@@ -11016,6 +11490,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cssstyle"; };
       src = fetchurl {
@@ -11039,6 +11514,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "custom-return"; };
       src = fetchurl {
@@ -11062,6 +11538,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "d"; };
       src = fetchurl {
@@ -11085,6 +11562,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "dash-ast"; };
       src = fetchurl {
@@ -11108,6 +11586,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "dashdash"; };
       src = fetchurl {
@@ -11131,6 +11610,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "data-urls"; };
       src = fetchurl {
@@ -11154,6 +11634,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "debug"; };
       src = fetchurl {
@@ -11177,6 +11658,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "debug"; };
       src = fetchurl {
@@ -11200,6 +11682,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "debug"; };
       src = fetchurl {
@@ -11223,6 +11706,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "debug"; };
       src = fetchurl {
@@ -11246,6 +11730,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "debug"; };
       src = fetchurl {
@@ -11269,6 +11754,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "debug"; };
       src = fetchurl {
@@ -11292,6 +11778,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "debug-log"; };
       src = fetchurl {
@@ -11315,6 +11802,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "decamelize"; };
       src = fetchurl {
@@ -11338,6 +11826,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "decamelize"; };
       src = fetchurl {
@@ -11361,6 +11850,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "decamelize-keys"; };
       src = fetchurl {
@@ -11384,6 +11874,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "decimal.js"; };
       src = fetchurl {
@@ -11407,6 +11898,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "decode-uri-component"; };
       src = fetchurl {
@@ -11430,6 +11922,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "dedent"; };
       src = fetchurl {
@@ -11453,6 +11946,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "deep-eql"; };
       src = fetchurl {
@@ -11476,6 +11970,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "deep-equal"; };
       src = fetchurl {
@@ -11499,6 +11994,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "deep-equal"; };
       src = fetchurl {
@@ -11522,6 +12018,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "deep-equal"; };
       src = fetchurl {
@@ -11545,6 +12042,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "deep-is"; };
       src = fetchurl {
@@ -11568,6 +12066,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "deeper"; };
       src = fetchurl {
@@ -11591,6 +12090,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "deepmerge"; };
       src = fetchurl {
@@ -11614,6 +12114,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "default-require-extensions"; };
       src = fetchurl {
@@ -11637,6 +12138,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "default-require-extensions"; };
       src = fetchurl {
@@ -11660,6 +12162,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "defaults"; };
       src = fetchurl {
@@ -11683,6 +12186,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "deffy"; };
       src = fetchurl {
@@ -11706,6 +12210,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "define-properties"; };
       src = fetchurl {
@@ -11729,6 +12234,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "define-property"; };
       src = fetchurl {
@@ -11752,6 +12258,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "define-property"; };
       src = fetchurl {
@@ -11775,6 +12282,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "define-property"; };
       src = fetchurl {
@@ -11798,6 +12306,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "defined"; };
       src = fetchurl {
@@ -11821,6 +12330,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "defined"; };
       src = fetchurl {
@@ -11844,6 +12354,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "deglob"; };
       src = fetchurl {
@@ -11867,6 +12378,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "deglob"; };
       src = fetchurl {
@@ -11890,6 +12402,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "delayed-stream"; };
       src = fetchurl {
@@ -11913,6 +12426,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "delegates"; };
       src = fetchurl {
@@ -11936,6 +12450,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "depd"; };
       src = fetchurl {
@@ -11959,6 +12474,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "deps-sort"; };
       src = fetchurl {
@@ -11982,6 +12498,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "des.js"; };
       src = fetchurl {
@@ -12005,6 +12522,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "detect-newline"; };
       src = fetchurl {
@@ -12028,6 +12546,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "detective"; };
       src = fetchurl {
@@ -12051,6 +12570,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "diff"; };
       src = fetchurl {
@@ -12074,6 +12594,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "diff"; };
       src = fetchurl {
@@ -12097,6 +12618,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "diff"; };
       src = fetchurl {
@@ -12120,6 +12642,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "diff"; };
       src = fetchurl {
@@ -12143,6 +12666,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "diff-frag"; };
       src = fetchurl {
@@ -12166,6 +12690,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "diff-sequences"; };
       src = fetchurl {
@@ -12189,6 +12714,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "diff-sequences"; };
       src = fetchurl {
@@ -12212,6 +12738,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "diff-sequences"; };
       src = fetchurl {
@@ -12235,6 +12762,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "diffie-hellman"; };
       src = fetchurl {
@@ -12258,6 +12786,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "difflet"; };
       src = fetchurl {
@@ -12281,6 +12810,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "difflet"; };
       src = fetchurl {
@@ -12304,6 +12834,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "dir-glob"; };
       src = fetchurl {
@@ -12327,6 +12858,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "doctrine"; };
       src = fetchurl {
@@ -12350,6 +12882,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "doctrine"; };
       src = fetchurl {
@@ -12373,6 +12906,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "doctrine"; };
       src = fetchurl {
@@ -12396,6 +12930,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "dom-serializer"; };
       src = fetchurl {
@@ -12419,6 +12954,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "domain-browser"; };
       src = fetchurl {
@@ -12442,6 +12978,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "domelementtype"; };
       src = fetchurl {
@@ -12465,6 +13002,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "domelementtype"; };
       src = fetchurl {
@@ -12488,6 +13026,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "domexception"; };
       src = fetchurl {
@@ -12511,6 +13050,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "domhandler"; };
       src = fetchurl {
@@ -12534,6 +13074,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "domutils"; };
       src = fetchurl {
@@ -12557,6 +13098,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "dotignore"; };
       src = fetchurl {
@@ -12580,6 +13122,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "dts-critic"; };
       src = fetchurl {
@@ -12603,6 +13146,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "dtslint"; };
       src = fetchurl {
@@ -12626,6 +13170,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "duplexer"; };
       src = fetchurl {
@@ -12649,6 +13194,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "duplexer2"; };
       src = fetchurl {
@@ -12672,6 +13218,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ecc-jsbn"; };
       src = fetchurl {
@@ -12679,12 +13226,12 @@ let
         sha1 = "3a83a904e54353287874c564b7549386849a98c9";
       };
     };
-    "electron-to-chromium-1.3.769" = {dependencies ? []}:
+    "electron-to-chromium-1.3.770" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "electron-to-chromium";
       packageName = "electron-to-chromium";
-      version = "1.3.769";
+      version = "1.3.770";
       buildInputs = [
         jq
         nodejs
@@ -12695,11 +13242,12 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "electron-to-chromium"; };
       src = fetchurl {
-        url = "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.3.769.tgz";
-        sha512 = "B+3hW8D76/uoTPSobWI3D/CFn2S4jPn88dVJ+BkD88Lz6LijQpL+hfdzIFJGTQK4KdE0XwmNbjUQFH1OQVwKdQ==";
+        url = "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.3.770.tgz";
+        sha512 = "Kyh8DGK1KfEZuYKIHvuOmrKotsKZQ+qBkDIWHciE3QoFkxXB1KzPP+tfLilSHAfxTON0yYMnFCWkQtUOR7g6KQ==";
       };
     };
     "elliptic-6.5.4" = {dependencies ? []}:
@@ -12718,6 +13266,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "elliptic"; };
       src = fetchurl {
@@ -12741,6 +13290,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "emittery"; };
       src = fetchurl {
@@ -12764,6 +13314,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "emittery"; };
       src = fetchurl {
@@ -12787,6 +13338,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "emoji-logger"; };
       src = fetchurl {
@@ -12810,6 +13362,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "emoji-regex"; };
       src = fetchurl {
@@ -12833,6 +13386,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "emoji-regex"; };
       src = fetchurl {
@@ -12856,6 +13410,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "emojic"; };
       src = fetchurl {
@@ -12879,6 +13434,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "emojilib"; };
       src = fetchurl {
@@ -12902,6 +13458,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "end-of-stream"; };
       src = fetchurl {
@@ -12925,6 +13482,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "enquirer"; };
       src = fetchurl {
@@ -12948,6 +13506,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "entities"; };
       src = fetchurl {
@@ -12971,6 +13530,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "entities"; };
       src = fetchurl {
@@ -12994,6 +13554,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "entities"; };
       src = fetchurl {
@@ -13017,6 +13578,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "env-fn"; };
       src = fetchurl {
@@ -13040,6 +13602,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "err"; };
       src = fetchurl {
@@ -13063,6 +13626,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "err-code"; };
       src = fetchurl {
@@ -13086,6 +13650,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "error-ex"; };
       src = fetchurl {
@@ -13109,6 +13674,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "errs"; };
       src = fetchurl {
@@ -13132,6 +13698,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "es-abstract"; };
       src = fetchurl {
@@ -13155,6 +13722,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "es-get-iterator"; };
       src = fetchurl {
@@ -13178,6 +13746,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "es-to-primitive"; };
       src = fetchurl {
@@ -13201,6 +13770,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "es5-ext"; };
       src = fetchurl {
@@ -13224,6 +13794,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "es6-error"; };
       src = fetchurl {
@@ -13247,6 +13818,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "es6-iterator"; };
       src = fetchurl {
@@ -13270,6 +13842,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "es6-map"; };
       src = fetchurl {
@@ -13293,6 +13866,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "es6-set"; };
       src = fetchurl {
@@ -13316,6 +13890,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "es6-symbol"; };
       src = fetchurl {
@@ -13339,6 +13914,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "es6-symbol"; };
       src = fetchurl {
@@ -13362,6 +13938,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "es6-weak-map"; };
       src = fetchurl {
@@ -13385,6 +13962,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "escalade"; };
       src = fetchurl {
@@ -13408,6 +13986,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "escape-string-regexp"; };
       src = fetchurl {
@@ -13431,6 +14010,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "escape-string-regexp"; };
       src = fetchurl {
@@ -13454,6 +14034,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "escape-string-regexp"; };
       src = fetchurl {
@@ -13477,6 +14058,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "escodegen"; };
       src = fetchurl {
@@ -13500,6 +14082,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "escodegen"; };
       src = fetchurl {
@@ -13523,6 +14106,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "escope"; };
       src = fetchurl {
@@ -13546,6 +14130,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint"; };
       src = fetchurl {
@@ -13569,6 +14154,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint"; };
       src = fetchurl {
@@ -13592,6 +14178,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint"; };
       src = fetchurl {
@@ -13615,6 +14202,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint"; };
       src = fetchurl {
@@ -13638,6 +14226,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint"; };
       src = fetchurl {
@@ -13661,6 +14250,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-config-standard"; };
       src = fetchurl {
@@ -13684,6 +14274,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-config-standard"; };
       src = fetchurl {
@@ -13707,6 +14298,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-config-standard"; };
       src = fetchurl {
@@ -13730,6 +14322,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-config-standard"; };
       src = fetchurl {
@@ -13753,6 +14346,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-config-standard-jsx"; };
       src = fetchurl {
@@ -13776,6 +14370,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-config-standard-jsx"; };
       src = fetchurl {
@@ -13799,6 +14394,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-config-standard-jsx"; };
       src = fetchurl {
@@ -13822,6 +14418,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-formatter-pretty"; };
       src = fetchurl {
@@ -13845,6 +14442,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-import-resolver-node"; };
       src = fetchurl {
@@ -13868,6 +14466,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-module-utils"; };
       src = fetchurl {
@@ -13891,6 +14490,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-es"; };
       src = fetchurl {
@@ -13914,6 +14514,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-es"; };
       src = fetchurl {
@@ -13937,6 +14538,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-es"; };
       src = fetchurl {
@@ -13960,6 +14562,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-html"; };
       src = fetchurl {
@@ -13983,6 +14586,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-import"; };
       src = fetchurl {
@@ -14006,6 +14610,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-import"; };
       src = fetchurl {
@@ -14029,6 +14634,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-import"; };
       src = fetchurl {
@@ -14052,6 +14658,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-jest"; };
       src = fetchurl {
@@ -14075,6 +14682,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-no-use-extend-native"; };
       src = fetchurl {
@@ -14098,6 +14706,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-node"; };
       src = fetchurl {
@@ -14121,6 +14730,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-node"; };
       src = fetchurl {
@@ -14144,6 +14754,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-node"; };
       src = fetchurl {
@@ -14167,6 +14778,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-promise"; };
       src = fetchurl {
@@ -14190,6 +14802,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-promise"; };
       src = fetchurl {
@@ -14213,6 +14826,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-promise"; };
       src = fetchurl {
@@ -14236,6 +14850,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-react"; };
       src = fetchurl {
@@ -14259,6 +14874,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-react"; };
       src = fetchurl {
@@ -14282,6 +14898,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-react"; };
       src = fetchurl {
@@ -14305,6 +14922,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-standard"; };
       src = fetchurl {
@@ -14328,6 +14946,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-standard"; };
       src = fetchurl {
@@ -14351,6 +14970,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-standard"; };
       src = fetchurl {
@@ -14374,6 +14994,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-rule-docs"; };
       src = fetchurl {
@@ -14397,6 +15018,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-scope"; };
       src = fetchurl {
@@ -14420,6 +15042,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-scope"; };
       src = fetchurl {
@@ -14443,6 +15066,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-utils"; };
       src = fetchurl {
@@ -14466,6 +15090,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-utils"; };
       src = fetchurl {
@@ -14489,6 +15114,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-utils"; };
       src = fetchurl {
@@ -14512,6 +15138,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-visitor-keys"; };
       src = fetchurl {
@@ -14535,6 +15162,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-visitor-keys"; };
       src = fetchurl {
@@ -14558,6 +15186,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "esm"; };
       src = fetchurl {
@@ -14581,6 +15210,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "espree"; };
       src = fetchurl {
@@ -14604,6 +15234,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "espree"; };
       src = fetchurl {
@@ -14627,6 +15258,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "espree"; };
       src = fetchurl {
@@ -14650,6 +15282,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "espree"; };
       src = fetchurl {
@@ -14673,6 +15306,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "esprima"; };
       src = fetchurl {
@@ -14696,6 +15330,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "esprima"; };
       src = fetchurl {
@@ -14719,6 +15354,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "esprima"; };
       src = fetchurl {
@@ -14742,6 +15378,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "esprima"; };
       src = fetchurl {
@@ -14765,6 +15402,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "esquery"; };
       src = fetchurl {
@@ -14788,6 +15426,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "esrecurse"; };
       src = fetchurl {
@@ -14811,6 +15450,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "estraverse"; };
       src = fetchurl {
@@ -14834,6 +15474,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "estraverse"; };
       src = fetchurl {
@@ -14857,6 +15498,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "estraverse"; };
       src = fetchurl {
@@ -14880,6 +15522,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "estree-walker"; };
       src = fetchurl {
@@ -14903,6 +15546,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "estree-walker"; };
       src = fetchurl {
@@ -14926,6 +15570,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "estree-walker"; };
       src = fetchurl {
@@ -14949,6 +15594,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "esutils"; };
       src = fetchurl {
@@ -14972,6 +15618,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "event-emitter"; };
       src = fetchurl {
@@ -14995,6 +15642,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "events"; };
       src = fetchurl {
@@ -15018,6 +15666,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "events-to-array"; };
       src = fetchurl {
@@ -15041,6 +15690,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "evp_bytestokey"; };
       src = fetchurl {
@@ -15064,6 +15714,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "exec-sh"; };
       src = fetchurl {
@@ -15087,6 +15738,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "execa"; };
       src = fetchurl {
@@ -15110,6 +15762,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "execa"; };
       src = fetchurl {
@@ -15133,6 +15786,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "execa"; };
       src = fetchurl {
@@ -15156,6 +15810,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "executing-npm-path"; };
       src = fetchurl {
@@ -15179,6 +15834,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "exit"; };
       src = fetchurl {
@@ -15202,6 +15858,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "exit-hook"; };
       src = fetchurl {
@@ -15225,6 +15882,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "expand-brackets"; };
       src = fetchurl {
@@ -15248,6 +15906,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "expect"; };
       src = fetchurl {
@@ -15271,6 +15930,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "expect"; };
       src = fetchurl {
@@ -15294,6 +15954,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "expect"; };
       src = fetchurl {
@@ -15317,6 +15978,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "expect"; };
       src = fetchurl {
@@ -15340,6 +16002,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ext"; };
       src = fetchurl {
@@ -15363,6 +16026,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "extend"; };
       src = fetchurl {
@@ -15386,6 +16050,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "extend-shallow"; };
       src = fetchurl {
@@ -15409,6 +16074,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "extend-shallow"; };
       src = fetchurl {
@@ -15432,6 +16098,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "external-editor"; };
       src = fetchurl {
@@ -15455,6 +16122,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "extglob"; };
       src = fetchurl {
@@ -15478,6 +16146,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "extsprintf"; };
       src = fetchurl {
@@ -15501,6 +16170,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fast-deep-equal"; };
       src = fetchurl {
@@ -15508,12 +16178,12 @@ let
         sha512 = "f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==";
       };
     };
-    "fast-glob-3.2.6" = {dependencies ? []}:
+    "fast-glob-3.2.7" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "fast-glob";
       packageName = "fast-glob";
-      version = "3.2.6";
+      version = "3.2.7";
       buildInputs = [
         jq
         nodejs
@@ -15524,11 +16194,12 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fast-glob"; };
       src = fetchurl {
-        url = "https://registry.npmjs.org/fast-glob/-/fast-glob-3.2.6.tgz";
-        sha512 = "GnLuqj/pvQ7pX8/L4J84nijv6sAnlwvSDpMkJi9i7nPmPxGtRPkBSStfvDW5l6nMdX9VWe+pkKWFTgD+vF2QSQ==";
+        url = "https://registry.npmjs.org/fast-glob/-/fast-glob-3.2.7.tgz";
+        sha512 = "rYGMRwip6lUMvYD3BTScMwT1HtAs2d71SMv66Vrxs0IekGZEjhM0pcMfjQPnknBt2zeCwQMEupiN02ZP4DiT1Q==";
       };
     };
     "fast-json-stable-stringify-2.1.0" = {dependencies ? []}:
@@ -15547,6 +16218,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fast-json-stable-stringify"; };
       src = fetchurl {
@@ -15570,6 +16242,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fast-levenshtein"; };
       src = fetchurl {
@@ -15593,6 +16266,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fast-levenshtein"; };
       src = fetchurl {
@@ -15616,6 +16290,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fast-safe-stringify"; };
       src = fetchurl {
@@ -15639,6 +16314,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fastq"; };
       src = fetchurl {
@@ -15662,6 +16338,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fb-watchman"; };
       src = fetchurl {
@@ -15685,6 +16362,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fdir"; };
       src = fetchurl {
@@ -15708,6 +16386,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fettuccine-class"; };
       src = fetchurl {
@@ -15731,6 +16410,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "figures"; };
       src = fetchurl {
@@ -15754,6 +16434,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "figures"; };
       src = fetchurl {
@@ -15777,6 +16458,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "figures"; };
       src = fetchurl {
@@ -15800,6 +16482,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "file-entry-cache"; };
       src = fetchurl {
@@ -15823,6 +16506,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "file-entry-cache"; };
       src = fetchurl {
@@ -15846,6 +16530,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "file-entry-cache"; };
       src = fetchurl {
@@ -15869,6 +16554,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fileset"; };
       src = fetchurl {
@@ -15892,6 +16578,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fill-keys"; };
       src = fetchurl {
@@ -15915,6 +16602,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fill-range"; };
       src = fetchurl {
@@ -15938,6 +16626,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fill-range"; };
       src = fetchurl {
@@ -15961,6 +16650,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "filter-obj"; };
       src = fetchurl {
@@ -15984,6 +16674,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "find-cache-dir"; };
       src = fetchurl {
@@ -16007,6 +16698,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "find-cache-dir"; };
       src = fetchurl {
@@ -16030,6 +16722,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "find-root"; };
       src = fetchurl {
@@ -16053,6 +16746,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "find-up"; };
       src = fetchurl {
@@ -16076,6 +16770,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "find-up"; };
       src = fetchurl {
@@ -16099,6 +16794,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "find-up"; };
       src = fetchurl {
@@ -16122,6 +16818,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "find-up"; };
       src = fetchurl {
@@ -16145,6 +16842,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "findit"; };
       src = fetchurl {
@@ -16168,6 +16866,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "flat"; };
       src = fetchurl {
@@ -16191,6 +16890,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "flat"; };
       src = fetchurl {
@@ -16214,6 +16914,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "flat-cache"; };
       src = fetchurl {
@@ -16237,6 +16938,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "flat-colors"; };
       src = fetchurl {
@@ -16244,12 +16946,12 @@ let
         sha512 = "SYIhhJ+ElZbyyz6+e+xpyN3EboppIg1h6nZaMyEeDwXSY6a3jjp/gANDBmj8xwu+mMflj4UWCPkxRIH+rExDMQ==";
       };
     };
-    "flatted-3.2.0" = {dependencies ? []}:
+    "flatted-3.2.1" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "flatted";
       packageName = "flatted";
-      version = "3.2.0";
+      version = "3.2.1";
       buildInputs = [
         jq
         nodejs
@@ -16260,19 +16962,20 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "flatted"; };
       src = fetchurl {
-        url = "https://registry.npmjs.org/flatted/-/flatted-3.2.0.tgz";
-        sha512 = "XprP7lDrVT+kE2c2YlfiV+IfS9zxukiIOvNamPNsImNhXadSsQEbosItdL9bUQlCZXR13SvPk20BjWSWLA7m4A==";
+        url = "https://registry.npmjs.org/flatted/-/flatted-3.2.1.tgz";
+        sha512 = "OMQjaErSFHmHqZe+PSidH5n8j3O0F2DdnVh8JB4j4eUQ2k6KvB0qGfrKIhapvez5JerBbmWkaLYUYWISaESoXg==";
       };
     };
-    "flow-parser-0.154.0" = {dependencies ? []}:
+    "flow-parser-0.155.0" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "flow-parser";
       packageName = "flow-parser";
-      version = "0.154.0";
+      version = "0.155.0";
       buildInputs = [
         jq
         nodejs
@@ -16283,19 +16986,20 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "flow-parser"; };
       src = fetchurl {
-        url = "https://registry.npmjs.org/flow-parser/-/flow-parser-0.154.0.tgz";
-        sha512 = "cH9xY/ljOgmqG1n7PU1jffiHhRggoloauwOrOlCWBEX4Y+ml6GA8g//tCVKU+6PO4BXoPF22TFHkS5E1bN3JOQ==";
+        url = "https://registry.npmjs.org/flow-parser/-/flow-parser-0.155.0.tgz";
+        sha512 = "DegBwxIjw8ZmgLO9Qae/uSDWlioenV7mbfMoPem97y1OZVxlTAXNVHt5JthwrGLwk4kpmHQ3VRcp1Jxj84NcWw==";
       };
     };
-    "flow-remove-types-2.154.0" = {dependencies ? []}:
+    "flow-remove-types-2.155.0" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "flow-remove-types";
       packageName = "flow-remove-types";
-      version = "2.154.0";
+      version = "2.155.0";
       buildInputs = [
         jq
         nodejs
@@ -16306,11 +17010,12 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "flow-remove-types"; };
       src = fetchurl {
-        url = "https://registry.npmjs.org/flow-remove-types/-/flow-remove-types-2.154.0.tgz";
-        sha512 = "i55LkOLp4JRYrw11xiVx/GzY9IvnJORTEw6oKcoBKTQu8iULc+rnI4YlMSZpcki00Y3EOA/xk9XXLYt4obtfug==";
+        url = "https://registry.npmjs.org/flow-remove-types/-/flow-remove-types-2.155.0.tgz";
+        sha512 = "7tyM6PsuGe9/EUMay8wPK/pUiYoQvCm2cJc4Ng2l1cOjiE/sRrJz/KZgED47r4tynCe2Fe7OCIygYJPXGbtDBg==";
       };
     };
     "for-each-0.3.3" = {dependencies ? []}:
@@ -16329,6 +17034,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "for-each"; };
       src = fetchurl {
@@ -16352,6 +17058,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "for-in"; };
       src = fetchurl {
@@ -16375,6 +17082,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "foreach"; };
       src = fetchurl {
@@ -16398,6 +17106,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "foreground-child"; };
       src = fetchurl {
@@ -16421,6 +17130,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "foreground-child"; };
       src = fetchurl {
@@ -16444,6 +17154,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "forever-agent"; };
       src = fetchurl {
@@ -16467,6 +17178,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "forever-agent"; };
       src = fetchurl {
@@ -16490,6 +17202,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "form-data"; };
       src = fetchurl {
@@ -16513,6 +17226,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "form-data"; };
       src = fetchurl {
@@ -16536,6 +17250,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "form-data"; };
       src = fetchurl {
@@ -16559,6 +17274,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fragment-cache"; };
       src = fetchurl {
@@ -16582,6 +17298,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fromentries"; };
       src = fetchurl {
@@ -16605,6 +17322,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fs-constants"; };
       src = fetchurl {
@@ -16628,6 +17346,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fs-exists-cached"; };
       src = fetchurl {
@@ -16651,6 +17370,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fs-extra"; };
       src = fetchurl {
@@ -16674,6 +17394,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fs-extra"; };
       src = fetchurl {
@@ -16697,6 +17418,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fs-extra"; };
       src = fetchurl {
@@ -16720,6 +17442,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fs-minipass"; };
       src = fetchurl {
@@ -16743,6 +17466,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fs-readdir-recursive"; };
       src = fetchurl {
@@ -16766,6 +17490,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fs.realpath"; };
       src = fetchurl {
@@ -16789,6 +17514,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fstream"; };
       src = fetchurl {
@@ -16812,6 +17538,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "function-bind"; };
       src = fetchurl {
@@ -16835,6 +17562,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "function-loop"; };
       src = fetchurl {
@@ -16858,6 +17586,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "function-loop"; };
       src = fetchurl {
@@ -16881,6 +17610,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "function.name"; };
       src = fetchurl {
@@ -16904,6 +17634,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "function.prototype.name"; };
       src = fetchurl {
@@ -16927,6 +17658,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "functional-red-black-tree"; };
       src = fetchurl {
@@ -16950,6 +17682,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "functions-have-names"; };
       src = fetchurl {
@@ -16973,6 +17706,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "gauge"; };
       src = fetchurl {
@@ -16996,6 +17730,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "generate-function"; };
       src = fetchurl {
@@ -17019,6 +17754,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "generate-object-property"; };
       src = fetchurl {
@@ -17042,6 +17778,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "gensync"; };
       src = fetchurl {
@@ -17065,6 +17802,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-assigned-identifiers"; };
       src = fetchurl {
@@ -17088,6 +17826,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-caller-file"; };
       src = fetchurl {
@@ -17111,6 +17850,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-func-name"; };
       src = fetchurl {
@@ -17134,6 +17874,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-intrinsic"; };
       src = fetchurl {
@@ -17157,6 +17898,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-own-enumerable-property-symbols"; };
       src = fetchurl {
@@ -17180,6 +17922,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-package-type"; };
       src = fetchurl {
@@ -17203,6 +17946,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-set-props"; };
       src = fetchurl {
@@ -17226,6 +17970,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-spdx-license-ids"; };
       src = fetchurl {
@@ -17249,6 +17994,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-stdin"; };
       src = fetchurl {
@@ -17272,6 +18018,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-stdin"; };
       src = fetchurl {
@@ -17295,6 +18042,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-stdin"; };
       src = fetchurl {
@@ -17318,6 +18066,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-stdin"; };
       src = fetchurl {
@@ -17341,6 +18090,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-stream"; };
       src = fetchurl {
@@ -17364,6 +18114,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-stream"; };
       src = fetchurl {
@@ -17387,6 +18138,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-stream"; };
       src = fetchurl {
@@ -17410,6 +18162,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-value"; };
       src = fetchurl {
@@ -17433,6 +18186,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "getpass"; };
       src = fetchurl {
@@ -17440,12 +18194,12 @@ let
         sha1 = "5eff8e3e684d569ae4cb2b1282604e8ba62149fa";
       };
     };
-    "git-up-4.0.2" = {dependencies ? []}:
+    "git-up-4.0.5" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "git-up";
       packageName = "git-up";
-      version = "4.0.2";
+      version = "4.0.5";
       buildInputs = [
         jq
         nodejs
@@ -17456,11 +18210,12 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "git-up"; };
       src = fetchurl {
-        url = "https://registry.npmjs.org/git-up/-/git-up-4.0.2.tgz";
-        sha512 = "kbuvus1dWQB2sSW4cbfTeGpCMd8ge9jx9RKnhXhuJ7tnvT+NIrTVfYZxjtflZddQYcmdOTlkAcjmx7bor+15AQ==";
+        url = "https://registry.npmjs.org/git-up/-/git-up-4.0.5.tgz";
+        sha512 = "YUvVDg/vX3d0syBsk/CKUTib0srcQME0JyHkL5BaYdwLsiCslPWmDSi8PUMo9pXYjrryMcmsCoCgsTpSCJEQaA==";
       };
     };
     "glob-3.2.11" = {dependencies ? []}:
@@ -17479,6 +18234,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "glob"; };
       src = fetchurl {
@@ -17502,6 +18258,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "glob"; };
       src = fetchurl {
@@ -17525,6 +18282,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "glob"; };
       src = fetchurl {
@@ -17548,6 +18306,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "glob"; };
       src = fetchurl {
@@ -17571,6 +18330,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "glob"; };
       src = fetchurl {
@@ -17594,6 +18354,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "glob"; };
       src = fetchurl {
@@ -17617,6 +18378,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "glob-option-error"; };
       src = fetchurl {
@@ -17640,6 +18402,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "glob-parent"; };
       src = fetchurl {
@@ -17663,6 +18426,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "globals"; };
       src = fetchurl {
@@ -17686,6 +18450,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "globals"; };
       src = fetchurl {
@@ -17693,12 +18458,12 @@ let
         sha512 = "BWICuzzDvDoH54NHKCseDanAhE3CeDorgDL5MT6LMXXj2WCnd9UC2szdk4AWLfjdgNBCXLUanXYcpBBKOSWGwg==";
       };
     };
-    "globals-13.9.0" = {dependencies ? []}:
+    "globals-13.10.0" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "globals";
       packageName = "globals";
-      version = "13.9.0";
+      version = "13.10.0";
       buildInputs = [
         jq
         nodejs
@@ -17709,11 +18474,12 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "globals"; };
       src = fetchurl {
-        url = "https://registry.npmjs.org/globals/-/globals-13.9.0.tgz";
-        sha512 = "74/FduwI/JaIrr1H8e71UbDE+5x7pIPs1C2rrwC52SszOo043CsWOZEMW7o2Y58xwm9b+0RBKDxY5n2sUpEFxA==";
+        url = "https://registry.npmjs.org/globals/-/globals-13.10.0.tgz";
+        sha512 = "piHC3blgLGFjvOuMmWZX60f+na1lXFDhQXBf1UYp2fXPXqvEUbOhNwi6BsQ0bQishwedgnjkwv1d9zKf+MWw3g==";
       };
     };
     "globals-9.18.0" = {dependencies ? []}:
@@ -17732,6 +18498,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "globals"; };
       src = fetchurl {
@@ -17755,6 +18522,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "globby"; };
       src = fetchurl {
@@ -17778,6 +18546,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "graceful-fs"; };
       src = fetchurl {
@@ -17801,6 +18570,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "gradient-string"; };
       src = fetchurl {
@@ -17824,6 +18594,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "growl"; };
       src = fetchurl {
@@ -17847,6 +18618,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "handlebars"; };
       src = fetchurl {
@@ -17870,6 +18642,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "har-schema"; };
       src = fetchurl {
@@ -17893,6 +18666,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "har-validator"; };
       src = fetchurl {
@@ -17916,6 +18690,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "har-validator"; };
       src = fetchurl {
@@ -17939,6 +18714,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "hard-rejection"; };
       src = fetchurl {
@@ -17962,6 +18738,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has"; };
       src = fetchurl {
@@ -17985,6 +18762,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has-ansi"; };
       src = fetchurl {
@@ -18008,6 +18786,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has-bigints"; };
       src = fetchurl {
@@ -18031,6 +18810,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has-flag"; };
       src = fetchurl {
@@ -18054,6 +18834,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has-flag"; };
       src = fetchurl {
@@ -18077,6 +18858,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has-flag"; };
       src = fetchurl {
@@ -18100,6 +18882,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has-symbols"; };
       src = fetchurl {
@@ -18123,6 +18906,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has-unicode"; };
       src = fetchurl {
@@ -18146,6 +18930,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has-value"; };
       src = fetchurl {
@@ -18169,6 +18954,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has-value"; };
       src = fetchurl {
@@ -18192,6 +18978,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has-values"; };
       src = fetchurl {
@@ -18215,6 +19002,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has-values"; };
       src = fetchurl {
@@ -18238,6 +19026,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "hash-base"; };
       src = fetchurl {
@@ -18261,6 +19050,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "hash.js"; };
       src = fetchurl {
@@ -18284,6 +19074,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "hasha"; };
       src = fetchurl {
@@ -18307,6 +19098,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "hasha"; };
       src = fetchurl {
@@ -18330,6 +19122,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "hawk"; };
       src = fetchurl {
@@ -18353,6 +19146,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "he"; };
       src = fetchurl {
@@ -18376,6 +19170,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "he"; };
       src = fetchurl {
@@ -18399,6 +19194,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "helpers-fn"; };
       src = fetchurl {
@@ -18422,6 +19218,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "hmac-drbg"; };
       src = fetchurl {
@@ -18445,6 +19242,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "hoek"; };
       src = fetchurl {
@@ -18468,6 +19266,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "hosted-git-info"; };
       src = fetchurl {
@@ -18491,6 +19290,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "hosted-git-info"; };
       src = fetchurl {
@@ -18514,6 +19314,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "html-encoding-sniffer"; };
       src = fetchurl {
@@ -18537,6 +19338,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "html-escaper"; };
       src = fetchurl {
@@ -18560,6 +19362,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "htmlescape"; };
       src = fetchurl {
@@ -18583,6 +19386,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "htmlparser2"; };
       src = fetchurl {
@@ -18606,6 +19410,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "http-cache-semantics"; };
       src = fetchurl {
@@ -18629,6 +19434,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "http-proxy-agent"; };
       src = fetchurl {
@@ -18652,6 +19458,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "http-signature"; };
       src = fetchurl {
@@ -18675,6 +19482,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "http-signature"; };
       src = fetchurl {
@@ -18698,6 +19506,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "https-browserify"; };
       src = fetchurl {
@@ -18721,6 +19530,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "https-proxy-agent"; };
       src = fetchurl {
@@ -18744,6 +19554,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "human-signals"; };
       src = fetchurl {
@@ -18767,6 +19578,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "human-signals"; };
       src = fetchurl {
@@ -18790,6 +19602,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "humanize-ms"; };
       src = fetchurl {
@@ -18813,6 +19626,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "iconv-lite"; };
       src = fetchurl {
@@ -18836,6 +19650,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ieee754"; };
       src = fetchurl {
@@ -18859,6 +19674,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ignore"; };
       src = fetchurl {
@@ -18882,6 +19698,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ignore"; };
       src = fetchurl {
@@ -18905,6 +19722,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ignore"; };
       src = fetchurl {
@@ -18928,6 +19746,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "import-fresh"; };
       src = fetchurl {
@@ -18951,6 +19770,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "import-jsx"; };
       src = fetchurl {
@@ -18974,6 +19794,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "import-local"; };
       src = fetchurl {
@@ -18997,6 +19818,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "imurmurhash"; };
       src = fetchurl {
@@ -19020,6 +19842,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "indent-string"; };
       src = fetchurl {
@@ -19043,6 +19866,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "indento"; };
       src = fetchurl {
@@ -19066,6 +19890,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "indexed-filter"; };
       src = fetchurl {
@@ -19089,6 +19914,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "infer-owner"; };
       src = fetchurl {
@@ -19112,6 +19938,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "inflight"; };
       src = fetchurl {
@@ -19135,6 +19962,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "inherits"; };
       src = fetchurl {
@@ -19158,6 +19986,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "inherits"; };
       src = fetchurl {
@@ -19181,6 +20010,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "inherits"; };
       src = fetchurl {
@@ -19204,6 +20034,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ini"; };
       src = fetchurl {
@@ -19227,6 +20058,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "inline-source-map"; };
       src = fetchurl {
@@ -19250,6 +20082,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "inquirer"; };
       src = fetchurl {
@@ -19273,6 +20106,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "inquirer"; };
       src = fetchurl {
@@ -19296,6 +20130,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "inquirer"; };
       src = fetchurl {
@@ -19319,6 +20154,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "insert-module-globals"; };
       src = fetchurl {
@@ -19342,6 +20178,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "inspect-with-kind"; };
       src = fetchurl {
@@ -19365,6 +20202,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "internal-slot"; };
       src = fetchurl {
@@ -19388,6 +20226,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "invert-kv"; };
       src = fetchurl {
@@ -19411,6 +20250,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ip"; };
       src = fetchurl {
@@ -19434,6 +20274,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "irregular-plurals"; };
       src = fetchurl {
@@ -19457,6 +20298,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-accessor-descriptor"; };
       src = fetchurl {
@@ -19480,6 +20322,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-accessor-descriptor"; };
       src = fetchurl {
@@ -19503,6 +20346,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-arguments"; };
       src = fetchurl {
@@ -19526,6 +20370,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-arrayish"; };
       src = fetchurl {
@@ -19549,6 +20394,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-arrow-function"; };
       src = fetchurl {
@@ -19572,6 +20418,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-async-fn"; };
       src = fetchurl {
@@ -19595,6 +20442,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-bigint"; };
       src = fetchurl {
@@ -19618,6 +20466,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-binary-path"; };
       src = fetchurl {
@@ -19641,6 +20490,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-boolean-object"; };
       src = fetchurl {
@@ -19664,6 +20514,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-buffer"; };
       src = fetchurl {
@@ -19687,6 +20538,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-buffer"; };
       src = fetchurl {
@@ -19710,6 +20562,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-callable"; };
       src = fetchurl {
@@ -19733,6 +20586,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-ci"; };
       src = fetchurl {
@@ -19756,6 +20610,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-ci"; };
       src = fetchurl {
@@ -19779,6 +20634,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-core-module"; };
       src = fetchurl {
@@ -19802,6 +20658,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-data-descriptor"; };
       src = fetchurl {
@@ -19825,6 +20682,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-data-descriptor"; };
       src = fetchurl {
@@ -19848,6 +20706,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-date-object"; };
       src = fetchurl {
@@ -19871,6 +20730,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-descriptor"; };
       src = fetchurl {
@@ -19894,6 +20754,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-descriptor"; };
       src = fetchurl {
@@ -19917,6 +20778,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-equal"; };
       src = fetchurl {
@@ -19940,6 +20802,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-extendable"; };
       src = fetchurl {
@@ -19963,6 +20826,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-extendable"; };
       src = fetchurl {
@@ -19986,6 +20850,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-extglob"; };
       src = fetchurl {
@@ -20009,6 +20874,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-finalizationregistry"; };
       src = fetchurl {
@@ -20032,6 +20898,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-fullwidth-code-point"; };
       src = fetchurl {
@@ -20055,6 +20922,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-fullwidth-code-point"; };
       src = fetchurl {
@@ -20078,6 +20946,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-fullwidth-code-point"; };
       src = fetchurl {
@@ -20101,6 +20970,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-generator-fn"; };
       src = fetchurl {
@@ -20124,6 +20994,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-generator-function"; };
       src = fetchurl {
@@ -20147,6 +21018,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-get-set-prop"; };
       src = fetchurl {
@@ -20170,6 +21042,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-glob"; };
       src = fetchurl {
@@ -20193,6 +21066,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-js-type"; };
       src = fetchurl {
@@ -20216,6 +21090,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-lambda"; };
       src = fetchurl {
@@ -20239,6 +21114,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-map"; };
       src = fetchurl {
@@ -20262,6 +21138,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-module"; };
       src = fetchurl {
@@ -20285,6 +21162,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-my-ip-valid"; };
       src = fetchurl {
@@ -20308,6 +21186,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-my-json-valid"; };
       src = fetchurl {
@@ -20331,6 +21210,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-negative-zero"; };
       src = fetchurl {
@@ -20354,6 +21234,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-number"; };
       src = fetchurl {
@@ -20377,6 +21258,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-number"; };
       src = fetchurl {
@@ -20400,6 +21282,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-number-object"; };
       src = fetchurl {
@@ -20423,6 +21306,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-obj"; };
       src = fetchurl {
@@ -20446,6 +21330,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-obj-prop"; };
       src = fetchurl {
@@ -20469,6 +21354,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-object"; };
       src = fetchurl {
@@ -20492,6 +21378,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-plain-obj"; };
       src = fetchurl {
@@ -20515,6 +21402,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-plain-obj"; };
       src = fetchurl {
@@ -20538,6 +21426,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-plain-object"; };
       src = fetchurl {
@@ -20561,6 +21450,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-potential-custom-element-name"; };
       src = fetchurl {
@@ -20584,6 +21474,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-property"; };
       src = fetchurl {
@@ -20607,6 +21498,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-proto-prop"; };
       src = fetchurl {
@@ -20630,6 +21522,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-reference"; };
       src = fetchurl {
@@ -20653,6 +21546,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-regex"; };
       src = fetchurl {
@@ -20676,6 +21570,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-regex"; };
       src = fetchurl {
@@ -20699,6 +21594,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-regexp"; };
       src = fetchurl {
@@ -20722,6 +21618,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-resolvable"; };
       src = fetchurl {
@@ -20745,6 +21642,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-set"; };
       src = fetchurl {
@@ -20768,6 +21666,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-ssh"; };
       src = fetchurl {
@@ -20791,6 +21690,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-stream"; };
       src = fetchurl {
@@ -20814,6 +21714,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-stream"; };
       src = fetchurl {
@@ -20837,6 +21738,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-string"; };
       src = fetchurl {
@@ -20860,6 +21762,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-symbol"; };
       src = fetchurl {
@@ -20883,6 +21786,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-typed-array"; };
       src = fetchurl {
@@ -20906,6 +21810,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-typedarray"; };
       src = fetchurl {
@@ -20929,6 +21834,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-unicode-supported"; };
       src = fetchurl {
@@ -20952,6 +21858,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-utf8"; };
       src = fetchurl {
@@ -20975,6 +21882,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-weakmap"; };
       src = fetchurl {
@@ -20998,6 +21906,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-weakref"; };
       src = fetchurl {
@@ -21021,6 +21930,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-weakset"; };
       src = fetchurl {
@@ -21044,6 +21954,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-win"; };
       src = fetchurl {
@@ -21067,6 +21978,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-windows"; };
       src = fetchurl {
@@ -21090,6 +22002,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "isarray"; };
       src = fetchurl {
@@ -21113,6 +22026,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "isarray"; };
       src = fetchurl {
@@ -21136,6 +22050,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "isarray"; };
       src = fetchurl {
@@ -21159,6 +22074,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "isexe"; };
       src = fetchurl {
@@ -21182,6 +22098,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "isexe"; };
       src = fetchurl {
@@ -21205,6 +22122,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "isobject"; };
       src = fetchurl {
@@ -21228,6 +22146,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "isobject"; };
       src = fetchurl {
@@ -21251,6 +22170,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "isstream"; };
       src = fetchurl {
@@ -21274,6 +22194,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul"; };
       src = fetchurl {
@@ -21297,6 +22218,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-coverage"; };
       src = fetchurl {
@@ -21320,6 +22242,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-coverage"; };
       src = fetchurl {
@@ -21343,6 +22266,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-hook"; };
       src = fetchurl {
@@ -21366,6 +22290,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-hook"; };
       src = fetchurl {
@@ -21389,6 +22314,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-instrument"; };
       src = fetchurl {
@@ -21412,6 +22338,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-instrument"; };
       src = fetchurl {
@@ -21435,6 +22362,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-processinfo"; };
       src = fetchurl {
@@ -21458,6 +22386,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-processinfo"; };
       src = fetchurl {
@@ -21481,6 +22410,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-report"; };
       src = fetchurl {
@@ -21504,6 +22434,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-report"; };
       src = fetchurl {
@@ -21527,6 +22458,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-source-maps"; };
       src = fetchurl {
@@ -21550,6 +22482,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-source-maps"; };
       src = fetchurl {
@@ -21573,6 +22506,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-reports"; };
       src = fetchurl {
@@ -21596,6 +22530,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-reports"; };
       src = fetchurl {
@@ -21619,6 +22554,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "iterate-object"; };
       src = fetchurl {
@@ -21642,6 +22578,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jackspeak"; };
       src = fetchurl {
@@ -21665,6 +22602,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest"; };
       src = fetchurl {
@@ -21688,6 +22626,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest"; };
       src = fetchurl {
@@ -21711,6 +22650,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-changed-files"; };
       src = fetchurl {
@@ -21734,6 +22674,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-changed-files"; };
       src = fetchurl {
@@ -21757,6 +22698,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-circus"; };
       src = fetchurl {
@@ -21780,6 +22722,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-cli"; };
       src = fetchurl {
@@ -21803,6 +22746,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-cli"; };
       src = fetchurl {
@@ -21826,6 +22770,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-config"; };
       src = fetchurl {
@@ -21849,6 +22794,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-config"; };
       src = fetchurl {
@@ -21872,6 +22818,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-diff"; };
       src = fetchurl {
@@ -21895,6 +22842,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-diff"; };
       src = fetchurl {
@@ -21918,6 +22866,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-diff"; };
       src = fetchurl {
@@ -21941,6 +22890,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-docblock"; };
       src = fetchurl {
@@ -21964,6 +22914,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-docblock"; };
       src = fetchurl {
@@ -21987,6 +22938,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-each"; };
       src = fetchurl {
@@ -22010,6 +22962,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-each"; };
       src = fetchurl {
@@ -22033,6 +22986,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-environment-jsdom"; };
       src = fetchurl {
@@ -22056,6 +23010,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-environment-jsdom"; };
       src = fetchurl {
@@ -22079,6 +23034,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-environment-node"; };
       src = fetchurl {
@@ -22102,6 +23058,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-environment-node"; };
       src = fetchurl {
@@ -22125,6 +23082,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-extended"; };
       src = fetchurl {
@@ -22148,6 +23106,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-get-type"; };
       src = fetchurl {
@@ -22171,6 +23130,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-get-type"; };
       src = fetchurl {
@@ -22194,6 +23154,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-get-type"; };
       src = fetchurl {
@@ -22217,6 +23178,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-get-type"; };
       src = fetchurl {
@@ -22240,6 +23202,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-haste-map"; };
       src = fetchurl {
@@ -22263,6 +23226,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-haste-map"; };
       src = fetchurl {
@@ -22286,6 +23250,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-jasmine2"; };
       src = fetchurl {
@@ -22309,6 +23274,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-jasmine2"; };
       src = fetchurl {
@@ -22332,6 +23298,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-leak-detector"; };
       src = fetchurl {
@@ -22355,6 +23322,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-leak-detector"; };
       src = fetchurl {
@@ -22378,6 +23346,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-matcher-utils"; };
       src = fetchurl {
@@ -22401,6 +23370,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-matcher-utils"; };
       src = fetchurl {
@@ -22424,6 +23394,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-matcher-utils"; };
       src = fetchurl {
@@ -22447,6 +23418,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-matcher-utils"; };
       src = fetchurl {
@@ -22470,6 +23442,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-message-util"; };
       src = fetchurl {
@@ -22493,6 +23466,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-message-util"; };
       src = fetchurl {
@@ -22516,6 +23490,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-message-util"; };
       src = fetchurl {
@@ -22539,6 +23514,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-mock"; };
       src = fetchurl {
@@ -22562,6 +23538,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-mock"; };
       src = fetchurl {
@@ -22585,6 +23562,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-pnp-resolver"; };
       src = fetchurl {
@@ -22608,6 +23586,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-regex-util"; };
       src = fetchurl {
@@ -22631,6 +23610,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-regex-util"; };
       src = fetchurl {
@@ -22654,6 +23634,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-regex-util"; };
       src = fetchurl {
@@ -22677,6 +23658,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-resolve"; };
       src = fetchurl {
@@ -22700,6 +23682,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-resolve"; };
       src = fetchurl {
@@ -22723,6 +23706,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-resolve-dependencies"; };
       src = fetchurl {
@@ -22746,6 +23730,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-resolve-dependencies"; };
       src = fetchurl {
@@ -22769,6 +23754,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-runner"; };
       src = fetchurl {
@@ -22792,6 +23778,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-runner"; };
       src = fetchurl {
@@ -22815,6 +23802,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-runtime"; };
       src = fetchurl {
@@ -22838,6 +23826,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-runtime"; };
       src = fetchurl {
@@ -22861,6 +23850,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-serializer"; };
       src = fetchurl {
@@ -22884,6 +23874,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-serializer"; };
       src = fetchurl {
@@ -22907,6 +23898,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-snapshot"; };
       src = fetchurl {
@@ -22930,6 +23922,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-snapshot"; };
       src = fetchurl {
@@ -22953,6 +23946,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-util"; };
       src = fetchurl {
@@ -22976,6 +23970,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-util"; };
       src = fetchurl {
@@ -22999,6 +23994,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-validate"; };
       src = fetchurl {
@@ -23022,6 +24018,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-validate"; };
       src = fetchurl {
@@ -23045,6 +24042,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-watcher"; };
       src = fetchurl {
@@ -23068,6 +24066,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-watcher"; };
       src = fetchurl {
@@ -23091,6 +24090,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-worker"; };
       src = fetchurl {
@@ -23114,6 +24114,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-worker"; };
       src = fetchurl {
@@ -23137,6 +24138,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-worker"; };
       src = fetchurl {
@@ -23160,6 +24162,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "js-cleanup"; };
       src = fetchurl {
@@ -23183,6 +24186,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "js-tokens"; };
       src = fetchurl {
@@ -23206,6 +24210,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "js-tokens"; };
       src = fetchurl {
@@ -23229,6 +24234,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "js-types"; };
       src = fetchurl {
@@ -23252,6 +24258,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "js-yaml"; };
       src = fetchurl {
@@ -23275,6 +24282,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "js-yaml"; };
       src = fetchurl {
@@ -23298,6 +24306,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "js-yaml"; };
       src = fetchurl {
@@ -23321,6 +24330,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "js-yaml"; };
       src = fetchurl {
@@ -23344,6 +24354,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "js2xmlparser"; };
       src = fetchurl {
@@ -23367,6 +24378,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsbn"; };
       src = fetchurl {
@@ -23390,6 +24402,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsdoc"; };
       src = fetchurl {
@@ -23413,6 +24426,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsdom"; };
       src = fetchurl {
@@ -23436,6 +24450,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsesc"; };
       src = fetchurl {
@@ -23459,6 +24474,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsesc"; };
       src = fetchurl {
@@ -23482,6 +24498,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "json-parse-better-errors"; };
       src = fetchurl {
@@ -23505,6 +24522,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "json-parse-even-better-errors"; };
       src = fetchurl {
@@ -23528,6 +24546,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "json-schema"; };
       src = fetchurl {
@@ -23551,6 +24570,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "json-schema-traverse"; };
       src = fetchurl {
@@ -23574,6 +24594,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "json-schema-traverse"; };
       src = fetchurl {
@@ -23597,6 +24618,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "json-stable-stringify"; };
       src = fetchurl {
@@ -23620,6 +24642,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "json-stable-stringify"; };
       src = fetchurl {
@@ -23643,6 +24666,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "json-stable-stringify-without-jsonify"; };
       src = fetchurl {
@@ -23666,6 +24690,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "json-stringify-safe"; };
       src = fetchurl {
@@ -23689,6 +24714,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "json2csv"; };
       src = fetchurl {
@@ -23712,6 +24738,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "json5"; };
       src = fetchurl {
@@ -23735,6 +24762,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsonfile"; };
       src = fetchurl {
@@ -23758,6 +24786,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsonfile"; };
       src = fetchurl {
@@ -23781,6 +24810,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsonify"; };
       src = fetchurl {
@@ -23804,6 +24834,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsonparse"; };
       src = fetchurl {
@@ -23827,6 +24858,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsonpointer"; };
       src = fetchurl {
@@ -23850,6 +24882,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsprim"; };
       src = fetchurl {
@@ -23873,6 +24906,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsx-ast-utils"; };
       src = fetchurl {
@@ -23896,6 +24930,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsx-ast-utils"; };
       src = fetchurl {
@@ -23919,6 +24954,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsx-ast-utils"; };
       src = fetchurl {
@@ -23942,6 +24978,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "kind-of"; };
       src = fetchurl {
@@ -23965,6 +25002,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "kind-of"; };
       src = fetchurl {
@@ -23988,6 +25026,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "kind-of"; };
       src = fetchurl {
@@ -24011,6 +25050,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "kind-of"; };
       src = fetchurl {
@@ -24034,6 +25074,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "klaw"; };
       src = fetchurl {
@@ -24057,6 +25098,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "klaw"; };
       src = fetchurl {
@@ -24080,6 +25122,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "klaw-sync"; };
       src = fetchurl {
@@ -24103,6 +25146,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "kleur"; };
       src = fetchurl {
@@ -24126,6 +25170,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "kleur"; };
       src = fetchurl {
@@ -24149,6 +25194,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "labeled-stream-splicer"; };
       src = fetchurl {
@@ -24172,6 +25218,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lcid"; };
       src = fetchurl {
@@ -24195,6 +25242,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lcov-parse"; };
       src = fetchurl {
@@ -24218,6 +25266,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lcov-parse"; };
       src = fetchurl {
@@ -24241,6 +25290,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "leven"; };
       src = fetchurl {
@@ -24264,6 +25314,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "levn"; };
       src = fetchurl {
@@ -24287,6 +25338,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "levn"; };
       src = fetchurl {
@@ -24310,6 +25362,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "levn"; };
       src = fetchurl {
@@ -24333,6 +25386,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "libtap"; };
       src = fetchurl {
@@ -24356,6 +25410,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lines-and-columns"; };
       src = fetchurl {
@@ -24379,6 +25434,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "linkify-it"; };
       src = fetchurl {
@@ -24402,6 +25458,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "load-from-cwd-or-npm"; };
       src = fetchurl {
@@ -24425,6 +25482,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "load-json-file"; };
       src = fetchurl {
@@ -24448,6 +25506,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "load-json-file"; };
       src = fetchurl {
@@ -24471,6 +25530,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "load-json-file"; };
       src = fetchurl {
@@ -24494,6 +25554,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "load-request-from-cwd-or-npm"; };
       src = fetchurl {
@@ -24517,6 +25578,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "locate-path"; };
       src = fetchurl {
@@ -24540,6 +25602,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "locate-path"; };
       src = fetchurl {
@@ -24563,6 +25626,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "locate-path"; };
       src = fetchurl {
@@ -24586,6 +25650,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "locate-path"; };
       src = fetchurl {
@@ -24609,6 +25674,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lodash"; };
       src = fetchurl {
@@ -24632,6 +25698,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lodash"; };
       src = fetchurl {
@@ -24655,6 +25722,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lodash"; };
       src = fetchurl {
@@ -24678,6 +25746,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lodash.clonedeep"; };
       src = fetchurl {
@@ -24701,6 +25770,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lodash.flattendeep"; };
       src = fetchurl {
@@ -24724,6 +25794,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lodash.get"; };
       src = fetchurl {
@@ -24747,6 +25818,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lodash.memoize"; };
       src = fetchurl {
@@ -24770,6 +25842,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lodash.merge"; };
       src = fetchurl {
@@ -24793,6 +25866,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lodash.set"; };
       src = fetchurl {
@@ -24816,6 +25890,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lodash.truncate"; };
       src = fetchurl {
@@ -24839,6 +25914,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "log-driver"; };
       src = fetchurl {
@@ -24862,6 +25938,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "log-driver"; };
       src = fetchurl {
@@ -24885,6 +25962,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "log-symbols"; };
       src = fetchurl {
@@ -24908,6 +25986,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "log-symbols"; };
       src = fetchurl {
@@ -24931,6 +26010,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "log-symbols"; };
       src = fetchurl {
@@ -24954,6 +26034,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "log-update"; };
       src = fetchurl {
@@ -24977,6 +26058,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "loose-envify"; };
       src = fetchurl {
@@ -25000,6 +26082,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lowercase-keys"; };
       src = fetchurl {
@@ -25023,6 +26106,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lru-cache"; };
       src = fetchurl {
@@ -25046,6 +26130,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lru-cache"; };
       src = fetchurl {
@@ -25069,6 +26154,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lru-cache"; };
       src = fetchurl {
@@ -25092,6 +26178,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "magic-string"; };
       src = fetchurl {
@@ -25115,6 +26202,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "make-dir"; };
       src = fetchurl {
@@ -25138,6 +26226,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "make-dir"; };
       src = fetchurl {
@@ -25161,6 +26250,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "make-error"; };
       src = fetchurl {
@@ -25184,6 +26274,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "make-fetch-happen"; };
       src = fetchurl {
@@ -25207,6 +26298,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "makeerror"; };
       src = fetchurl {
@@ -25230,6 +26322,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "map-cache"; };
       src = fetchurl {
@@ -25253,6 +26346,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "map-obj"; };
       src = fetchurl {
@@ -25276,6 +26370,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "map-obj"; };
       src = fetchurl {
@@ -25299,6 +26394,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "map-visit"; };
       src = fetchurl {
@@ -25322,6 +26418,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "markdown-it"; };
       src = fetchurl {
@@ -25345,6 +26442,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "markdown-it-anchor"; };
       src = fetchurl {
@@ -25368,6 +26466,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "marked"; };
       src = fetchurl {
@@ -25391,6 +26490,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "md5.js"; };
       src = fetchurl {
@@ -25414,6 +26514,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mdurl"; };
       src = fetchurl {
@@ -25437,6 +26538,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "meow"; };
       src = fetchurl {
@@ -25460,6 +26562,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "merge-descriptors"; };
       src = fetchurl {
@@ -25483,6 +26586,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "merge-source-map"; };
       src = fetchurl {
@@ -25506,6 +26610,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "merge-stream"; };
       src = fetchurl {
@@ -25529,6 +26634,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "merge2"; };
       src = fetchurl {
@@ -25552,6 +26658,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "micromatch"; };
       src = fetchurl {
@@ -25575,6 +26682,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "micromatch"; };
       src = fetchurl {
@@ -25598,6 +26706,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "miller-rabin"; };
       src = fetchurl {
@@ -25621,6 +26730,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mime-db"; };
       src = fetchurl {
@@ -25644,6 +26754,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mime-types"; };
       src = fetchurl {
@@ -25667,6 +26778,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mime-types"; };
       src = fetchurl {
@@ -25690,6 +26802,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mimic-fn"; };
       src = fetchurl {
@@ -25713,6 +26826,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mimic-fn"; };
       src = fetchurl {
@@ -25736,6 +26850,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "min-indent"; };
       src = fetchurl {
@@ -25759,6 +26874,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minimalistic-assert"; };
       src = fetchurl {
@@ -25782,6 +26898,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minimalistic-crypto-utils"; };
       src = fetchurl {
@@ -25805,6 +26922,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minimatch"; };
       src = fetchurl {
@@ -25828,6 +26946,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minimatch"; };
       src = fetchurl {
@@ -25851,6 +26970,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minimatch"; };
       src = fetchurl {
@@ -25874,6 +26994,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minimist"; };
       src = fetchurl {
@@ -25897,6 +27018,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minimist"; };
       src = fetchurl {
@@ -25920,6 +27042,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minimist"; };
       src = fetchurl {
@@ -25943,6 +27066,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minimist-options"; };
       src = fetchurl {
@@ -25966,6 +27090,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minipass"; };
       src = fetchurl {
@@ -25989,6 +27114,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minipass-collect"; };
       src = fetchurl {
@@ -26012,6 +27138,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minipass-fetch"; };
       src = fetchurl {
@@ -26035,6 +27162,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minipass-flush"; };
       src = fetchurl {
@@ -26058,6 +27186,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minipass-json-stream"; };
       src = fetchurl {
@@ -26081,6 +27210,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minipass-pipeline"; };
       src = fetchurl {
@@ -26104,6 +27234,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minipass-sized"; };
       src = fetchurl {
@@ -26127,6 +27258,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minizlib"; };
       src = fetchurl {
@@ -26150,6 +27282,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mixin-deep"; };
       src = fetchurl {
@@ -26173,6 +27306,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mkdirp"; };
       src = fetchurl {
@@ -26196,6 +27330,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mkdirp"; };
       src = fetchurl {
@@ -26219,6 +27354,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mkdirp"; };
       src = fetchurl {
@@ -26242,6 +27378,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mkdirp"; };
       src = fetchurl {
@@ -26265,6 +27402,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mkdirp"; };
       src = fetchurl {
@@ -26288,6 +27426,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mkdirp-classic"; };
       src = fetchurl {
@@ -26311,6 +27450,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mocha"; };
       src = fetchurl {
@@ -26334,6 +27474,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mocha"; };
       src = fetchurl {
@@ -26357,6 +27498,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mocha"; };
       src = fetchurl {
@@ -26380,6 +27522,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "module-deps"; };
       src = fetchurl {
@@ -26403,6 +27546,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "module-not-found-error"; };
       src = fetchurl {
@@ -26426,6 +27570,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ms"; };
       src = fetchurl {
@@ -26449,6 +27594,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ms"; };
       src = fetchurl {
@@ -26472,6 +27618,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ms"; };
       src = fetchurl {
@@ -26495,6 +27642,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ms"; };
       src = fetchurl {
@@ -26518,6 +27666,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "multiline"; };
       src = fetchurl {
@@ -26541,6 +27690,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mutate-fs"; };
       src = fetchurl {
@@ -26564,6 +27714,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mute-stream"; };
       src = fetchurl {
@@ -26587,6 +27738,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mute-stream"; };
       src = fetchurl {
@@ -26610,6 +27762,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mute-stream"; };
       src = fetchurl {
@@ -26633,6 +27786,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nanoid"; };
       src = fetchurl {
@@ -26656,6 +27810,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nanomatch"; };
       src = fetchurl {
@@ -26679,6 +27834,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "natural-compare"; };
       src = fetchurl {
@@ -26702,6 +27858,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "negotiator"; };
       src = fetchurl {
@@ -26725,6 +27882,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "neo-async"; };
       src = fetchurl {
@@ -26748,6 +27906,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nested-error-stacks"; };
       src = fetchurl {
@@ -26771,6 +27930,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "next-tick"; };
       src = fetchurl {
@@ -26794,6 +27954,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nice-try"; };
       src = fetchurl {
@@ -26817,6 +27978,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nock"; };
       src = fetchurl {
@@ -26840,6 +28002,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "node-environment-flags"; };
       src = fetchurl {
@@ -26863,6 +28026,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "node-int64"; };
       src = fetchurl {
@@ -26886,6 +28050,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "node-modules-regexp"; };
       src = fetchurl {
@@ -26909,6 +28074,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "node-os-utils"; };
       src = fetchurl {
@@ -26932,6 +28098,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "node-preload"; };
       src = fetchurl {
@@ -26955,6 +28122,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "node-releases"; };
       src = fetchurl {
@@ -26978,6 +28146,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "node-uuid"; };
       src = fetchurl {
@@ -27001,6 +28170,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "noop6"; };
       src = fetchurl {
@@ -27024,6 +28194,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nopt"; };
       src = fetchurl {
@@ -27047,6 +28218,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nopt"; };
       src = fetchurl {
@@ -27070,6 +28242,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "normalize-package-data"; };
       src = fetchurl {
@@ -27093,6 +28266,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "normalize-package-data"; };
       src = fetchurl {
@@ -27116,6 +28290,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "normalize-path"; };
       src = fetchurl {
@@ -27139,6 +28314,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "normalize-path"; };
       src = fetchurl {
@@ -27146,12 +28322,12 @@ let
         sha512 = "6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==";
       };
     };
-    "normalize-url-4.5.1" = {dependencies ? []}:
+    "normalize-url-6.1.0" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "normalize-url";
       packageName = "normalize-url";
-      version = "4.5.1";
+      version = "6.1.0";
       buildInputs = [
         jq
         nodejs
@@ -27162,11 +28338,12 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "normalize-url"; };
       src = fetchurl {
-        url = "https://registry.npmjs.org/normalize-url/-/normalize-url-4.5.1.tgz";
-        sha512 = "9UZCFRHQdNrfTpGg8+1INIg93B6zE0aXMVFkw1WFwvO4SlZywU6aLg5Of0Ap/PgcbSw4LNxvMWXMeugwMCX0AA==";
+        url = "https://registry.npmjs.org/normalize-url/-/normalize-url-6.1.0.tgz";
+        sha512 = "DlL+XwOy3NxAQ8xuC0okPgK46iuVNAK01YN7RueYBqqFeGsBjV9XmCAzAdgt+667bCl5kPh9EqKKDwnaPG1I7A==";
       };
     };
     "npm-cli-dir-2.0.2" = {dependencies ? []}:
@@ -27185,6 +28362,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "npm-cli-dir"; };
       src = fetchurl {
@@ -27208,6 +28386,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "npm-cli-path"; };
       src = fetchurl {
@@ -27231,6 +28410,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "npm-package-arg"; };
       src = fetchurl {
@@ -27254,6 +28434,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "npm-package-arg"; };
       src = fetchurl {
@@ -27277,6 +28458,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "npm-registry-client"; };
       src = fetchurl {
@@ -27300,6 +28482,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "npm-run-path"; };
       src = fetchurl {
@@ -27323,6 +28506,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "npm-run-path"; };
       src = fetchurl {
@@ -27346,6 +28530,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "npmlog"; };
       src = fetchurl {
@@ -27369,6 +28554,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "number-is-nan"; };
       src = fetchurl {
@@ -27392,6 +28578,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nwsapi"; };
       src = fetchurl {
@@ -27415,6 +28602,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nyc"; };
       src = fetchurl {
@@ -27438,6 +28626,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nyc"; };
       src = fetchurl {
@@ -27461,6 +28650,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nyc"; };
       src = fetchurl {
@@ -27484,6 +28674,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nyc"; };
       src = fetchurl {
@@ -27507,6 +28698,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "oauth-sign"; };
       src = fetchurl {
@@ -27530,6 +28722,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "oauth-sign"; };
       src = fetchurl {
@@ -27553,6 +28746,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "obj-props"; };
       src = fetchurl {
@@ -27576,6 +28770,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object-assign"; };
       src = fetchurl {
@@ -27599,6 +28794,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object-copy"; };
       src = fetchurl {
@@ -27622,6 +28818,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object-inspect"; };
       src = fetchurl {
@@ -27645,6 +28842,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object-inspect"; };
       src = fetchurl {
@@ -27668,6 +28866,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object-is"; };
       src = fetchurl {
@@ -27691,6 +28890,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object-keys"; };
       src = fetchurl {
@@ -27714,6 +28914,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object-visit"; };
       src = fetchurl {
@@ -27737,6 +28938,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object.assign"; };
       src = fetchurl {
@@ -27760,6 +28962,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object.assign"; };
       src = fetchurl {
@@ -27783,6 +28986,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object.entries"; };
       src = fetchurl {
@@ -27806,6 +29010,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object.fromentries"; };
       src = fetchurl {
@@ -27829,6 +29034,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object.getownpropertydescriptors"; };
       src = fetchurl {
@@ -27852,6 +29058,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object.getprototypeof"; };
       src = fetchurl {
@@ -27875,6 +29082,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object.pick"; };
       src = fetchurl {
@@ -27898,6 +29106,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object.values"; };
       src = fetchurl {
@@ -27921,6 +29130,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "once"; };
       src = fetchurl {
@@ -27944,6 +29154,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "once"; };
       src = fetchurl {
@@ -27967,6 +29178,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "onetime"; };
       src = fetchurl {
@@ -27990,6 +29202,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "onetime"; };
       src = fetchurl {
@@ -28013,6 +29226,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "onetime"; };
       src = fetchurl {
@@ -28036,6 +29250,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "only-shallow"; };
       src = fetchurl {
@@ -28059,6 +29274,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "opener"; };
       src = fetchurl {
@@ -28082,6 +29298,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "optional"; };
       src = fetchurl {
@@ -28105,6 +29322,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "optionator"; };
       src = fetchurl {
@@ -28128,6 +29346,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "optionator"; };
       src = fetchurl {
@@ -28151,6 +29370,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "optionator"; };
       src = fetchurl {
@@ -28174,6 +29394,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "optparse"; };
       src = fetchurl {
@@ -28197,6 +29418,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "os-browserify"; };
       src = fetchurl {
@@ -28220,6 +29442,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "os-homedir"; };
       src = fetchurl {
@@ -28243,6 +29466,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "os-locale"; };
       src = fetchurl {
@@ -28266,6 +29490,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "os-tmpdir"; };
       src = fetchurl {
@@ -28289,6 +29514,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "osenv"; };
       src = fetchurl {
@@ -28312,6 +29538,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "own-or"; };
       src = fetchurl {
@@ -28335,6 +29562,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "own-or-env"; };
       src = fetchurl {
@@ -28358,6 +29586,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-each-series"; };
       src = fetchurl {
@@ -28381,6 +29610,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-finally"; };
       src = fetchurl {
@@ -28404,6 +29634,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-limit"; };
       src = fetchurl {
@@ -28427,6 +29658,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-limit"; };
       src = fetchurl {
@@ -28450,6 +29682,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-limit"; };
       src = fetchurl {
@@ -28473,6 +29706,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-locate"; };
       src = fetchurl {
@@ -28496,6 +29730,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-locate"; };
       src = fetchurl {
@@ -28519,6 +29754,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-locate"; };
       src = fetchurl {
@@ -28542,6 +29778,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-locate"; };
       src = fetchurl {
@@ -28565,6 +29802,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-map"; };
       src = fetchurl {
@@ -28588,6 +29826,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-map"; };
       src = fetchurl {
@@ -28611,6 +29850,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-try"; };
       src = fetchurl {
@@ -28634,6 +29874,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-try"; };
       src = fetchurl {
@@ -28657,6 +29898,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "package-hash"; };
       src = fetchurl {
@@ -28680,6 +29922,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "package-hash"; };
       src = fetchurl {
@@ -28703,6 +29946,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pako"; };
       src = fetchurl {
@@ -28726,6 +29970,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "parent-module"; };
       src = fetchurl {
@@ -28749,6 +29994,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "parents"; };
       src = fetchurl {
@@ -28772,6 +30018,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "parse-asn1"; };
       src = fetchurl {
@@ -28795,6 +30042,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "parse-json"; };
       src = fetchurl {
@@ -28818,6 +30066,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "parse-json"; };
       src = fetchurl {
@@ -28841,6 +30090,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "parse-json"; };
       src = fetchurl {
@@ -28864,6 +30114,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "parse-path"; };
       src = fetchurl {
@@ -28871,12 +30122,12 @@ let
         sha512 = "9Cepbp2asKnWTJ9x2kpw6Fe8y9JDbqwahGCTvklzd/cEq5C5JC59x2Xb0Kx+x0QZ8bvNquGO8/BWP0cwBHzSAA==";
       };
     };
-    "parse-url-5.0.7" = {dependencies ? []}:
+    "parse-url-6.0.0" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "parse-url";
       packageName = "parse-url";
-      version = "5.0.7";
+      version = "6.0.0";
       buildInputs = [
         jq
         nodejs
@@ -28887,11 +30138,12 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "parse-url"; };
       src = fetchurl {
-        url = "https://registry.npmjs.org/parse-url/-/parse-url-5.0.7.tgz";
-        sha512 = "CgbjyWT6aOh2oNSUS0cioYQsGysj9hQ2IdbOfeNwq5KOaKM7dOw/yTupiI0cnJhaDHJEIGybPkQz7LF9WNIhyw==";
+        url = "https://registry.npmjs.org/parse-url/-/parse-url-6.0.0.tgz";
+        sha512 = "cYyojeX7yIIwuJzledIHeLUBVJ6COVLeT4eF+2P6aKVzwvgKQPndCBv3+yQ7pcWjqToYwaligxzSYNNmGoMAvw==";
       };
     };
     "parse5-6.0.1" = {dependencies ? []}:
@@ -28910,6 +30162,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "parse5"; };
       src = fetchurl {
@@ -28933,6 +30186,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "parsimmon"; };
       src = fetchurl {
@@ -28956,6 +30210,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pascalcase"; };
       src = fetchurl {
@@ -28979,6 +30234,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-browserify"; };
       src = fetchurl {
@@ -29002,6 +30258,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-exists"; };
       src = fetchurl {
@@ -29025,6 +30282,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-exists"; };
       src = fetchurl {
@@ -29048,6 +30306,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-is-absolute"; };
       src = fetchurl {
@@ -29071,6 +30330,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-is-inside"; };
       src = fetchurl {
@@ -29094,6 +30354,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-key"; };
       src = fetchurl {
@@ -29117,6 +30378,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-key"; };
       src = fetchurl {
@@ -29140,6 +30402,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-parse"; };
       src = fetchurl {
@@ -29163,6 +30426,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-platform"; };
       src = fetchurl {
@@ -29186,6 +30450,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-type"; };
       src = fetchurl {
@@ -29209,6 +30474,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-type"; };
       src = fetchurl {
@@ -29232,6 +30498,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-type"; };
       src = fetchurl {
@@ -29255,6 +30522,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pathval"; };
       src = fetchurl {
@@ -29278,6 +30546,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pbkdf2"; };
       src = fetchurl {
@@ -29301,6 +30570,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "perf-regexes"; };
       src = fetchurl {
@@ -29324,6 +30594,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "performance-now"; };
       src = fetchurl {
@@ -29347,6 +30618,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "picomatch"; };
       src = fetchurl {
@@ -29370,6 +30642,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pify"; };
       src = fetchurl {
@@ -29393,6 +30666,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pify"; };
       src = fetchurl {
@@ -29416,6 +30690,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pify"; };
       src = fetchurl {
@@ -29439,6 +30714,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pinkie"; };
       src = fetchurl {
@@ -29462,6 +30738,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pinkie-promise"; };
       src = fetchurl {
@@ -29485,6 +30762,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pirates"; };
       src = fetchurl {
@@ -29508,6 +30786,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pirates"; };
       src = fetchurl {
@@ -29531,6 +30810,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pkg-conf"; };
       src = fetchurl {
@@ -29554,6 +30834,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pkg-config"; };
       src = fetchurl {
@@ -29577,6 +30858,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pkg-dir"; };
       src = fetchurl {
@@ -29600,6 +30882,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pkg-dir"; };
       src = fetchurl {
@@ -29623,6 +30906,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pkg-dir"; };
       src = fetchurl {
@@ -29646,6 +30930,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pkg-up"; };
       src = fetchurl {
@@ -29669,6 +30954,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "platform"; };
       src = fetchurl {
@@ -29692,6 +30978,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "plur"; };
       src = fetchurl {
@@ -29715,6 +31002,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pluralize"; };
       src = fetchurl {
@@ -29738,6 +31026,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "posix-character-classes"; };
       src = fetchurl {
@@ -29761,6 +31050,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "prelude-ls"; };
       src = fetchurl {
@@ -29784,6 +31074,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "prelude-ls"; };
       src = fetchurl {
@@ -29807,6 +31098,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "prettier"; };
       src = fetchurl {
@@ -29830,6 +31122,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pretty-format"; };
       src = fetchurl {
@@ -29853,6 +31146,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pretty-format"; };
       src = fetchurl {
@@ -29876,6 +31170,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pretty-format"; };
       src = fetchurl {
@@ -29899,6 +31194,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pretty-format"; };
       src = fetchurl {
@@ -29922,6 +31218,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "process"; };
       src = fetchurl {
@@ -29945,6 +31242,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "process-nextick-args"; };
       src = fetchurl {
@@ -29968,6 +31266,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "process-on-spawn"; };
       src = fetchurl {
@@ -29991,6 +31290,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "progress"; };
       src = fetchurl {
@@ -30014,6 +31314,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "progress"; };
       src = fetchurl {
@@ -30037,6 +31338,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "promise-inflight"; };
       src = fetchurl {
@@ -30060,6 +31362,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "promise-retry"; };
       src = fetchurl {
@@ -30083,6 +31386,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "prompts"; };
       src = fetchurl {
@@ -30106,6 +31410,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "prop-types"; };
       src = fetchurl {
@@ -30129,6 +31434,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "propagate"; };
       src = fetchurl {
@@ -30152,6 +31458,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "proto-list"; };
       src = fetchurl {
@@ -30175,6 +31482,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "proto-props"; };
       src = fetchurl {
@@ -30198,6 +31506,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "protocols"; };
       src = fetchurl {
@@ -30221,6 +31530,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "proxyquire"; };
       src = fetchurl {
@@ -30244,6 +31554,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pseudomap"; };
       src = fetchurl {
@@ -30267,6 +31578,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "psl"; };
       src = fetchurl {
@@ -30290,6 +31602,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "public-encrypt"; };
       src = fetchurl {
@@ -30313,6 +31626,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pump"; };
       src = fetchurl {
@@ -30336,6 +31650,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pump"; };
       src = fetchurl {
@@ -30359,6 +31674,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "punycode"; };
       src = fetchurl {
@@ -30382,6 +31698,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "punycode"; };
       src = fetchurl {
@@ -30405,6 +31722,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "punycode"; };
       src = fetchurl {
@@ -30428,6 +31746,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "q-i"; };
       src = fetchurl {
@@ -30451,6 +31770,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "qs"; };
       src = fetchurl {
@@ -30474,6 +31794,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "qs"; };
       src = fetchurl {
@@ -30497,6 +31818,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "qs"; };
       src = fetchurl {
@@ -30520,6 +31842,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "qs"; };
       src = fetchurl {
@@ -30543,6 +31866,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "queoid"; };
       src = fetchurl {
@@ -30566,6 +31890,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "query-string"; };
       src = fetchurl {
@@ -30589,6 +31914,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "querystring"; };
       src = fetchurl {
@@ -30612,6 +31938,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "querystring-es3"; };
       src = fetchurl {
@@ -30635,6 +31962,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "queue-microtask"; };
       src = fetchurl {
@@ -30658,6 +31986,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "quick-lru"; };
       src = fetchurl {
@@ -30681,6 +32010,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "r-json"; };
       src = fetchurl {
@@ -30704,6 +32034,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rambda"; };
       src = fetchurl {
@@ -30727,6 +32058,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rambdax"; };
       src = fetchurl {
@@ -30750,6 +32082,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rambdax"; };
       src = fetchurl {
@@ -30773,6 +32106,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ramda"; };
       src = fetchurl {
@@ -30796,6 +32130,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "randombytes"; };
       src = fetchurl {
@@ -30819,6 +32154,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "randomfill"; };
       src = fetchurl {
@@ -30842,6 +32178,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "react"; };
       src = fetchurl {
@@ -30865,6 +32202,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "react-is"; };
       src = fetchurl {
@@ -30888,6 +32226,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "react-is"; };
       src = fetchurl {
@@ -30911,6 +32250,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "read-dir-files"; };
       src = fetchurl {
@@ -30934,6 +32274,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "read-only-stream"; };
       src = fetchurl {
@@ -30957,6 +32298,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "read-pkg"; };
       src = fetchurl {
@@ -30980,6 +32322,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "read-pkg"; };
       src = fetchurl {
@@ -31003,6 +32346,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "read-pkg"; };
       src = fetchurl {
@@ -31026,6 +32370,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "read-pkg-up"; };
       src = fetchurl {
@@ -31049,6 +32394,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "read-pkg-up"; };
       src = fetchurl {
@@ -31072,6 +32418,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "read-pkg-up"; };
       src = fetchurl {
@@ -31095,6 +32442,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "read-pkg-up"; };
       src = fetchurl {
@@ -31118,6 +32466,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "readable-stream"; };
       src = fetchurl {
@@ -31141,6 +32490,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "readable-stream"; };
       src = fetchurl {
@@ -31164,6 +32514,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "readable-stream"; };
       src = fetchurl {
@@ -31187,6 +32538,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "readdirp"; };
       src = fetchurl {
@@ -31210,6 +32562,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "readdirp"; };
       src = fetchurl {
@@ -31233,6 +32586,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "readline2"; };
       src = fetchurl {
@@ -31256,6 +32610,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "real-executable-path"; };
       src = fetchurl {
@@ -31279,6 +32634,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "real-executable-path-callback"; };
       src = fetchurl {
@@ -31302,6 +32658,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "redent"; };
       src = fetchurl {
@@ -31325,6 +32682,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "reflect.getprototypeof"; };
       src = fetchurl {
@@ -31348,6 +32706,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regenerate"; };
       src = fetchurl {
@@ -31371,6 +32730,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regenerate-unicode-properties"; };
       src = fetchurl {
@@ -31394,6 +32754,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regenerator-runtime"; };
       src = fetchurl {
@@ -31417,6 +32778,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regenerator-transform"; };
       src = fetchurl {
@@ -31440,6 +32802,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regex-escape"; };
       src = fetchurl {
@@ -31463,6 +32826,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regex-not"; };
       src = fetchurl {
@@ -31486,6 +32850,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regexp.prototype.flags"; };
       src = fetchurl {
@@ -31509,6 +32874,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regexpp"; };
       src = fetchurl {
@@ -31532,6 +32898,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regexpp"; };
       src = fetchurl {
@@ -31555,6 +32922,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regexpu-core"; };
       src = fetchurl {
@@ -31578,6 +32946,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regjsgen"; };
       src = fetchurl {
@@ -31601,6 +32970,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regjsparser"; };
       src = fetchurl {
@@ -31624,6 +32994,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "release-zalgo"; };
       src = fetchurl {
@@ -31647,6 +33018,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "remove-trailing-separator"; };
       src = fetchurl {
@@ -31670,6 +33042,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "repeat-element"; };
       src = fetchurl {
@@ -31693,6 +33066,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "repeat-string"; };
       src = fetchurl {
@@ -31716,6 +33090,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "request"; };
       src = fetchurl {
@@ -31739,6 +33114,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "request"; };
       src = fetchurl {
@@ -31762,6 +33138,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "request"; };
       src = fetchurl {
@@ -31785,6 +33162,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "require-directory"; };
       src = fetchurl {
@@ -31808,6 +33186,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "require-from-string"; };
       src = fetchurl {
@@ -31831,6 +33210,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "require-inject"; };
       src = fetchurl {
@@ -31854,6 +33234,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "require-main-filename"; };
       src = fetchurl {
@@ -31877,6 +33258,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "require-uncached"; };
       src = fetchurl {
@@ -31900,6 +33282,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "requizzle"; };
       src = fetchurl {
@@ -31923,6 +33306,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "resolve"; };
       src = fetchurl {
@@ -31946,6 +33330,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "resolve"; };
       src = fetchurl {
@@ -31969,6 +33354,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "resolve"; };
       src = fetchurl {
@@ -31992,6 +33378,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "resolve-cwd"; };
       src = fetchurl {
@@ -32015,6 +33402,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "resolve-from"; };
       src = fetchurl {
@@ -32038,6 +33426,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "resolve-from"; };
       src = fetchurl {
@@ -32061,6 +33450,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "resolve-from"; };
       src = fetchurl {
@@ -32084,6 +33474,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "resolve-from"; };
       src = fetchurl {
@@ -32107,6 +33498,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "resolve-from-npm"; };
       src = fetchurl {
@@ -32130,6 +33522,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "resolve-url"; };
       src = fetchurl {
@@ -32153,6 +33546,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "restore-cursor"; };
       src = fetchurl {
@@ -32176,6 +33570,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "restore-cursor"; };
       src = fetchurl {
@@ -32199,6 +33594,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "restore-cursor"; };
       src = fetchurl {
@@ -32222,6 +33618,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "resumer"; };
       src = fetchurl {
@@ -32245,6 +33642,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ret"; };
       src = fetchurl {
@@ -32268,6 +33666,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "retry"; };
       src = fetchurl {
@@ -32291,6 +33690,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "retry"; };
       src = fetchurl {
@@ -32314,6 +33714,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "reusify"; };
       src = fetchurl {
@@ -32337,6 +33738,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rimraf"; };
       src = fetchurl {
@@ -32360,6 +33762,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rimraf"; };
       src = fetchurl {
@@ -32383,6 +33786,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ripemd160"; };
       src = fetchurl {
@@ -32406,6 +33810,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rmfr"; };
       src = fetchurl {
@@ -32429,6 +33834,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rollup"; };
       src = fetchurl {
@@ -32452,6 +33858,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rollup-plugin-cleanup"; };
       src = fetchurl {
@@ -32475,6 +33882,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rollup-plugin-sourcemaps"; };
       src = fetchurl {
@@ -32498,6 +33906,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rollup-plugin-uglify"; };
       src = fetchurl {
@@ -32521,6 +33930,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rollup-pluginutils"; };
       src = fetchurl {
@@ -32544,6 +33954,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rsvp"; };
       src = fetchurl {
@@ -32567,6 +33978,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "run-async"; };
       src = fetchurl {
@@ -32590,6 +34002,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "run-async"; };
       src = fetchurl {
@@ -32613,6 +34026,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "run-parallel"; };
       src = fetchurl {
@@ -32636,6 +34050,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "runforcover"; };
       src = fetchurl {
@@ -32659,6 +34074,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rx-lite"; };
       src = fetchurl {
@@ -32682,6 +34098,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rxjs"; };
       src = fetchurl {
@@ -32705,6 +34122,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "safe-buffer"; };
       src = fetchurl {
@@ -32728,6 +34146,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "safe-buffer"; };
       src = fetchurl {
@@ -32751,6 +34170,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "safe-regex"; };
       src = fetchurl {
@@ -32774,6 +34194,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "safer-buffer"; };
       src = fetchurl {
@@ -32797,6 +34218,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "sane"; };
       src = fetchurl {
@@ -32820,6 +34242,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "saxes"; };
       src = fetchurl {
@@ -32843,6 +34266,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "semver"; };
       src = fetchurl {
@@ -32866,6 +34290,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "semver"; };
       src = fetchurl {
@@ -32889,6 +34314,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "semver"; };
       src = fetchurl {
@@ -32912,6 +34338,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "semver"; };
       src = fetchurl {
@@ -32935,6 +34362,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "semver"; };
       src = fetchurl {
@@ -32958,6 +34386,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "serialize-javascript"; };
       src = fetchurl {
@@ -32981,6 +34410,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "serialize-javascript"; };
       src = fetchurl {
@@ -33004,6 +34434,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "set-blocking"; };
       src = fetchurl {
@@ -33027,6 +34458,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "set-value"; };
       src = fetchurl {
@@ -33050,6 +34482,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "sha.js"; };
       src = fetchurl {
@@ -33073,6 +34506,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "shasum"; };
       src = fetchurl {
@@ -33096,6 +34530,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "shasum-object"; };
       src = fetchurl {
@@ -33119,6 +34554,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "shebang-command"; };
       src = fetchurl {
@@ -33142,6 +34578,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "shebang-command"; };
       src = fetchurl {
@@ -33165,6 +34602,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "shebang-regex"; };
       src = fetchurl {
@@ -33188,6 +34626,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "shebang-regex"; };
       src = fetchurl {
@@ -33211,6 +34650,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "shell-quote"; };
       src = fetchurl {
@@ -33234,6 +34674,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "shelljs"; };
       src = fetchurl {
@@ -33257,6 +34698,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "side-channel"; };
       src = fetchurl {
@@ -33280,6 +34722,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "sigmund"; };
       src = fetchurl {
@@ -33303,6 +34746,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "signal-exit"; };
       src = fetchurl {
@@ -33326,6 +34770,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "signal-exit"; };
       src = fetchurl {
@@ -33349,6 +34794,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "simple-concat"; };
       src = fetchurl {
@@ -33372,6 +34818,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "sisteransi"; };
       src = fetchurl {
@@ -33395,6 +34842,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "skip-regex"; };
       src = fetchurl {
@@ -33418,6 +34866,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "slash"; };
       src = fetchurl {
@@ -33441,6 +34890,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "slash"; };
       src = fetchurl {
@@ -33464,6 +34914,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "slasp"; };
       src = fetchurl {
@@ -33487,6 +34938,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "slice-ansi"; };
       src = fetchurl {
@@ -33510,6 +34962,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "slice-ansi"; };
       src = fetchurl {
@@ -33533,6 +34986,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "slice-ansi"; };
       src = fetchurl {
@@ -33556,6 +35010,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "slide"; };
       src = fetchurl {
@@ -33579,6 +35034,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "smart-buffer"; };
       src = fetchurl {
@@ -33602,6 +35058,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "snapdragon"; };
       src = fetchurl {
@@ -33625,6 +35082,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "snapdragon-node"; };
       src = fetchurl {
@@ -33648,6 +35106,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "snapdragon-util"; };
       src = fetchurl {
@@ -33671,6 +35130,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "sntp"; };
       src = fetchurl {
@@ -33694,6 +35154,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "socks"; };
       src = fetchurl {
@@ -33717,6 +35178,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "socks-proxy-agent"; };
       src = fetchurl {
@@ -33740,6 +35202,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "source-map"; };
       src = fetchurl {
@@ -33763,6 +35226,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "source-map"; };
       src = fetchurl {
@@ -33786,6 +35250,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "source-map"; };
       src = fetchurl {
@@ -33809,6 +35274,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "source-map-resolve"; };
       src = fetchurl {
@@ -33832,6 +35298,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "source-map-resolve"; };
       src = fetchurl {
@@ -33855,6 +35322,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "source-map-support"; };
       src = fetchurl {
@@ -33878,6 +35346,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "source-map-url"; };
       src = fetchurl {
@@ -33901,6 +35370,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "sourcemap-codec"; };
       src = fetchurl {
@@ -33924,6 +35394,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "spawn-wrap"; };
       src = fetchurl {
@@ -33947,6 +35418,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "spawn-wrap"; };
       src = fetchurl {
@@ -33970,6 +35442,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "spdx-correct"; };
       src = fetchurl {
@@ -33993,6 +35466,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "spdx-exceptions"; };
       src = fetchurl {
@@ -34016,6 +35490,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "spdx-expression-parse"; };
       src = fetchurl {
@@ -34039,6 +35514,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "spdx-license-ids"; };
       src = fetchurl {
@@ -34062,6 +35538,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "split"; };
       src = fetchurl {
@@ -34085,6 +35562,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "split-on-first"; };
       src = fetchurl {
@@ -34108,6 +35586,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "split-string"; };
       src = fetchurl {
@@ -34131,6 +35610,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "sprintf-js"; };
       src = fetchurl {
@@ -34154,6 +35634,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "sshpk"; };
       src = fetchurl {
@@ -34177,6 +35658,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ssri"; };
       src = fetchurl {
@@ -34200,6 +35682,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ssri"; };
       src = fetchurl {
@@ -34223,6 +35706,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "stack-utils"; };
       src = fetchurl {
@@ -34246,6 +35730,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "stack-utils"; };
       src = fetchurl {
@@ -34269,6 +35754,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "stack-utils"; };
       src = fetchurl {
@@ -34292,6 +35778,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "standard"; };
       src = fetchurl {
@@ -34315,6 +35802,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "standard"; };
       src = fetchurl {
@@ -34338,6 +35826,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "standard"; };
       src = fetchurl {
@@ -34361,6 +35850,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "standard-engine"; };
       src = fetchurl {
@@ -34384,6 +35874,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "standard-engine"; };
       src = fetchurl {
@@ -34407,6 +35898,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "standard-engine"; };
       src = fetchurl {
@@ -34430,6 +35922,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "static-extend"; };
       src = fetchurl {
@@ -34453,6 +35946,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "stats-median"; };
       src = fetchurl {
@@ -34476,6 +35970,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "stream-browserify"; };
       src = fetchurl {
@@ -34499,6 +35994,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "stream-combiner"; };
       src = fetchurl {
@@ -34522,6 +36018,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "stream-combiner2"; };
       src = fetchurl {
@@ -34545,6 +36042,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "stream-http"; };
       src = fetchurl {
@@ -34568,6 +36066,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "stream-splicer"; };
       src = fetchurl {
@@ -34591,6 +36090,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strict-uri-encode"; };
       src = fetchurl {
@@ -34614,6 +36114,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string-fn"; };
       src = fetchurl {
@@ -34637,6 +36138,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string-length"; };
       src = fetchurl {
@@ -34660,6 +36162,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string-width"; };
       src = fetchurl {
@@ -34683,6 +36186,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string-width"; };
       src = fetchurl {
@@ -34706,6 +36210,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string-width"; };
       src = fetchurl {
@@ -34729,6 +36234,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string-width"; };
       src = fetchurl {
@@ -34752,6 +36258,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string.prototype.matchall"; };
       src = fetchurl {
@@ -34775,6 +36282,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string.prototype.trim"; };
       src = fetchurl {
@@ -34798,6 +36306,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string.prototype.trimend"; };
       src = fetchurl {
@@ -34821,6 +36330,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string.prototype.trimstart"; };
       src = fetchurl {
@@ -34844,6 +36354,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string_decoder"; };
       src = fetchurl {
@@ -34867,6 +36378,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string_decoder"; };
       src = fetchurl {
@@ -34890,6 +36402,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string_decoder"; };
       src = fetchurl {
@@ -34913,6 +36426,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "stringify-object"; };
       src = fetchurl {
@@ -34936,6 +36450,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "stringstream"; };
       src = fetchurl {
@@ -34959,6 +36474,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-ansi"; };
       src = fetchurl {
@@ -34982,6 +36498,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-ansi"; };
       src = fetchurl {
@@ -35005,6 +36522,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-ansi"; };
       src = fetchurl {
@@ -35028,6 +36546,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-ansi"; };
       src = fetchurl {
@@ -35051,6 +36570,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-bom"; };
       src = fetchurl {
@@ -35074,6 +36594,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-bom"; };
       src = fetchurl {
@@ -35097,6 +36618,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-bom"; };
       src = fetchurl {
@@ -35120,6 +36642,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-eof"; };
       src = fetchurl {
@@ -35143,6 +36666,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-final-newline"; };
       src = fetchurl {
@@ -35166,6 +36690,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-indent"; };
       src = fetchurl {
@@ -35189,6 +36714,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-indent"; };
       src = fetchurl {
@@ -35212,6 +36738,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-json-comments"; };
       src = fetchurl {
@@ -35235,6 +36762,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-json-comments"; };
       src = fetchurl {
@@ -35258,6 +36786,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-json-comments"; };
       src = fetchurl {
@@ -35281,6 +36810,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "subarg"; };
       src = fetchurl {
@@ -35304,6 +36834,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "supports-color"; };
       src = fetchurl {
@@ -35327,6 +36858,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "supports-color"; };
       src = fetchurl {
@@ -35350,6 +36882,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "supports-color"; };
       src = fetchurl {
@@ -35373,6 +36906,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "supports-color"; };
       src = fetchurl {
@@ -35396,6 +36930,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "supports-color"; };
       src = fetchurl {
@@ -35419,6 +36954,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "supports-color"; };
       src = fetchurl {
@@ -35442,6 +36978,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "supports-color"; };
       src = fetchurl {
@@ -35465,6 +37002,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "supports-color"; };
       src = fetchurl {
@@ -35488,6 +37026,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "supports-color"; };
       src = fetchurl {
@@ -35511,6 +37050,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "supports-hyperlinks"; };
       src = fetchurl {
@@ -35534,6 +37074,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "symbol-tree"; };
       src = fetchurl {
@@ -35557,6 +37098,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "syntax-error"; };
       src = fetchurl {
@@ -35580,6 +37122,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "table"; };
       src = fetchurl {
@@ -35603,6 +37146,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "table"; };
       src = fetchurl {
@@ -35626,6 +37170,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "table"; };
       src = fetchurl {
@@ -35649,6 +37194,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "taffydb"; };
       src = fetchurl {
@@ -35672,6 +37218,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tap"; };
       src = fetchurl {
@@ -35695,6 +37242,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tap"; };
       src = fetchurl {
@@ -35718,6 +37266,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tap"; };
       src = fetchurl {
@@ -35741,6 +37290,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tap"; };
       src = fetchurl {
@@ -35764,6 +37314,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tap"; };
       src = fetchurl {
@@ -35787,6 +37338,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tap-mocha-reporter"; };
       src = fetchurl {
@@ -35810,6 +37362,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tap-mocha-reporter"; };
       src = fetchurl {
@@ -35833,6 +37386,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tap-parser"; };
       src = fetchurl {
@@ -35856,6 +37410,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tap-parser"; };
       src = fetchurl {
@@ -35879,6 +37434,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tap-yaml"; };
       src = fetchurl {
@@ -35902,6 +37458,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tape"; };
       src = fetchurl {
@@ -35925,6 +37482,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tape"; };
       src = fetchurl {
@@ -35948,6 +37506,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tar"; };
       src = fetchurl {
@@ -35971,6 +37530,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tar"; };
       src = fetchurl {
@@ -35994,6 +37554,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tar-fs"; };
       src = fetchurl {
@@ -36017,6 +37578,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tar-stream"; };
       src = fetchurl {
@@ -36040,6 +37602,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tar-stream"; };
       src = fetchurl {
@@ -36063,6 +37626,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tcompare"; };
       src = fetchurl {
@@ -36086,6 +37650,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tcompare"; };
       src = fetchurl {
@@ -36109,6 +37674,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "terminal-link"; };
       src = fetchurl {
@@ -36132,6 +37698,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "terser"; };
       src = fetchurl {
@@ -36155,6 +37722,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "test-exclude"; };
       src = fetchurl {
@@ -36178,6 +37746,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "test-exclude"; };
       src = fetchurl {
@@ -36201,6 +37770,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tester"; };
       src = fetchurl {
@@ -36224,6 +37794,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "text-table"; };
       src = fetchurl {
@@ -36247,6 +37818,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "throat"; };
       src = fetchurl {
@@ -36270,6 +37842,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "throat"; };
       src = fetchurl {
@@ -36293,6 +37866,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "through"; };
       src = fetchurl {
@@ -36316,6 +37890,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "through2"; };
       src = fetchurl {
@@ -36339,6 +37914,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "timers-browserify"; };
       src = fetchurl {
@@ -36362,6 +37938,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tinycolor2"; };
       src = fetchurl {
@@ -36385,6 +37962,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tinygradient"; };
       src = fetchurl {
@@ -36408,6 +37986,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tmatch"; };
       src = fetchurl {
@@ -36431,6 +38010,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tmp"; };
       src = fetchurl {
@@ -36454,6 +38034,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tmp"; };
       src = fetchurl {
@@ -36477,6 +38058,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tmpl"; };
       src = fetchurl {
@@ -36500,6 +38082,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "to-buffer"; };
       src = fetchurl {
@@ -36523,6 +38106,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "to-fast-properties"; };
       src = fetchurl {
@@ -36546,6 +38130,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "to-object-path"; };
       src = fetchurl {
@@ -36569,6 +38154,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "to-regex"; };
       src = fetchurl {
@@ -36592,6 +38178,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "to-regex-range"; };
       src = fetchurl {
@@ -36615,6 +38202,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "to-regex-range"; };
       src = fetchurl {
@@ -36638,6 +38226,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tough-cookie"; };
       src = fetchurl {
@@ -36661,6 +38250,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tough-cookie"; };
       src = fetchurl {
@@ -36684,6 +38274,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tough-cookie"; };
       src = fetchurl {
@@ -36707,6 +38298,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tr46"; };
       src = fetchurl {
@@ -36730,6 +38322,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "traverse"; };
       src = fetchurl {
@@ -36753,6 +38346,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "traverse"; };
       src = fetchurl {
@@ -36776,6 +38370,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "trim-newlines"; };
       src = fetchurl {
@@ -36799,6 +38394,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "trivial-deferred"; };
       src = fetchurl {
@@ -36822,6 +38418,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "try-async"; };
       src = fetchurl {
@@ -36845,6 +38442,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ts-jest"; };
       src = fetchurl {
@@ -36868,6 +38466,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ts-node"; };
       src = fetchurl {
@@ -36891,6 +38490,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ts-toolbelt"; };
       src = fetchurl {
@@ -36914,6 +38514,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tsconfig-paths"; };
       src = fetchurl {
@@ -36937,6 +38538,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tsd"; };
       src = fetchurl {
@@ -36960,6 +38562,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tslib"; };
       src = fetchurl {
@@ -36983,6 +38586,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tslint"; };
       src = fetchurl {
@@ -37006,6 +38610,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tsutils"; };
       src = fetchurl {
@@ -37029,6 +38634,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tsutils"; };
       src = fetchurl {
@@ -37052,6 +38658,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tty-browserify"; };
       src = fetchurl {
@@ -37075,6 +38682,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tunnel-agent"; };
       src = fetchurl {
@@ -37098,6 +38706,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tunnel-agent"; };
       src = fetchurl {
@@ -37121,6 +38730,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tweetnacl"; };
       src = fetchurl {
@@ -37144,6 +38754,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "type"; };
       src = fetchurl {
@@ -37167,6 +38778,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "type"; };
       src = fetchurl {
@@ -37190,6 +38802,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "type-check"; };
       src = fetchurl {
@@ -37213,6 +38826,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "type-check"; };
       src = fetchurl {
@@ -37236,6 +38850,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "type-detect"; };
       src = fetchurl {
@@ -37259,6 +38874,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "type-fest"; };
       src = fetchurl {
@@ -37282,6 +38898,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "type-fest"; };
       src = fetchurl {
@@ -37305,6 +38922,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "type-fest"; };
       src = fetchurl {
@@ -37328,6 +38946,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "type-fest"; };
       src = fetchurl {
@@ -37351,6 +38970,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "type-fest"; };
       src = fetchurl {
@@ -37374,6 +38994,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "type-fest"; };
       src = fetchurl {
@@ -37397,6 +39018,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "typedarray"; };
       src = fetchurl {
@@ -37420,6 +39042,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "typedarray-to-buffer"; };
       src = fetchurl {
@@ -37443,6 +39066,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "typescript"; };
       src = fetchurl {
@@ -37466,6 +39090,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "typescript"; };
       src = fetchurl {
@@ -37489,6 +39114,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "typescript"; };
       src = fetchurl {
@@ -37512,6 +39138,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "typpy"; };
       src = fetchurl {
@@ -37535,6 +39162,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "uc-first-array"; };
       src = fetchurl {
@@ -37558,6 +39186,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "uc.micro"; };
       src = fetchurl {
@@ -37581,6 +39210,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ucfirst"; };
       src = fetchurl {
@@ -37604,6 +39234,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "uglify-js"; };
       src = fetchurl {
@@ -37627,6 +39258,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "uglify-js"; };
       src = fetchurl {
@@ -37650,6 +39282,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "uid-number"; };
       src = fetchurl {
@@ -37673,6 +39306,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ul"; };
       src = fetchurl {
@@ -37696,6 +39330,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "umd"; };
       src = fetchurl {
@@ -37719,6 +39354,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "unbox-primitive"; };
       src = fetchurl {
@@ -37742,6 +39378,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "undeclared-identifiers"; };
       src = fetchurl {
@@ -37765,6 +39402,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "underscore"; };
       src = fetchurl {
@@ -37788,6 +39426,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "unicode-canonical-property-names-ecmascript"; };
       src = fetchurl {
@@ -37811,6 +39450,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "unicode-length"; };
       src = fetchurl {
@@ -37834,6 +39474,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "unicode-length"; };
       src = fetchurl {
@@ -37857,6 +39498,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "unicode-match-property-ecmascript"; };
       src = fetchurl {
@@ -37880,6 +39522,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "unicode-match-property-value-ecmascript"; };
       src = fetchurl {
@@ -37903,6 +39546,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "unicode-property-aliases-ecmascript"; };
       src = fetchurl {
@@ -37926,6 +39570,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "union-value"; };
       src = fetchurl {
@@ -37949,6 +39594,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "uniq"; };
       src = fetchurl {
@@ -37972,6 +39618,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "unique-filename"; };
       src = fetchurl {
@@ -37995,6 +39642,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "unique-slug"; };
       src = fetchurl {
@@ -38018,6 +39666,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "universalify"; };
       src = fetchurl {
@@ -38041,6 +39690,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "universalify"; };
       src = fetchurl {
@@ -38064,6 +39714,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "unset-value"; };
       src = fetchurl {
@@ -38087,6 +39738,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "uri-js"; };
       src = fetchurl {
@@ -38110,6 +39762,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "urix"; };
       src = fetchurl {
@@ -38133,6 +39786,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "url"; };
       src = fetchurl {
@@ -38156,6 +39810,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "urlgrey"; };
       src = fetchurl {
@@ -38179,6 +39834,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "use"; };
       src = fetchurl {
@@ -38202,6 +39858,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "user-home"; };
       src = fetchurl {
@@ -38225,6 +39882,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "util"; };
       src = fetchurl {
@@ -38248,6 +39906,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "util"; };
       src = fetchurl {
@@ -38271,6 +39930,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "util-deprecate"; };
       src = fetchurl {
@@ -38294,6 +39954,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "util.promisify"; };
       src = fetchurl {
@@ -38317,6 +39978,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "uuid"; };
       src = fetchurl {
@@ -38340,6 +40002,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "v8-compile-cache"; };
       src = fetchurl {
@@ -38363,6 +40026,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "v8-to-istanbul"; };
       src = fetchurl {
@@ -38386,6 +40050,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "v8-to-istanbul"; };
       src = fetchurl {
@@ -38409,6 +40074,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "validate-glob-opts"; };
       src = fetchurl {
@@ -38432,6 +40098,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "validate-npm-package-license"; };
       src = fetchurl {
@@ -38455,6 +40122,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "validate-npm-package-name"; };
       src = fetchurl {
@@ -38478,6 +40146,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "verror"; };
       src = fetchurl {
@@ -38501,6 +40170,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "vlq"; };
       src = fetchurl {
@@ -38524,6 +40194,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "vm-browserify"; };
       src = fetchurl {
@@ -38547,6 +40218,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "w3c-hr-time"; };
       src = fetchurl {
@@ -38570,6 +40242,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "w3c-xmlserializer"; };
       src = fetchurl {
@@ -38593,6 +40266,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "walker"; };
       src = fetchurl {
@@ -38616,6 +40290,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "webidl-conversions"; };
       src = fetchurl {
@@ -38639,6 +40314,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "webidl-conversions"; };
       src = fetchurl {
@@ -38662,6 +40338,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "whatwg-encoding"; };
       src = fetchurl {
@@ -38685,6 +40362,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "whatwg-mimetype"; };
       src = fetchurl {
@@ -38708,6 +40386,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "whatwg-url"; };
       src = fetchurl {
@@ -38731,6 +40410,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "which"; };
       src = fetchurl {
@@ -38754,6 +40434,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "which"; };
       src = fetchurl {
@@ -38777,6 +40458,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "which-boxed-primitive"; };
       src = fetchurl {
@@ -38800,6 +40482,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "which-builtin-type"; };
       src = fetchurl {
@@ -38823,6 +40506,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "which-collection"; };
       src = fetchurl {
@@ -38846,6 +40530,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "which-module"; };
       src = fetchurl {
@@ -38869,6 +40554,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "which-typed-array"; };
       src = fetchurl {
@@ -38892,6 +40578,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "wide-align"; };
       src = fetchurl {
@@ -38915,6 +40602,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "widest-line"; };
       src = fetchurl {
@@ -38938,6 +40626,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "win-user-installed-npm-cli-path"; };
       src = fetchurl {
@@ -38961,6 +40650,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "window-size"; };
       src = fetchurl {
@@ -38984,6 +40674,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "window-size"; };
       src = fetchurl {
@@ -39007,6 +40698,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "word-wrap"; };
       src = fetchurl {
@@ -39030,6 +40722,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "wordwrap"; };
       src = fetchurl {
@@ -39053,6 +40746,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "wordwrap"; };
       src = fetchurl {
@@ -39076,6 +40770,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "workerpool"; };
       src = fetchurl {
@@ -39099,6 +40794,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "wrap-ansi"; };
       src = fetchurl {
@@ -39122,6 +40818,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "wrap-ansi"; };
       src = fetchurl {
@@ -39145,6 +40842,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "wrap-ansi"; };
       src = fetchurl {
@@ -39168,6 +40866,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "wrap-ansi"; };
       src = fetchurl {
@@ -39191,6 +40890,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "wrappy"; };
       src = fetchurl {
@@ -39214,6 +40914,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "write-file-atomic"; };
       src = fetchurl {
@@ -39237,6 +40938,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "write-file-atomic"; };
       src = fetchurl {
@@ -39260,6 +40962,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ws"; };
       src = fetchurl {
@@ -39283,6 +40986,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "xdg-basedir"; };
       src = fetchurl {
@@ -39306,6 +41010,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "xml-name-validator"; };
       src = fetchurl {
@@ -39329,6 +41034,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "xmlchars"; };
       src = fetchurl {
@@ -39352,6 +41058,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "xmlcreate"; };
       src = fetchurl {
@@ -39375,6 +41082,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "xtend"; };
       src = fetchurl {
@@ -39398,6 +41106,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "y18n"; };
       src = fetchurl {
@@ -39421,6 +41130,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "y18n"; };
       src = fetchurl {
@@ -39444,6 +41154,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "y18n"; };
       src = fetchurl {
@@ -39467,6 +41178,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yallist"; };
       src = fetchurl {
@@ -39490,6 +41202,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yallist"; };
       src = fetchurl {
@@ -39513,6 +41226,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yaml"; };
       src = fetchurl {
@@ -39536,6 +41250,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yamlish"; };
       src = fetchurl {
@@ -39559,6 +41274,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yapool"; };
       src = fetchurl {
@@ -39582,6 +41298,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yargs"; };
       src = fetchurl {
@@ -39605,6 +41322,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yargs"; };
       src = fetchurl {
@@ -39628,6 +41346,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yargs"; };
       src = fetchurl {
@@ -39651,6 +41370,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yargs"; };
       src = fetchurl {
@@ -39674,6 +41394,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yargs-parser"; };
       src = fetchurl {
@@ -39697,6 +41418,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yargs-parser"; };
       src = fetchurl {
@@ -39720,6 +41442,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yargs-parser"; };
       src = fetchurl {
@@ -39743,6 +41466,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yargs-parser"; };
       src = fetchurl {
@@ -39766,6 +41490,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yargs-parser"; };
       src = fetchurl {
@@ -39789,6 +41514,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yargs-unparser"; };
       src = fetchurl {
@@ -39812,6 +41538,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yargs-unparser"; };
       src = fetchurl {
@@ -39835,6 +41562,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yn"; };
       src = fetchurl {
@@ -39858,6 +41586,7 @@ let
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               '';
+      configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yocto-queue"; };
       src = fetchurl {
@@ -40287,7 +42016,7 @@ let
         (sources."duplexer2-0.1.4" {
           dependencies = [];
         })
-        (sources."electron-to-chromium-1.3.769" {
+        (sources."electron-to-chromium-1.3.770" {
           dependencies = [];
         })
         (sources."elliptic-6.5.4" {
@@ -40472,7 +42201,7 @@ let
         (sources."flat-cache-3.0.4" {
           dependencies = [];
         })
-        (sources."flatted-3.2.0" {
+        (sources."flatted-3.2.1" {
           dependencies = [];
         })
         (sources."for-each-0.3.3" {
@@ -41493,7 +43222,7 @@ let
         (sources."flat-cache-3.0.4" {
           dependencies = [];
         })
-        (sources."flatted-3.2.0" {
+        (sources."flatted-3.2.1" {
           dependencies = [];
         })
         (sources."fs.realpath-1.0.0" {
@@ -42343,7 +44072,7 @@ let
         (sources."@nodelib/fs.stat-2.0.5" {
           dependencies = [];
         })
-        (sources."@nodelib/fs.walk-1.2.7" {
+        (sources."@nodelib/fs.walk-1.2.8" {
           dependencies = [];
         })
         (sources."@sinonjs/commons-1.8.3" {
@@ -42367,7 +44096,7 @@ let
         (sources."@types/babel__template-7.4.1" {
           dependencies = [];
         })
-        (sources."@types/babel__traverse-7.14.1" {
+        (sources."@types/babel__traverse-7.14.2" {
           dependencies = [];
         })
         (sources."@types/eslint-7.2.14" {
@@ -42397,13 +44126,13 @@ let
         (sources."@types/minimist-1.2.2" {
           dependencies = [];
         })
-        (sources."@types/node-14.17.4" {
+        (sources."@types/node-14.17.5" {
           dependencies = [];
         })
-        (sources."@types/normalize-package-data-2.4.0" {
+        (sources."@types/normalize-package-data-2.4.1" {
           dependencies = [];
         })
-        (sources."@types/prettier-2.3.1" {
+        (sources."@types/prettier-2.3.2" {
           dependencies = [];
         })
         (sources."@types/stack-utils-2.0.1" {
@@ -42669,7 +44398,7 @@ let
             })
           ];
         })
-        (sources."electron-to-chromium-1.3.769" {
+        (sources."electron-to-chromium-1.3.770" {
           dependencies = [];
         })
         (sources."emittery-0.8.1" {
@@ -42892,7 +44621,7 @@ let
         (sources."fast-deep-equal-3.1.3" {
           dependencies = [];
         })
-        (sources."fast-glob-3.2.6" {
+        (sources."fast-glob-3.2.7" {
           dependencies = [];
         })
         (sources."fast-json-stable-stringify-2.1.0" {
@@ -42919,7 +44648,7 @@ let
         (sources."flat-cache-3.0.4" {
           dependencies = [];
         })
-        (sources."flatted-3.2.0" {
+        (sources."flatted-3.2.1" {
           dependencies = [];
         })
         (sources."form-data-3.0.1" {
@@ -42958,7 +44687,7 @@ let
         (sources."glob-parent-5.1.2" {
           dependencies = [];
         })
-        (sources."globals-13.9.0" {
+        (sources."globals-13.10.0" {
           dependencies = [];
         })
         (sources."globby-11.0.4" {
@@ -44662,7 +46391,7 @@ let
         (sources."ecc-jsbn-0.1.2" {
           dependencies = [];
         })
-        (sources."electron-to-chromium-1.3.769" {
+        (sources."electron-to-chromium-1.3.770" {
           dependencies = [];
         })
         (sources."emoji-regex-8.0.0" {
@@ -44882,7 +46611,7 @@ let
         (sources."flat-cache-3.0.4" {
           dependencies = [];
         })
-        (sources."flatted-3.2.0" {
+        (sources."flatted-3.2.1" {
           dependencies = [];
         })
         (sources."foreground-child-2.0.0" {
@@ -45938,7 +47667,7 @@ let
         (sources."get-intrinsic-1.1.1" {
           dependencies = [];
         })
-        (sources."git-up-4.0.2" {
+        (sources."git-up-4.0.5" {
           dependencies = [];
         })
         (sources."glob-7.1.6" {
@@ -46104,7 +47833,7 @@ let
         (sources."normalize-path-3.0.0" {
           dependencies = [];
         })
-        (sources."normalize-url-4.5.1" {
+        (sources."normalize-url-6.1.0" {
           dependencies = [];
         })
         (sources."object-inspect-1.10.3" {
@@ -46134,7 +47863,7 @@ let
         (sources."parse-path-4.0.3" {
           dependencies = [];
         })
-        (sources."parse-url-5.0.7" {
+        (sources."parse-url-6.0.0" {
           dependencies = [];
         })
         (sources."path-exists-4.0.0" {
@@ -46824,7 +48553,7 @@ let
         (sources."ecc-jsbn-0.1.2" {
           dependencies = [];
         })
-        (sources."electron-to-chromium-1.3.769" {
+        (sources."electron-to-chromium-1.3.770" {
           dependencies = [];
         })
         (sources."emoji-regex-8.0.0" {
@@ -48489,7 +50218,7 @@ let
         (sources."flat-cache-3.0.4" {
           dependencies = [];
         })
-        (sources."flatted-3.2.0" {
+        (sources."flatted-3.2.1" {
           dependencies = [];
         })
         (sources."foreground-child-1.5.6" {
@@ -49372,7 +51101,7 @@ let
         })
         (sources."@definitelytyped/utils-0.0.85" {
           dependencies = [
-            (sources."@types/node-14.17.4" {
+            (sources."@types/node-14.17.5" {
               dependencies = [];
             })
             (sources."fs-extra-8.1.0" {
@@ -49570,7 +51299,7 @@ let
         (sources."@types/babel__template-7.4.1" {
           dependencies = [];
         })
-        (sources."@types/babel__traverse-7.14.1" {
+        (sources."@types/babel__traverse-7.14.2" {
           dependencies = [];
         })
         (sources."@types/estree-0.0.39" {
@@ -49591,16 +51320,16 @@ let
         (sources."@types/jest-26.0.20" {
           dependencies = [];
         })
-        (sources."@types/node-16.0.0" {
+        (sources."@types/node-16.0.1" {
           dependencies = [];
         })
-        (sources."@types/normalize-package-data-2.4.0" {
+        (sources."@types/normalize-package-data-2.4.1" {
           dependencies = [];
         })
         (sources."@types/parsimmon-1.10.6" {
           dependencies = [];
         })
-        (sources."@types/prettier-2.3.1" {
+        (sources."@types/prettier-2.3.2" {
           dependencies = [];
         })
         (sources."@types/ramda-0.27.38" {
@@ -50112,7 +51841,7 @@ let
         (sources."ecc-jsbn-0.1.2" {
           dependencies = [];
         })
-        (sources."electron-to-chromium-1.3.769" {
+        (sources."electron-to-chromium-1.3.770" {
           dependencies = [];
         })
         (sources."emittery-0.7.2" {
@@ -52330,10 +54059,10 @@ let
         (sources."findit-2.0.0" {
           dependencies = [];
         })
-        (sources."flow-parser-0.154.0" {
+        (sources."flow-parser-0.155.0" {
           dependencies = [];
         })
-        (sources."flow-remove-types-2.154.0" {
+        (sources."flow-remove-types-2.155.0" {
           dependencies = [];
         })
         (sources."foreground-child-1.5.6" {
@@ -53214,7 +54943,7 @@ let
         (sources."flat-cache-3.0.4" {
           dependencies = [];
         })
-        (sources."flatted-3.2.0" {
+        (sources."flatted-3.2.1" {
           dependencies = [];
         })
         (sources."for-each-0.3.3" {
@@ -54164,13 +55893,13 @@ let
             })
           ];
         })
-        (sources."flatted-3.2.0" {
+        (sources."flatted-3.2.1" {
           dependencies = [];
         })
-        (sources."flow-parser-0.154.0" {
+        (sources."flow-parser-0.155.0" {
           dependencies = [];
         })
-        (sources."flow-remove-types-2.154.0" {
+        (sources."flow-remove-types-2.155.0" {
           dependencies = [];
         })
         (sources."foreground-child-1.5.6" {
@@ -54231,7 +55960,7 @@ let
         (sources."glob-parent-5.1.2" {
           dependencies = [];
         })
-        (sources."globals-13.9.0" {
+        (sources."globals-13.10.0" {
           dependencies = [];
         })
         (sources."graceful-fs-4.2.6" {

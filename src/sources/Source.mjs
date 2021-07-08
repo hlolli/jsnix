@@ -150,6 +150,7 @@ export class Source extends nijs.NixASTNode {
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
               ''`),
+              configurePhase: "true",
               buildPhase: "true", // dont build transitive deps
               installPhase: new nijs.NixValue(
                 `transitiveDepInstallPhase { inherit dependencies; pkgName = "${this.config.name}"; }`

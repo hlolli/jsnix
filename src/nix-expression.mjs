@@ -56,6 +56,16 @@ const mkPhase = new nijs.NixValue(`pkgs_: {phase, pkgName}:
        else
          (packageNix.dependencies."\${pkgName}"."\${phase}" pkgs_))`);
 
+const mkExtraBuildInputs = new nijs.NixValue(`pkgs_: {pkgName}:
+     lib.optionals ((builtins.hasAttr "\${pkgName}" packageNix.dependencies) &&
+                    (builtins.typeOf packageNix.dependencies."\${pkgName}" == "set") &&
+                    (builtins.hasAttr "extraBuildInputs" packageNix.dependencies."\${pkgName}"))
+      (if builtins.typeOf packageNix.dependencies."\${pkgName}"."extraBuildInputs" == "list"
+       then
+         packageNix.dependencies."\${pkgName}"."extraBuildInputs"
+       else
+         (packageNix.dependencies."\${pkgName}"."extraBuildInputs" pkgs_))`);
+
 const toPackageJson = new nijs.NixValue(`{ jsnixDeps ? {} }:
     let
       packageNixDeps = if (builtins.hasAttr "dependencies" packageNix)
@@ -149,6 +159,7 @@ class OutputExpression extends nijs.NixASTNode {
           jsnixDrvOverrides,
           toPackageJson,
           mkPhase,
+          mkExtraBuildInputs,
           sources: this.sourcesCache,
         },
       }),

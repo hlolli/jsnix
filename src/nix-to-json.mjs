@@ -1,4 +1,5 @@
 import fs from "fs";
+import child_process from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
 import Parser from "../wasm/tree-sitter.cjs";
@@ -30,7 +31,7 @@ function treeToJson(treeCursor, context = { out: {} }, treePath = []) {
 
   switch (nodeType) {
     case "ERROR": {
-      throw new SyntaxError(treeCursor.nodeText + "\n");
+      throw new SyntaxError("In package.nix: " + treeCursor.nodeText + "\n");
       process.exit(1);
       break;
     }
@@ -54,9 +55,14 @@ function treeToJson(treeCursor, context = { out: {} }, treePath = []) {
       // } else
       break;
     }
+    case "spath":
     case "}": {
       if (treeCursor.gotoParent() && treeCursor.gotoNextSibling()) {
-        return treeToJson(treeCursor, context, treePath);
+        return treeToJson(
+          treeCursor,
+          context,
+          nodeType === "spath" ? R.dropLast(1, treePath) : treePath
+        );
       }
       break;
     }
@@ -95,6 +101,7 @@ function treeToJson(treeCursor, context = { out: {} }, treePath = []) {
       }
       break;
     }
+
     case "string":
     case "indented_string": {
       const tp = R.pipe(
@@ -137,6 +144,18 @@ function treeToJson(treeCursor, context = { out: {} }, treePath = []) {
   return context.out;
 }
 
+async function evalNixExpr(pathTo, outsJson = false) {
+  const suffix = outsJson ? " --json" : "";
+  return new Promise(async (resolve) => {
+    child_process.exec(
+      `nix eval -f "${pathTo}"${suffix}`,
+      (err, stdout, stderr) => {
+        resolve((stdout || "").replace("<LAMBDA>", '"<LAMBDA>"'));
+      }
+    );
+  });
+}
+
 async function initParser() {
   await Parser.init();
   const parser = new Parser();
@@ -174,9 +193,11 @@ export async function fromFile(userPath) {
     throw new Error(`File not found ${srcPath.toString()}`);
     process.exit(1);
   }
-  const src = fs.readFileSync(srcPath).toString();
+  // const srcRaw = fs.readFileSync(srcPath).toString();
+  const src = await evalNixExpr(srcPath);
   const tree = parser.parse(src);
   const json = treeToJson(tree.rootNode.walk());
+
   return json;
 }
 

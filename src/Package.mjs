@@ -218,7 +218,9 @@ export class Package extends nijs.NixASTNode {
 
     const ast = this.source.toNixAST();
     // ast.dependencies = this.generateDependencyAST();
-    ast.buildInputs = [new nijs.NixExpression("nodejs")];
+    ast.buildInputs = new nijs.NixValue(
+      `[ nodejs ] ++ (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { pkgName = "${this.source.config.name}"; })`
+    );
     ast.buildPhase = new nijs.NixValue(`''
       runHook preBuild
       \${copyNodeModules { inherit dependencies; }}
