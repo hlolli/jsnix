@@ -11,9 +11,9 @@ rec {
     email = "hlolli@gmail.com";
   };
   bin = {
-    node2nix = "bin/jsnix.js";
+    jsnix = "bin/jsnix";
   };
-  main = "./src/jsnix.js";
+  main = "./src/jsnix.mjs";
   dependencies = {
     base64-js = "1.5.x";
     cachedir = { version = "2.3.x"; };
@@ -32,26 +32,15 @@ rec {
     tar = "6.1.x";
     web-tree-sitter = "0.19.4";
   };
-  packageDerivation = { lib, gitignoreSource, jsnixDeps, ... }@pkgs: {
+  packageDerivation = { lib, jsnixDeps, ... }@pkgs: {
     name = "jsnix";
-    src = gitignoreSource ./.;
     nativeBuildInputs = with pkgs; [
       makeWrapper
     ];
     dontStrip = true;
-    unpackPhase = "cp -r $src jsnix && cd jsnix";
-    buildPhase = ''
-      ${pkgs.copyNodeModules {
-        dependencies = builtins.map
-          (dep: jsnixDeps."${dep}")
-          (builtins.attrNames dependencies);
-      }}
-    '';
-    installPhase = ''
-      mkdir -p $out/lib/node_modules/jsnix
-      mkdir -p $out/bin
-      cp -rf ./ $out/lib/node_modules/jsnix
 
+    installPhase = ''
+      mkdir -p $out/bin
       makeWrapper '${pkgs.nodejs}/bin/node' "$out/bin/jsnix" \
         --add-flags "$out/lib/node_modules/jsnix/bin/jsnix.mjs"
     '';

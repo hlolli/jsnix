@@ -207,7 +207,8 @@ const flattenScript = new nijs.NixValue(`''
             if [[ ! -z "$(echo $package | egrep '.*/node_modules/([^@][^/]+)$')" ]]
             then
               if [[  -w "$(dirname -- $(dirname --  "$(dirname -- $package)"))" && \\
-                   ! -w "$(dirname --  "$(dirname -- $package)")" ]]
+                   ! -w "$(dirname --  "$(dirname -- $package)")" && \\
+                     -d "$(dirname -- "$(dirname -- $package)")" ]]
               then
                 mkdir -p $TMPDIR/node_modules
                 mv "$(dirname -- "$(dirname -- $package)")" $TMPDIR/node_modules
@@ -220,7 +221,6 @@ const flattenScript = new nijs.NixValue(`''
                   mv "$(dirname -- "$package")" $TMPDIR/$pkg
                   mkdir -p "$(dirname -- "$package")"
                   mv $TMPDIR/$pkg/* "$(dirname -- "$package")"
-                  mv $TMPDIR/$pkg/.* "$(dirname -- "$package")"
                   rm -rf $TMPDIR/$pkg
                 fi
               fi
@@ -237,22 +237,24 @@ const flattenScript = new nijs.NixValue(`''
               fi
             fi
           if [[ ! -z "$(echo $package | egrep '.*/node_modules/([^@][^/]+$)')" ]]; then
-            if [[ ! -w "$(dirname -- $(dirname -- "$package"))" && -w "$(dirname -- $(dirname --  "$(dirname -- $package)"))" ]]; then
+            if [[ ! -w "$(dirname -- $(dirname -- "$package"))" && \\
+                    -w "$(dirname -- $(dirname --  "$(dirname -- $package)"))" && \\
+                    -d "$(dirname -- $(dirname -- "$package"))" ]]; then
                 mkdir -p $TMPDIR/node_modules
                 mv "$(dirname -- $(dirname -- "$package"))" $TMPDIR/node_modules
                 mkdir -p "$(dirname -- $(dirname -- "$package"))"
                 mv $TMPDIR/node_modules/* "$(dirname -- $(dirname -- "$package"))"
                 rm -rf $TMPDIR/node_modules
              fi
-
               if [[ ! -w "$(dirname -- $package)" && -w "$(dirname -- $(dirname -- "$package"))" ]]; then
                 mkdir -p $TMPDIR/node_modules
                 mv "$(dirname -- "$package")" $TMPDIR/node_modules
                 mkdir -p "$(dirname -- "$package")"
                 mv $TMPDIR/node_modules/* "$(dirname -- "$package")"
+                find $TMPDIR -type l -delete
                 rm -rf $TMPDIR/node_modules
               fi
-              if [[ ! -d "$(pwd)/node_modules/$(basename -- "$package")" ]]; then
+              if [[ ! -d "$(pwd)/node_modules/$(basename -- "$package")" && -d "$package" ]]; then
                 if [[ ! -L "$(dirname $package)" ]]; then
                   mv "$package" "$(pwd)/node_modules"
                 else
@@ -266,15 +268,14 @@ const flattenScript = new nijs.NixValue(`''
                   fi
                 fi
               else
-                if [[ ! -L "$(dirname $package)" ]]; then
-                  rm -rf "$package"
-                else
-                  echo "$package" could not be deduped
-                fi
+                set +e
+                rm -rf "$package" 1>/dev/null 2>/dev/null || true
+                set -e
               fi
             fi
           fi
         done
+        find $TMPDIR -type l -delete
         rm -rf $TMPDIR
 ''`);
 
