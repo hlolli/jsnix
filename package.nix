@@ -40,8 +40,11 @@ rec {
     dontStrip = true;
 
     installPhase = ''
+      mkdir -p $out/lib/node_modules/jsnix
+      cp -rfT "$(pwd)" $out/lib/node_modules/jsnix
       mkdir -p $out/bin
       makeWrapper '${pkgs.nodejs}/bin/node' "$out/bin/jsnix" \
+        --prefix NODE_PATH : "$out/lib/node_modules/jsnix/node_modules" \
         --add-flags "$out/lib/node_modules/jsnix/bin/jsnix.mjs"
     '';
   };
