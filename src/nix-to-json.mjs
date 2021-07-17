@@ -102,19 +102,31 @@ function treeToJson(treeCursor, context = { out: {} }, treePath = []) {
       break;
     }
 
+    case "identifier":
     case "string":
+    case "list":
     case "indented_string": {
       const tp = R.pipe(
         R.when(
           () => context.isBinding,
-          (c) => R.append(JSON.parse(treeCursor.nodeText), c)
+          (c) =>
+            R.append(
+              JSON.parse(
+                nodeType === "list"
+                  ? `"'${treeCursor.nodeText}'"`
+                  : treeCursor.nodeText
+              ),
+              c
+            )
         )
       )(treePath);
       const ctx = R.pipe(
         R.when(R.prop("isAssigning"), (c) =>
           R.assocPath(
             ["out"].concat(tp),
-            nodeType === "indented_string"
+            nodeType === "list"
+              ? `"'${treeCursor.nodeText}'"` // FIXME
+              : nodeType === "indented_string"
               ? treeCursor.nodeText.replace(/''/g, "").replace(/\n/g, "").trim()
               : JSON.parse(treeCursor.nodeText),
             c
@@ -197,7 +209,8 @@ export async function fromFile(userPath) {
   const src = await evalNixExpr(srcPath);
   const tree = parser.parse(src);
   const json = treeToJson(tree.rootNode.walk());
-
+  // console.log(json);
+  // process.exit(1);
   return json;
 }
 

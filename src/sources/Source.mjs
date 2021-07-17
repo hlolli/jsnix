@@ -137,10 +137,12 @@ export class Source extends nijs.NixASTNode {
               name: pkgName, // Escape characters from scoped package names that aren't allowed
               packageName: this.config.name,
               version: this.config.version,
+              extraDependencies: [],
               buildInputs: [
                 new nijs.NixExpression("jq"),
                 new nijs.NixExpression("nodejs"),
               ],
+              NODE_OPTIONS: new nijs.NixValue('"--preserve-symlinks"'),
               unpackPhase: new nijs.NixValue(
                 `transitiveDepUnpackPhase { inherit dependencies; pkgName = "${this.config.name}"; }`
               ),
@@ -149,6 +151,19 @@ export class Source extends nijs.NixASTNode {
                 if [ -f "package.json" ]; then
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi
+                ${
+                  this.config.name.startsWith("node-gyp")
+                    ? `if [ -f "bin/node-gyp.js" ]; then
+                       substituteInPlace bin/node-gyp.js \\
+                         --replace 'open(output_filename' 'open(re.sub(r".*/nix/store/", "/nix/store/", output_filename)' || true
+                       fi
+                       if [ -f "gyp/pylib/gyp/generator/make.py" ]; then
+                       substituteInPlace "gyp/pylib/gyp/generator/make.py" \\
+                         --replace 'open(output_filename' 'open(re.sub(r".*/nix/store/", "/nix/store/", output_filename)' || true
+                       fi
+                    `
+                    : ""
+                }
               ''`),
               configurePhase: "true",
               buildPhase: "true", // dont build transitive deps

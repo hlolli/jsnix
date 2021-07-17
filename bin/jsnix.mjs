@@ -15,6 +15,12 @@ install.usage("[path]");
 
 install.argument("[path]");
 
+install.option("--no-cache", "ignore the cache and fetch every single package");
+
+install.option("--cache <mode>", "verify", "always");
+
+install.option("--revalidate-cache", "revalidate the cache if old");
+
 install.description(
   "Resolves the dependencies in package.nix and (re)generates package-lock.nix"
 );
@@ -22,13 +28,14 @@ install.description(
 install.alias("i");
 
 install.action(
-  async (packageNixPath = "./package.nix") =>
-    // console.log(await nix2json.fromFile(packageNixPath)) ||
+  async (packageNixPath = "./package.nix", opt) =>
+    // console.log(opt) ||
     // process.exit(1) ||
     await jsnix({
       ...(await nix2json.fromFile(packageNixPath)),
       outputDir: path.dirname(path.resolve("./", packageNixPath)),
       baseDir: path.dirname(path.resolve("./", packageNixPath)),
+      opt,
     })
 );
 

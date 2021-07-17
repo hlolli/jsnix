@@ -22,13 +22,18 @@ export class Package extends nijs.NixASTNode {
     super();
     this.jsnixConfig = jsnixConfig;
     this.parent = parent;
-    const compat = resolveCompat({ name, versionSpec });
+    const compat = resolveCompat({
+      name,
+      versionSpec,
+      pkgJsonResolutions: jsnixConfig.resolutions,
+    });
     this.name = compat.name;
     this.versionSpec = compat.versionSpec;
     this.sourcesCache = sourcesCache;
 
     this.isTransitive = isTransitive;
     const newSrc = new Source(baseDir, compat.name, compat.versionSpec);
+    newSrc.jsnixConfig = jsnixConfig;
 
     this.source = newSrc.constructSource.call(
       newSrc,
@@ -95,13 +100,26 @@ export class Package extends nijs.NixASTNode {
     return false;
   }
 
+  getDepth(pkg) {
+    let depth = 0;
+    while (pkg.parent) {
+      depth += 1;
+      pkg = pkg.parent;
+    }
+    return depth;
+  }
+
   bundleDependency(dependencyName, pkg) {
     this.requiredDependencies[dependencyName] = pkg;
+
     // flatten
-    if (
+    if (this.parent && dependencyName === this.parent.name) {
+      return undefined;
+    } else if (
       this.parent &&
       !this.parent.providedDependencies[dependencyName] &&
-      !this.parent.requiredDependencies[dependencyName]
+      !this.parent.requiredDependencies[dependencyName] &&
+      dependencyName !== this.parent.name
     ) {
       this.parent.bundleDependency(dependencyName, pkg);
     } else {
@@ -112,7 +130,6 @@ export class Package extends nijs.NixASTNode {
 
   async bundleDependencies(resolvedDependencies, dependencies) {
     if (dependencies) {
-      // var self = this;
       for (const dependencyName in dependencies) {
         const versionSpec = dependencies[dependencyName];
         const parentDependency = this.findMatchingProvidedDependencyByParent(
@@ -165,7 +182,8 @@ export class Package extends nijs.NixASTNode {
 
     for (const dependencyName in resolvedDependencies) {
       const dependency = resolvedDependencies[dependencyName];
-      await dependency.resolveDependencies();
+      dependency.resolveDependencies &&
+        (await dependency.resolveDependencies());
     }
 
     return resolvedDependencies;
@@ -217,52 +235,73 @@ export class Package extends nijs.NixASTNode {
     }
 
     const ast = this.source.toNixAST();
-    // ast.dependencies = this.generateDependencyAST();
+
+    ast.dependencies = new nijs.NixInherit();
+    ast.extraDependencies = new nijs.NixInherit();
     ast.buildInputs = new nijs.NixValue(
-      `[ nodejs ] ++ (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { pkgName = "${this.source.config.name}"; })`
+      `[ nodejs python3 makeWrapper perl jq ] ++
+         (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
+         (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "${this.source.config.name}"; })`
     );
-    ast.buildPhase = new nijs.NixValue(`''
-      runHook preBuild
-      \${copyNodeModules { inherit dependencies; }}
-      patchShebangs .
-      export HOME=$TMPDIR
-      NODE_PATH="$NODE_PATH":$(pwd)/node_modules \\
-      npm --offline --no-bin-links \\
-          \${if builtins.hasAttr "npmFlags" packageNix then packageNix.npmFlags else ""} \\
-          "--production" \\
-          rebuild || \\
-        echo npm rebuild failed, and it may or may not matter
-      runHook postBuild
-    ''`);
-    ast.installPhase = new nijs.NixValue(`''
-      runHook preInstall
-      export packageDir="$(pwd)"
-      mkdir -p $out/lib/node_modules/${this.source.config.name}
-      cd $out/lib/node_modules/${this.source.config.name}
-      cp -rfT "$packageDir" "$(pwd)"
-      # Create symlink to the deployed executable folder
-      mkdir -p $out/bin
-      find "$(cd ..; pwd)" -type f \\( -perm -u=x -o -perm -g=x -o -perm -o=x \\) -not -path "$(pwd)/node_modules/*" \\
-        -exec ln -s {} $out/bin \\; -print
-      if [ -f "$out/bin" ]; then
-        chmod +x $out/bin/*
-      fi
-      runHook postInstall
-    ''`);
-    ast.preInstall = new nijs.NixValue(
-      `(mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preInstall"; pkgName = "${this.source.config.name}"; })`
+    ast.dontStrip = new nijs.NixValue("true"); // it's just too slow atm with node_modules
+    // ast.preUnpackBan_ = new nijs.NixValue(`mkPhaseBan "preUnpack" drv`);
+    // ast.unpackBan_ = new nijs.NixValue(`mkPhaseBan "unpackPhase" drv`);
+    // ast.postUnpackBan_ = new nijs.NixValue(`mkPhaseBan "postUnpack" drv`);
+    // ast.preConfigureBan_ = new nijs.NixValue(`mkPhaseBan "preConfigure" drv`);
+    // ast.configureBan_ = new nijs.NixValue(`mkPhaseBan "configurePhase" drv`);
+    // ast.postConfigureBan_ = new nijs.NixValue(`mkPhaseBan "postConfigure" drv`);
+
+    ast.NODE_OPTIONS = new nijs.NixValue('"--preserve-symlinks"');
+    ast.passAsFile = new nijs.NixValue(
+      `[ "unpackScript" "configureScript" "buildScript" "installScript" ]`
     );
-    ast.postInstall = new nijs.NixValue(
-      `(mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postInstall"; pkgName = "${this.source.config.name}"; })`
+    ast.outputs = new nijs.NixValue(`["out" "dev"]`);
+    ast.unpackScript = new nijs.NixValue(
+      `mkUnpackScript { inherit dependencies extraDependencies;
+         pkgName = "${this.source.config.name}"; }`
     );
-    ast.preBuild = new nijs.NixValue(
-      `(mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "preBuild"; pkgName = "${this.source.config.name}"; })`
-    );
-    ast.postBuild = new nijs.NixValue(
-      `(mkPhase (pkgs // { inherit jsnixDeps dependencies getNodeDepFromList; }) { phase = "postBuild"; pkgName = "${this.source.config.name}"; })`
+    ast.configureScript = new nijs.NixValue(`mkConfigureScript {}`);
+    ast.buildScript = new nijs.NixValue(
+      `mkBuildScript { inherit dependencies; pkgName = "${this.source.config.name}"; }`
     );
 
-    ast.dontStrip = true;
+    ast.buildPhase = new nijs.NixValue(`''
+      source $unpackScriptPath
+      source $configureScriptPath
+      runHook preBuild
+      if [ -z "$preBuild" ]; then
+        runHook preInstall
+      fi
+      source $buildScriptPath
+      if [ -z "$postBuild" ]; then
+        runHook postBuild
+      fi
+    ''`);
+    ast.installScript = new nijs.NixValue(
+      `mkInstallScript { pkgName = "${this.source.config.name}"; }`
+    );
+    ast.installPhase = new nijs.NixValue(`''
+      if [ -z "$preInstall" ]; then
+        runHook preInstall
+      fi
+      source $installScriptPath
+      if [ -z "$postInstall" ]; then
+        runHook postInstall
+      fi
+    ''`);
+    ast.preInstall = new nijs.NixValue(
+      `(mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "preInstall"; pkgName = "${this.source.config.name}"; })`
+    );
+    ast.postInstall = new nijs.NixValue(
+      `(mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postInstall"; pkgName = "${this.source.config.name}"; })`
+    );
+    ast.preBuild = new nijs.NixValue(
+      `(mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "preBuild"; pkgName = "${this.source.config.name}"; })`
+    );
+    ast.postBuild = new nijs.NixValue(
+      `(mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postBuild"; pkgName = "${this.source.config.name}"; })`
+    );
+    // ast.depsBuildBuild = new nijs.NixValue("builtins.attrValues dependencies");
     ast.meta = {
       description: this.source.config.description,
       license: this.source.config.license,

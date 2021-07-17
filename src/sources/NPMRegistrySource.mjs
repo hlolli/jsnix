@@ -60,17 +60,47 @@ export class NPMRegistrySource extends Source {
       ? npmProtocolPath
       : this.dependencyName;
     const url =
-      selectedRegistry.url + "/" + dependencyName_.replace("/", "%2F"); // Escape / to make scoped packages work
+      selectedRegistry.url +
+      "/" +
+      dependencyName_.replace("/", "%2F").replace(/^npm:/, "");
 
-    const npmFetchOpts = { log };
+    log.enableProgress();
+
+    const npmFetchOpts = {
+      log: {
+        http: (data1, data2, data3) =>
+          log.showProgress(data1 + " " + data2 + "\n"),
+      },
+    };
 
     if (selectedRegistry.authToken) {
       npmFetchOpts.token = selectedRegistry.authToken;
     }
+    const cachePolicy = R.pathOr("always", ["opt", "cache"], this.jsnixConfig);
+
+    if (!cachePolicy) {
+      npmFetchOpts.preferOnline = true;
+    } else if (cachePolicy === "verify") {
+      npmFetchOpts.preferOffline = true;
+    } else {
+      npmFetchOpts.offline = true;
+    }
 
     npmFetchOpts.cache = process.env["jsnix"] || cachedir("node2nix");
 
-    const data = await npmFetch.json(url, npmFetchOpts);
+    let data;
+    try {
+      data = await npmFetch.json(url, npmFetchOpts);
+    } catch (error) {
+      // only possible in offline mode, try again as online
+      if (error.code === "ENOTCACHED") {
+        data = await npmFetch.json(
+          url,
+          R.mergeAll([npmFetchOpts, { preferOnline: true, offline: false }])
+        );
+      }
+      !data && console.error(error);
+    }
 
     if (data == undefined || data.versions === undefined) {
       console.error(
@@ -88,7 +118,11 @@ export class NPMRegistrySource extends Source {
       version,
       true
     );
-
+    // console.log("versionIds", versionIdentifiers);
+    // console.log("versionSpec", this.versionSpec);
+    // console.log("data", data._id);
+    // console.log("version", version);
+    // console.log("resolvedVersion", resolvedVersion);
     if (!resolvedVersion) {
       console.error(
         "Cannot resolve version: " +

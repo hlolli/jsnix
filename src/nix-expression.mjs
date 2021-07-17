@@ -11,23 +11,55 @@ const gitignoreSource = `
       sha256 = "sha256-qHu3uZ/o9jBHiA3MEKHJ06k7w4heOhA+4HCSIvflRxo=";
     }) { inherit lib; }).gitignoreSource`;
 
-const getNodeDepFromList = `packageName: dependencies:
-    (builtins.head
-      (builtins.filter (p: p.packageName == packageName) dependencies))`;
+const getNodeDep = `packageName: dependencies:
+    (let depList = if ((builtins.typeOf dependencies) == "set")
+                  then (builtins.attrValues dependencies)
+                  else dependencies;
+    in (builtins.head
+        (builtins.filter (p: p.packageName == packageName) depList)))`;
 
-const linkNodeModulesExpr = `{dependencies ? []}:
-    (lib.lists.foldr (dep: acc: acc + ''mkdir -p "node_modules/\${dep.packageName}";
-     ln -s "\${dep}/lib/node_modules/\${dep.packageName}/*" "node_modules/\${dep.packageName}"
-     '')
+const linkNodeModulesExpr = `{dependencies ? [], extraDependencies ? []}:
+    (lib.lists.foldr (dep: acc:
+      let pkgName = if (builtins.hasAttr "packageName" dep)
+                    then dep.packageName else dep.name;
+      in (acc + (lib.optionalString
+      ((lib.findSingle (px: px.packageName == dep.packageName) "none" "found" extraDependencies) == "none")
+      ''
+      if [[ ! -f "node_modules/\${pkgName}" && \\
+            ! -d "node_modules/\${pkgName}" && \\
+            ! -L "node_modules/\${pkgName}" && \\
+            ! -e "node_modules/\${pkgName}" ]]
+     then
+       mkdir -p "node_modules/\${pkgName}"
+       ln -s "\${dep}/lib/node_modules/\${pkgName}"/* "node_modules/\${pkgName}"
+       \${lib.optionalString (builtins.hasAttr "dependencies" dep)
+         ''
+         rm -rf "node_modules/\${pkgName}/node_modules"
+         (cd node_modules/\${dep.packageName}; \${linkNodeModules { inherit (dep) dependencies; inherit extraDependencies;}})
+         ''}
+     fi
+     '')))
      "" dependencies)`;
 
-const copyNodeModulesExpr = `{dependencies ? []}:
-    (lib.lists.foldr (dep: acc: acc + ''mkdir -p node_modules/\${dep.packageName};
-     cp -rT "\${dep}/lib/node_modules/\${dep.packageName}" "node_modules/\${dep.packageName}"
-     find "\${dep}/lib/node_modules/\${dep.packageName}" \\
-       -not -path "\${dep}/lib/node_modules/\${dep.packageName}/node_modules/*" \\
-       -type f -exec chmod +rw {} \\; 2>/dev/null
-     '')
+const copyNodeModulesExpr = `{dependencies ? [], extraDependencies ? []}:
+    (lib.lists.foldr (dep: acc:
+      let pkgName = if (builtins.hasAttr "packageName" dep)
+                    then dep.packageName else dep.name;
+      in (acc + (lib.optionalString
+      ((lib.findSingle (px: px.packageName == dep.packageName) "none" "found" extraDependencies) == "none")
+      ''
+      if [[ ! -f "node_modules/\${pkgName}" && \\
+            ! -d "node_modules/\${pkgName}" && \\
+            ! -L "node_modules/\${pkgName}" && \\
+            ! -e "node_modules/\${pkgName}" ]]
+     then
+       mkdir -p "node_modules/\${pkgName}"
+       cp -rLT "\${dep}/lib/node_modules/\${pkgName}" "node_modules/\${pkgName}"
+       chmod -R +rw "node_modules/\${pkgName}"
+       \${lib.optionalString (builtins.hasAttr "dependencies" dep)
+         "(cd node_modules/\${dep.packageName}; \${linkNodeModules { inherit (dep) dependencies; inherit extraDependencies; }})"}
+     fi
+     '')))
      "" dependencies)`;
 
 const transitiveDepUnpackPhase = `{dependencies ? [], pkgName}: ''
@@ -46,6 +78,11 @@ const transitiveDepInstallPhase = `{dependencies ? [], pkgName}: ''
     mkdir -p node_modules
     \${linkNodeModules { inherit dependencies; }} ''`;
 
+const mkPhaseBan = new nijs.NixValue(`phaseName: usrDrv:
+      if (builtins.hasAttr phaseName usrDrv) then
+      throw "jsnix error: using \${phaseName} isn't supported at this time"
+      else  ""`);
+
 const mkPhase = new nijs.NixValue(`pkgs_: {phase, pkgName}:
      lib.optionalString ((builtins.hasAttr "\${pkgName}" packageNix.dependencies) &&
                          (builtins.typeOf packageNix.dependencies."\${pkgName}" == "set") &&
@@ -54,7 +91,7 @@ const mkPhase = new nijs.NixValue(`pkgs_: {phase, pkgName}:
        then
          packageNix.dependencies."\${pkgName}"."\${phase}"
        else
-         (packageNix.dependencies."\${pkgName}"."\${phase}" pkgs_))`);
+         (packageNix.dependencies."\${pkgName}"."\${phase}" (pkgs_ // { inherit getNodeDep copyNodeModules linkNodeModules; })))`);
 
 const mkExtraBuildInputs = new nijs.NixValue(`pkgs_: {pkgName}:
      lib.optionals ((builtins.hasAttr "\${pkgName}" packageNix.dependencies) &&
@@ -64,14 +101,192 @@ const mkExtraBuildInputs = new nijs.NixValue(`pkgs_: {pkgName}:
        then
          packageNix.dependencies."\${pkgName}"."extraBuildInputs"
        else
-         (packageNix.dependencies."\${pkgName}"."extraBuildInputs" pkgs_))`);
+         (packageNix.dependencies."\${pkgName}"."extraBuildInputs" (pkgs_ // { inherit getNodeDep copyNodeModules linkNodeModules; })))`);
+
+const mkExtraDependencies = new nijs.NixValue(`pkgs_: {pkgName}:
+     lib.optionals ((builtins.hasAttr "\${pkgName}" packageNix.dependencies) &&
+                    (builtins.typeOf packageNix.dependencies."\${pkgName}" == "set") &&
+                    (builtins.hasAttr "extraDependencies" packageNix.dependencies."\${pkgName}"))
+      (if builtins.typeOf packageNix.dependencies."\${pkgName}"."extraDependencies" == "list"
+       then
+         packageNix.dependencies."\${pkgName}"."extraDependencies"
+       else
+         (packageNix.dependencies."\${pkgName}"."extraDependencies" (pkgs_ // { inherit getNodeDep copyNodeModules linkNodeModules; })))`);
+
+const mkUnpackScript = new nijs.NixValue(`{ dependencies ? [], extraDependencies ? [], pkgName }:
+     let copyNodeDependencies =
+       if ((builtins.hasAttr "\${pkgName}" packageNix.dependencies) &&
+           (builtins.typeOf packageNix.dependencies."\${pkgName}" == "set") &&
+           (builtins.hasAttr "copyNodeDependencies" packageNix.dependencies."\${pkgName}") &&
+           (builtins.typeOf packageNix.dependencies."\${pkgName}"."copyNodeDependencies" == "bool") &&
+           (packageNix.dependencies."\${pkgName}"."copyNodeDependencies" == true))
+       then true else false;
+     in ''
+      \${(if copyNodeDependencies then copyNodeModules else linkNodeModules) { inherit dependencies extraDependencies; }}
+      chmod -R +rw $(pwd)
+    ''`);
+
+const mkConfigureScript = new nijs.NixValue(`{}: ''
+    \${flattenScript}
+''`);
+
+const mkBuildScript = new nijs.NixValue(`{ dependencies ? [], pkgName }:
+    let extraNpmFlags =
+      if ((builtins.hasAttr "\${pkgName}" packageNix.dependencies) &&
+          (builtins.typeOf packageNix.dependencies."\${pkgName}" == "set") &&
+          (builtins.hasAttr "npmFlags" packageNix.dependencies."\${pkgName}") &&
+          (builtins.typeOf packageNix.dependencies."\${pkgName}"."npmFlags" == "string"))
+      then packageNix.dependencies."\${pkgName}"."npmFlags" else "";
+    in ''
+      runHook preBuild
+      export HOME=$TMPDIR
+      NODE_PATH="$(pwd)/node_modules:$NODE_PATH" \\
+      npm --offline --no-bin-links --nodedir=\${nodeSources} \\
+          \${extraNpmFlags} "--production" "--preserve-symlinks" \\
+          rebuild
+      runHook postBuild
+    ''`);
+
+const mkInstallScript = new nijs.NixValue(`{ pkgName }: ''
+      runHook preInstall
+      export packageDir="$(pwd)"
+      mkdir -p $dev/lib/node_modules/\${pkgName}
+      mkdir -p $out/lib/node_modules/\${pkgName}
+      cd $dev/lib/node_modules/\${pkgName}
+      cp -rfT "$packageDir" "$(pwd)"
+      if [[ -d "$dev/lib/node_modules/\${pkgName}/bin" ]]
+      then
+         mkdir -p $dev/bin
+         ln -s "$dev/lib/node_modules/\${pkgName}/bin"/* $dev/bin
+      fi
+      cd $out/lib/node_modules/\${pkgName}
+      cp -rfT "$packageDir" "$(pwd)"
+      cat package.json | jq ".peerDependencies // {} | keys" | sed -n 's/.*"\\(.*\\)".*/\\1/p' | while read peerDep; do
+        rm -rf node_modules/"$peerDep"
+      done
+      cat package.json | jq ".devDependencies // {} | keys" | sed -n 's/.*"\\(.*\\)".*/\\1/p' | while read devDep; do
+        rm -rf node_modules/"$devDep"
+      done
+      runHook postInstall
+    ''`);
+
+const nodeSources = new nijs.NixValue(`runCommand "node-sources" {} ''
+    tar --no-same-owner --no-same-permissions -xf \${nodejs.src}
+    mv node-* $out
+  ''`);
+
+const sanitizeName = new nijs.NixValue(`nm: lib.strings.sanitizeDerivationName
+    (builtins.replaceStrings [ "@" "/" ] [ "_at_" "_" ] nm)`);
+
+const flattenScript = new nijs.NixValue(`''
+       export topLevel=( $(ls node_modules) )
+       mkdir -p tmp
+       export TMPDIR="$(pwd)/tmp"
+       export NODE_MODULE_DIRS=$(echo $(pwd)/node_modules/*/node_modules/* $(pwd)/node_modules/@*/*/node_modules | xargs ls -lR |grep -v "^d"|grep ":$"|sed -e 's/:$//'|perl -pe 's/^\d+\s//;'|awk '{count[$1]++}END{for(j in count) print j |"sort -t/ -k2"}')
+       for package in $NODE_MODULE_DIRS; do
+          export nestLvl="4"
+          if [[ ! -z "$(echo $package | egrep '.*/node_modules/([^@][^/]+)$')" ]]
+          then
+              export nestLvl="3"
+          fi
+          if [ -z "$(echo $package | egrep '.*/node_modules$')" ] && \\
+             [ -z "$(echo $package | egrep '.*/[\@^/]*$')" ] && \\
+             [ $(awk -F"/" '{print NF-1}' <<< "$(echo "$package" | sed "s|$(pwd)||g")") -gt "$nestLvl" ]
+          then
+
+            if [ ! -w "$(pwd)/node_modules" ]
+            then
+              mkdir -p $TMPDIR/node_modules
+              mv "$(pwd)/node_modules" $TMPDIR/node_modules
+              mkdir -p "$(pwd)/node_modules"
+              mv $TMPDIR/node_modules/node_modules "$(pwd)"
+              rm -rf $TMPDIR/node_modules
+            fi
+
+            # first ensure the node_modules folder themselves are writable
+            if [[ ! -z "$(echo $package | egrep '.*/node_modules/([^@][^/]+)$')" ]]
+            then
+              if [[  -w "$(dirname -- $(dirname --  "$(dirname -- $package)"))" && \\
+                   ! -w "$(dirname --  "$(dirname -- $package)")" ]]
+              then
+                mkdir -p $TMPDIR/node_modules
+                mv "$(dirname -- "$(dirname -- $package)")" $TMPDIR/node_modules
+                mkdir -p "$(dirname -- "$(dirname -- $package)")"
+                mv $TMPDIR/node_modules "$(dirname -- "$(dirname -- $package)")"
+                rm -rf $TMPDIR/node_modules
+                if [ ! -w "$(dirname -- $package)" ]
+                then
+                  pkg="$(basename -- "$package")"
+                  mv "$(dirname -- "$package")" $TMPDIR/$pkg
+                  mkdir -p "$(dirname -- "$package")"
+                  mv $TMPDIR/$pkg/* "$(dirname -- "$package")"
+                  mv $TMPDIR/$pkg/.* "$(dirname -- "$package")"
+                  rm -rf $TMPDIR/$pkg
+                fi
+              fi
+            fi
+            if [[ ! -z "$(echo $package | egrep '.*/node_modules/@([^/]+/[^/]+$)')" ]]
+            then
+              mkdir -p "$(pwd)/node_modules/$(basename -- "$(dirname -- $package)")"
+              if [[ ! -d "$(pwd)/node_modules/$(basename -- "$(dirname -- $package)")/$(basename "$package")" && \\
+                      -w "$(dirname -- $(dirname -- "$package"))" ]]
+              then
+                mv "$package" "$(pwd)/node_modules/$(basename -- "$(dirname -- $package)")"
+              else
+                [[ -w "$(dirname -- $(dirname -- "$package"))" ]] && rm -rf "$package"
+              fi
+            fi
+          if [[ ! -z "$(echo $package | egrep '.*/node_modules/([^@][^/]+$)')" ]]; then
+            if [[ ! -w "$(dirname -- $(dirname -- "$package"))" && -w "$(dirname -- $(dirname --  "$(dirname -- $package)"))" ]]; then
+                mkdir -p $TMPDIR/node_modules
+                mv "$(dirname -- $(dirname -- "$package"))" $TMPDIR/node_modules
+                mkdir -p "$(dirname -- $(dirname -- "$package"))"
+                mv $TMPDIR/node_modules/* "$(dirname -- $(dirname -- "$package"))"
+                rm -rf $TMPDIR/node_modules
+             fi
+
+              if [[ ! -w "$(dirname -- $package)" && -w "$(dirname -- $(dirname -- "$package"))" ]]; then
+                mkdir -p $TMPDIR/node_modules
+                mv "$(dirname -- "$package")" $TMPDIR/node_modules
+                mkdir -p "$(dirname -- "$package")"
+                mv $TMPDIR/node_modules/* "$(dirname -- "$package")"
+                rm -rf $TMPDIR/node_modules
+              fi
+              if [[ ! -d "$(pwd)/node_modules/$(basename -- "$package")" ]]; then
+                if [[ ! -L "$(dirname $package)" ]]; then
+                  mv "$package" "$(pwd)/node_modules"
+                else
+                  mkdir -p "$TMPDIR/$package"
+                  cp -rfL $package "$TMPDIR/$package"
+                  rm "$package"
+                  mv "$TMPDIR/$package" "$(pwd)/node_modules"
+                  rm -rf "$TMPDIR/$package"
+                  if [[ $(echo "''\${topLevel[@]}" | grep -o "$(basename $package)" | wc -w) ]]; then
+                    rm -rf $package
+                  fi
+                fi
+              else
+                if [[ ! -L "$(dirname $package)" ]]; then
+                  rm -rf "$package"
+                else
+                  echo "$package" could not be deduped
+                fi
+              fi
+            fi
+          fi
+        done
+        rm -rf $TMPDIR
+''`);
 
 const toPackageJson = new nijs.NixValue(`{ jsnixDeps ? {} }:
     let
+      main = if (builtins.hasAttr "main" packageNix) then packageNix else throw "package.nix is missing main attribute";
+      pkgName = if (builtins.hasAttr "packageName" packageNix)
+                then packageNix.packageName else packageNix.name;
       packageNixDeps = if (builtins.hasAttr "dependencies" packageNix)
                        then packageNix.dependencies
                        else {};
-      packagesSpec = lib.lists.foldr
+      prodDeps = lib.lists.foldr
         (depName: acc: acc // {
           "\${depName}" = (if ((builtins.typeOf packageNixDeps."\${depName}") == "string")
                           then packageNixDeps."\${depName}"
@@ -86,35 +301,102 @@ const toPackageJson = new nijs.NixValue(`{ jsnixDeps ? {} }:
         else acc)
         {} (builtins.attrNames packageNix);
     in lib.strings.escapeNixString
-      (builtins.toJSON (safePkgNix // { dependencies = packagesSpec; }))`);
+      (builtins.toJSON (safePkgNix // { dependencies = prodDeps; name = pkgName; }))`);
 
 const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
-    drv.overrideAttrs({
-      dontUnpackPackageJson ? false,
-      unpackPhase ? "",
-      name ? packageNix.name,
-      version ? packageNix.version,
-      ...
-    } : {
-      inherit name version;
-      unpackPhase =
-        if (dontUnpackPackageJson != true)
-                    then ''
-                          \${if (builtins.stringLength unpackPhase) == 0 then
-                                "runHook preUnpack" else ""}
-                           \${unpackPhase}
-                           chmod -R +rw ./ || true
-                           echo \${toPackageJson { inherit jsnixDeps; }} | \${jq}/bin/jq > package.json
-                           \${if (builtins.stringLength unpackPhase) == 0 then
-                                "runHook postUnpack" else ""}
-                         ''
-                    else ''\${if (builtins.stringLength unpackPhase) == 0 then
-                                "runHook preUnpack" else ""}
-                            \${unpackPhase}
-                            chmod -R +rw ./ || true
-                           \${if (builtins.stringLength unpackPhase) == 0 then
-                                "runHook postUnpack" else ""}
-                         '';
+    let skipUnpackFor = if (builtins.hasAttr "skipUnpackFor" drv)
+                        then drv.skipUnpackFor else [];
+        copyUnpackFor = if (builtins.hasAttr "copyUnpackFor" drv)
+                        then drv.copyUnpackFor else [];
+        linkDeps = (builtins.filter
+                                (p: (((lib.findSingle (px: px == p.packageName) "none" "found" skipUnpackFor) == "none") &&
+                                      (lib.findSingle (px: px == p.packageName) "none" "found" copyUnpackFor) == "none"))
+                              (builtins.map
+                              (dep: jsnixDeps."\${dep}")
+                              (builtins.attrNames packageNix.dependencies)));
+         copyDeps = (builtins.filter
+                                (p: (((lib.findSingle (px: px == p.packageName) "none" "found" skipUnpackFor) == "none") &&
+                                      (lib.findSingle (px: px == p.packageName) "none" "found" copyUnpackFor) == "found"))
+                                (builtins.map
+                                    (dep: jsnixDeps."\${dep}")
+                                    (builtins.attrNames packageNix.dependencies)));
+         extraLinkDeps = (builtins.filter
+                                (p: (((lib.findSingle (px: px == p.packageName) "none" "found" skipUnpackFor) == "none") &&
+                                      (lib.findSingle (px: px == p.packageName) "none" "found" copyUnpackFor) == "none"))
+                                (if (builtins.hasAttr "extraDependencies" drv) then drv.extraDependencies else []));
+         extraCopyDeps = (builtins.filter
+                                (p: (((lib.findSingle (px: px == p.packageName) "none" "found" skipUnpackFor) == "none") &&
+                                      (lib.findSingle (px: px == p.packageName) "none" "found" copyUnpackFor) == "found"))
+                                (if (builtins.hasAttr "extraDependencies" drv) then drv.extraDependencies else []));
+         nodeModules = runCommand "\${sanitizeName packageNix.name}_node_modules" { buildInputs = [ nodejs perl ]; } ''
+           echo 'unpack, dedupe and flatten dependencies...'
+           mkdir -p $out/lib/node_modules
+           cd $out/lib
+           \${linkNodeModules {
+                dependencies = extraLinkDeps;
+           }}
+           \${copyNodeModules {
+                dependencies = extraCopyDeps;
+           }}
+           \${linkNodeModules {
+                dependencies = linkDeps;
+                extraDependencies = (lib.optionals (builtins.hasAttr "extraDependencies" drv) drv.extraDependencies);
+           }}
+           \${copyNodeModules {
+                dependencies = copyDeps;
+                extraDependencies = (lib.optionals (builtins.hasAttr "extraDependencies" drv) drv.extraDependencies);
+           }}
+           chmod -R +rw node_modules
+           \${flattenScript}
+        '';
+    in stdenv.mkDerivation (drv // {
+      version = packageNix.version;
+      name = sanitizeName packageNix.name;
+      preUnpackBan_ = mkPhaseBan "preUnpack" drv;
+      unpackBan_ = mkPhaseBan "unpackPhase" drv;
+      postUnpackBan_ = mkPhaseBan "postUnpack" drv;
+      preConfigureBan_ = mkPhaseBan "preConfigure" drv;
+      configureBan_ = mkPhaseBan "configurePhase" drv;
+      postConfigureBan_ = mkPhaseBan "postConfigure" drv;
+      src = if (builtins.hasAttr "src" packageNix) then packageNix.src else gitignoreSource ./.;
+      packageName = packageNix.name;
+      dontStrip = true;
+      doUnpack = true;
+      NODE_OPTIONS = "--preserve-symlinks";
+      buildInputs = [ nodejs ] ++ lib.optionals (builtins.hasAttr "buildInputs" drv) drv.buildInputs;
+      passAsFile = [ "unpackFlattenDedupe" ];
+
+      unpackFlattenDedupe = ''
+        mkdir -p node_modules
+        chmod -R +rw node_modules
+        cp -rfT \${nodeModules}/lib/node_modules node_modules
+        export NODE_PATH="$(pwd)/node_modules:$NODE_PATH"
+        export NODE_OPTIONS="--preserve-symlinks"
+      '';
+      configurePhase = ''
+        source $unpackFlattenDedupePath
+      '';
+      buildPhase = ''
+        runHook preBuild
+       \${lib.optionalString (builtins.hasAttr "buildPhase" drv) drv.buildPhase}
+       runHook postBuild
+      '';
+      installPhase = if (builtins.hasAttr "installPhase" drv) then
+        ''
+          runHook preInstall
+            \${drv.installPhase}
+          runHook postInstall
+        '' else ''
+          runHook preInstall
+          if [[ -d "./bin" ]]
+          then
+            mkdir $out/bin
+            ln -s ./bin/* $out/bin
+          fi
+          mkdir -p $out/lib/node_modules/\${packageNix.name}
+          cp -rfL ./ $out/lib/node_modules/\${packageNix.name}
+          runHook postInstall
+       '';
   })`);
 
 class OutputExpression extends nijs.NixASTNode {
@@ -138,6 +420,11 @@ class OutputExpression extends nijs.NixASTNode {
         fetchgit: undefined,
         fetchFromGitHub: undefined,
         jq: undefined,
+        makeWrapper: undefined,
+        perl: undefined,
+        python3: undefined,
+        runCommand: undefined,
+        xcodebuild: undefined,
         "... ": undefined,
         // nodeEnv: undefined,
         // "nix-gitignore": undefined,
@@ -155,11 +442,20 @@ class OutputExpression extends nijs.NixASTNode {
             transitiveDepInstallPhase
           ),
           transitiveDepUnpackPhase: new nijs.NixValue(transitiveDepUnpackPhase),
-          getNodeDepFromList: new nijs.NixValue(getNodeDepFromList),
+          getNodeDep: new nijs.NixValue(getNodeDep),
+          nodeSources,
+          flattenScript,
+          sanitizeName,
           jsnixDrvOverrides,
           toPackageJson,
+          mkPhaseBan,
           mkPhase,
           mkExtraBuildInputs,
+          mkExtraDependencies,
+          mkUnpackScript,
+          mkConfigureScript,
+          mkBuildScript,
+          mkInstallScript,
           sources: this.sourcesCache,
         },
       }),
@@ -169,9 +465,10 @@ class OutputExpression extends nijs.NixASTNode {
 
 export class NixExpression extends OutputExpression {
   constructor(jsnixConfig, baseDir, dependencies) {
-    super();
+    super(jsnixConfig);
     this.packages = {};
     this.jsnixConfig = jsnixConfig;
+
     if (Array.isArray(dependencies)) {
       for (const dependenySpec of dependencies) {
         const dependency =
@@ -241,7 +538,13 @@ export class NixExpression extends OutputExpression {
     for (const identifier in this.packages) {
       const pkg = this.packages[identifier];
       packagesExpr[identifier] = new nijs.NixLet({
-        value: { dependencies: pkg.generateDependencyAST() },
+        value: {
+          dependencies: pkg.generateDependencyAST(),
+          extraDependencies: new nijs.NixValue(`[] ++
+        mkExtraDependencies
+           (pkgs // { inherit jsnixDeps dependencies; })
+            { pkgName = "${pkg.name}"; }`),
+        },
         body: new nijs.NixFunInvocation({
           funExpr: new nijs.NixExpression("stdenv.mkDerivation"),
           paramExpr: pkg,
@@ -266,21 +569,17 @@ export class NixExpression extends OutputExpression {
             paramExpr: {
               jsnixDeps: new nijs.NixInherit(),
               drv: new nijs.NixFunInvocation({
-                funExpr: new nijs.NixExpression("stdenv.mkDerivation"),
-                paramExpr: new nijs.NixFunInvocation({
-                  funExpr: new nijs.NixExpression(
-                    "packageNix.packageDerivation"
-                  ),
-                  paramExpr: new nijs.NixMergeAttrs({
-                    left: new nijs.NixExpression("pkgs"),
-                    right: {
-                      copyNodeModules: new nijs.NixInherit(),
-                      linkNodeModules: new nijs.NixInherit(),
-                      gitignoreSource: new nijs.NixInherit(),
-                      jsnixDeps: new nijs.NixInherit(),
-                      getNodeDepFromList: new nijs.NixInherit(),
-                    },
-                  }),
+                funExpr: new nijs.NixExpression("packageNix.packageDerivation"),
+                paramExpr: new nijs.NixMergeAttrs({
+                  left: new nijs.NixExpression("pkgs"),
+                  right: {
+                    nodejs: new nijs.NixInherit(),
+                    copyNodeModules: new nijs.NixInherit(),
+                    linkNodeModules: new nijs.NixInherit(),
+                    gitignoreSource: new nijs.NixInherit(),
+                    jsnixDeps: new nijs.NixInherit(),
+                    getNodeDep: new nijs.NixInherit(),
+                  },
                 }),
               }),
             },
