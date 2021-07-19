@@ -108,6 +108,7 @@ func main() {
 		if lsErr != nil {
 			log.Fatal(lsErr)
 		}
+
 		for _, topFile := range topLevelDepsInfo {
 			topLevelDeps = append(topLevelDeps, topFile.Name())
 		}
@@ -181,6 +182,7 @@ func main() {
 			dirName := path.Base(scopedFile)
 			scopeName := path.Base(path.Dir(scopedFile))
 			pName := path.Join(scopeName, dirName)
+			os.MkdirAll(path.Join("./node_modules", scopeName), 0755)
 			if _, err := os.Stat(path.Join("./node_modules", pName)); err == nil {
 				// path exists
 				if stringInSlice(pName, topLevelDeps) {
@@ -196,6 +198,7 @@ func main() {
 				fmt.Println(err)
 			}
 		}
+
 	} else {
 		fmt.Println("no node_modules found for flattening")
 	}
