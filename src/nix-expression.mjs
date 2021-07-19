@@ -175,17 +175,34 @@ const nodeSources = new nijs.NixValue(`runCommand "node-sources" {} ''
     mv node-* $out
   ''`);
 
+// const goFlatten = new nijs.NixValue(`pkgs.buildGoModule {
+//   pname = "flatten";
+//   version = "0.0.0";
+//   vendorSha256 = null;
+//   src = pkgs.fetchFromGitHub {
+//     owner = "hlolli";
+//     repo = "jsnix";
+//     rev = "1882cac52cdc3c3356b9d63aedc25898a5edf71c";
+//     sha256 = "sha256-7DLFUNJFQnRTcMipWpA9Xa429EsG2kSjA71q6BNkhdc=";
+//   };
+//   preBuild = ''
+//     cd go
+//   '';
+// }`);
+
 const goFlatten = new nijs.NixValue(`pkgs.buildGoModule {
   pname = "flatten";
   version = "0.0.0";
   vendorSha256 = null;
-  src = pkgs.fetchFromGitHub {
-    owner = "hlolli";
-    repo = "jsnix";
-    rev = "1882cac52cdc3c3356b9d63aedc25898a5edf71c";
-    sha256 = "sha256-7DLFUNJFQnRTcMipWpA9Xa429EsG2kSjA71q6BNkhdc=";
-  };
+  src = /Users/hlodversigurdsson/forks/jsnix/go;
   preBuild = ''
+    ls
+    mkdir -p go
+    mv flatten* go
+    chmod -R +rw .
+    mv vendor go
+    mv go.mod go
+    mkdir -p .git
     cd go
   '';
 }`);
