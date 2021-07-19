@@ -182,8 +182,8 @@ const goFlatten = new nijs.NixValue(`pkgs.buildGoModule {
   src = pkgs.fetchFromGitHub {
     owner = "hlolli";
     repo = "jsnix";
-    rev = "07a9c295f5bf22680050fdcd20a53830278337a4";
-    sha256 = "sha256-aOcrw0+KVfEoMgoGRbMIPlH9hT+fx74hd6SJScEOeV4=";
+    rev = "a79fa8510106b692a07d79d58f65077eccc74e6c";
+    sha256 = "sha256-gEe06QXUAnCsUu0wgGZpw8oCcMPhwbBzTdxJp50yODI=";
   };
   preBuild = ''
     cd go
