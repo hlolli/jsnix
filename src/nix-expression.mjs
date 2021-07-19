@@ -175,108 +175,28 @@ const nodeSources = new nijs.NixValue(`runCommand "node-sources" {} ''
     mv node-* $out
   ''`);
 
+const goFlatten = new nijs.NixValue(`pkgs.buildGoModule {
+  pname = "flatten";
+  version = "0.0.0";
+  vendorSha256 = null;
+  src = ??;
+  preBuild = ''
+    ls
+    mkdir -p go
+    mv flatten* go
+    chmod -R +rw .
+    mv vendor go
+    mv go.mod go
+    mkdir -p .git
+    cd go
+  '';
+}`);
+
 const sanitizeName = new nijs.NixValue(`nm: lib.strings.sanitizeDerivationName
     (builtins.replaceStrings [ "@" "/" ] [ "_at_" "_" ] nm)`);
 
 const flattenScript = new nijs.NixValue(`''
-       export topLevel=( $(ls node_modules) )
-       mkdir -p tmp
-       export TMPDIR="$(pwd)/tmp"
-       export NODE_MODULE_DIRS=$(echo $(pwd)/node_modules/*/node_modules/* $(pwd)/node_modules/@*/*/node_modules | xargs ls -lR |grep -v "^d"|grep ":$"|sed -e 's/:$//'|perl -pe 's/^\d+\s//;'|awk '{count[$1]++}END{for(j in count) print j |"sort -t/ -k2"}')
-       for package in $NODE_MODULE_DIRS; do
-          export nestLvl="4"
-          if [[ ! -z "$(echo $package | egrep '.*/node_modules/([^@][^/]+)$')" ]]
-          then
-              export nestLvl="3"
-          fi
-          if [ -z "$(echo $package | egrep '.*/node_modules$')" ] && \\
-             [ -z "$(echo $package | egrep '.*/[\@^/]*$')" ] && \\
-             [ $(awk -F"/" '{print NF-1}' <<< "$(echo "$package" | sed "s|$(pwd)||g")") -gt "$nestLvl" ]
-          then
-
-            if [ ! -w "$(pwd)/node_modules" ]
-            then
-              mkdir -p $TMPDIR/node_modules
-              mv "$(pwd)/node_modules" $TMPDIR/node_modules
-              mkdir -p "$(pwd)/node_modules"
-              mv $TMPDIR/node_modules/node_modules "$(pwd)"
-              rm -rf $TMPDIR/node_modules
-            fi
-
-            # first ensure the node_modules folder themselves are writable
-            if [[ ! -z "$(echo $package | egrep '.*/node_modules/([^@][^/]+)$')" ]]
-            then
-              if [[  -w "$(dirname -- $(dirname --  "$(dirname -- $package)"))" && \\
-                   ! -w "$(dirname --  "$(dirname -- $package)")" && \\
-                     -d "$(dirname -- "$(dirname -- $package)")" ]]
-              then
-                mkdir -p $TMPDIR/node_modules
-                mv "$(dirname -- "$(dirname -- $package)")" $TMPDIR/node_modules
-                mkdir -p "$(dirname -- "$(dirname -- $package)")"
-                mv $TMPDIR/node_modules "$(dirname -- "$(dirname -- $package)")"
-                rm -rf $TMPDIR/node_modules
-                if [ ! -w "$(dirname -- $package)" ]
-                then
-                  pkg="$(basename -- "$package")"
-                  mv "$(dirname -- "$package")" $TMPDIR/$pkg
-                  mkdir -p "$(dirname -- "$package")"
-                  mv $TMPDIR/$pkg/* "$(dirname -- "$package")"
-                  rm -rf $TMPDIR/$pkg
-                fi
-              fi
-            fi
-            if [[ ! -z "$(echo $package | egrep '.*/node_modules/@([^/]+/[^/]+$)')" ]]
-            then
-              mkdir -p "$(pwd)/node_modules/$(basename -- "$(dirname -- $package)")"
-              if [[ ! -d "$(pwd)/node_modules/$(basename -- "$(dirname -- $package)")/$(basename "$package")" && \\
-                      -w "$(dirname -- $(dirname -- "$package"))" ]]
-              then
-                mv "$package" "$(pwd)/node_modules/$(basename -- "$(dirname -- $package)")"
-              else
-                [[ -w "$(dirname -- $(dirname -- "$package"))" ]] && rm -rf "$package"
-              fi
-            fi
-          if [[ ! -z "$(echo $package | egrep '.*/node_modules/([^@][^/]+$)')" ]]; then
-            if [[ ! -w "$(dirname -- $(dirname -- "$package"))" && \\
-                    -w "$(dirname -- $(dirname --  "$(dirname -- $package)"))" && \\
-                    -d "$(dirname -- $(dirname -- "$package"))" ]]; then
-                mkdir -p $TMPDIR/node_modules
-                mv "$(dirname -- $(dirname -- "$package"))" $TMPDIR/node_modules
-                mkdir -p "$(dirname -- $(dirname -- "$package"))"
-                mv $TMPDIR/node_modules/* "$(dirname -- $(dirname -- "$package"))"
-                rm -rf $TMPDIR/node_modules
-             fi
-              if [[ ! -w "$(dirname -- $package)" && -w "$(dirname -- $(dirname -- "$package"))" ]]; then
-                mkdir -p $TMPDIR/node_modules
-                mv "$(dirname -- "$package")" $TMPDIR/node_modules
-                mkdir -p "$(dirname -- "$package")"
-                mv $TMPDIR/node_modules/* "$(dirname -- "$package")"
-                find $TMPDIR -type l -delete
-                rm -rf $TMPDIR/node_modules
-              fi
-              if [[ ! -d "$(pwd)/node_modules/$(basename -- "$package")" && -d "$package" ]]; then
-                if [[ ! -L "$(dirname $package)" ]]; then
-                  mv "$package" "$(pwd)/node_modules"
-                else
-                  mkdir -p "$TMPDIR/$package"
-                  cp -rfL $package "$TMPDIR/$package"
-                  rm "$package"
-                  mv "$TMPDIR/$package" "$(pwd)/node_modules"
-                  rm -rf "$TMPDIR/$package"
-                  if [[ $(echo "''\${topLevel[@]}" | grep -o "$(basename $package)" | wc -w) ]]; then
-                    rm -rf $package
-                  fi
-                fi
-              else
-                set +e
-                rm -rf "$package" 1>/dev/null 2>/dev/null || true
-                set -e
-              fi
-            fi
-          fi
-        done
-        find $TMPDIR -type l -delete
-        rm -rf $TMPDIR
+    \${goFlatten}/bin/flatten
 ''`);
 
 const toPackageJson = new nijs.NixValue(`{ jsnixDeps ? {} }:
@@ -329,7 +249,7 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
                                 (p: (((lib.findSingle (px: px == p.packageName) "none" "found" skipUnpackFor) == "none") &&
                                       (lib.findSingle (px: px == p.packageName) "none" "found" copyUnpackFor) == "found"))
                                 (if (builtins.hasAttr "extraDependencies" drv) then drv.extraDependencies else []));
-         nodeModules = runCommand "\${sanitizeName packageNix.name}_node_modules" { buildInputs = [ nodejs perl ]; } ''
+         nodeModules = runCommand "\${sanitizeName packageNix.name}_node_modules" { buildInputs = [ nodejs ripgrep ]; } ''
            echo 'unpack, dedupe and flatten dependencies...'
            mkdir -p $out/lib/node_modules
            cd $out/lib
@@ -422,8 +342,8 @@ class OutputExpression extends nijs.NixASTNode {
         fetchFromGitHub: undefined,
         jq: undefined,
         makeWrapper: undefined,
-        perl: undefined,
         python3: undefined,
+        ripgrep: undefined,
         runCommand: undefined,
         xcodebuild: undefined,
         "... ": undefined,
@@ -457,6 +377,7 @@ class OutputExpression extends nijs.NixASTNode {
           mkConfigureScript,
           mkBuildScript,
           mkInstallScript,
+          goFlatten,
           sources: this.sourcesCache,
         },
       }),

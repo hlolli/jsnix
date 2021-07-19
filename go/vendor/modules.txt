@@ -1,0 +1,3 @@
+# github.com/otiai10/copy v1.6.0
+## explicit
+github.com/otiai10/copy

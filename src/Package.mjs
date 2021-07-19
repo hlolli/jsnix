@@ -239,7 +239,7 @@ export class Package extends nijs.NixASTNode {
     ast.dependencies = new nijs.NixInherit();
     ast.extraDependencies = new nijs.NixInherit();
     ast.buildInputs = new nijs.NixValue(
-      `[ nodejs python3 makeWrapper perl jq ] ++
+      `[ nodejs python3 makeWrapper ripgrep jq ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "${this.source.config.name}"; })`
     );
@@ -300,6 +300,10 @@ export class Package extends nijs.NixASTNode {
     );
     ast.postBuild = new nijs.NixValue(
       `(mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postBuild"; pkgName = "${this.source.config.name}"; })`
+    );
+    ast.doInstallCheck = true;
+    ast.installCheckPhase = new nijs.NixValue(
+      `(mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "installCheckPhase"; pkgName = "${this.source.config.name}"; })`
     );
     // ast.depsBuildBuild = new nijs.NixValue("builtins.attrValues dependencies");
     ast.meta = {
