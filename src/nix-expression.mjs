@@ -286,6 +286,7 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
            \${flattenScript}
         '';
     in stdenv.mkDerivation (drv // {
+      inherit nodeModules;
       version = packageNix.version;
       name = sanitizeName packageNix.name;
       preUnpackBan_ = mkPhaseBan "preUnpack" drv;
@@ -308,6 +309,7 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
         cp -rfT \${nodeModules}/lib/node_modules node_modules
         export NODE_PATH="$(pwd)/node_modules:$NODE_PATH"
         export NODE_OPTIONS="--preserve-symlinks"
+        echo \${toPackageJson { inherit jsnixDeps; }} > package.json
       '';
       configurePhase = ''
         source $unpackFlattenDedupePath
