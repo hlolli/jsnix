@@ -1,4 +1,4 @@
-{pkgs, stdenv, lib, nodejs, fetchurl, fetchgit, fetchFromGitHub, jq, makeWrapper, perl, python3, runCommand, xcodebuild, ... }:
+{pkgs, stdenv, lib, nodejs, fetchurl, fetchgit, fetchFromGitHub, jq, makeWrapper, python3, ripgrep, runCommand, xcodebuild, ... }:
 
 let
   packageNix = import ./package.nix;
@@ -76,104 +76,7 @@ let
     mv node-* $out
   '';
   flattenScript = ''
-       export topLevel=( $(ls node_modules) )
-       mkdir -p tmp
-       export TMPDIR="$(pwd)/tmp"
-       export NODE_MODULE_DIRS=$(echo $(pwd)/node_modules/*/node_modules/* $(pwd)/node_modules/@*/*/node_modules | xargs ls -lR |grep -v "^d"|grep ":$"|sed -e 's/:$//'|perl -pe 's/^d+s//;'|awk '{count[$1]++}END{for(j in count) print j |"sort -t/ -k2"}')
-       for package in $NODE_MODULE_DIRS; do
-          export nestLvl="4"
-          if [[ ! -z "$(echo $package | egrep '.*/node_modules/([^@][^/]+)$')" ]]
-          then
-              export nestLvl="3"
-          fi
-          if [ -z "$(echo $package | egrep '.*/node_modules$')" ] && \
-             [ -z "$(echo $package | egrep '.*/[@^/]*$')" ] && \
-             [ $(awk -F"/" '{print NF-1}' <<< "$(echo "$package" | sed "s|$(pwd)||g")") -gt "$nestLvl" ]
-          then
-
-            if [ ! -w "$(pwd)/node_modules" ]
-            then
-              mkdir -p $TMPDIR/node_modules
-              mv "$(pwd)/node_modules" $TMPDIR/node_modules
-              mkdir -p "$(pwd)/node_modules"
-              mv $TMPDIR/node_modules/node_modules "$(pwd)"
-              rm -rf $TMPDIR/node_modules
-            fi
-
-            # first ensure the node_modules folder themselves are writable
-            if [[ ! -z "$(echo $package | egrep '.*/node_modules/([^@][^/]+)$')" ]]
-            then
-              if [[  -w "$(dirname -- $(dirname --  "$(dirname -- $package)"))" && \
-                   ! -w "$(dirname --  "$(dirname -- $package)")" && \
-                     -d "$(dirname -- "$(dirname -- $package)")" ]]
-              then
-                mkdir -p $TMPDIR/node_modules
-                mv "$(dirname -- "$(dirname -- $package)")" $TMPDIR/node_modules
-                mkdir -p "$(dirname -- "$(dirname -- $package)")"
-                mv $TMPDIR/node_modules "$(dirname -- "$(dirname -- $package)")"
-                rm -rf $TMPDIR/node_modules
-                if [ ! -w "$(dirname -- $package)" ]
-                then
-                  pkg="$(basename -- "$package")"
-                  mv "$(dirname -- "$package")" $TMPDIR/$pkg
-                  mkdir -p "$(dirname -- "$package")"
-                  mv $TMPDIR/$pkg/* "$(dirname -- "$package")"
-                  rm -rf $TMPDIR/$pkg
-                fi
-              fi
-            fi
-            if [[ ! -z "$(echo $package | egrep '.*/node_modules/@([^/]+/[^/]+$)')" ]]
-            then
-              mkdir -p "$(pwd)/node_modules/$(basename -- "$(dirname -- $package)")"
-              if [[ ! -d "$(pwd)/node_modules/$(basename -- "$(dirname -- $package)")/$(basename "$package")" && \
-                      -w "$(dirname -- $(dirname -- "$package"))" ]]
-              then
-                mv "$package" "$(pwd)/node_modules/$(basename -- "$(dirname -- $package)")"
-              else
-                [[ -w "$(dirname -- $(dirname -- "$package"))" ]] && rm -rf "$package"
-              fi
-            fi
-          if [[ ! -z "$(echo $package | egrep '.*/node_modules/([^@][^/]+$)')" ]]; then
-            if [[ ! -w "$(dirname -- $(dirname -- "$package"))" && \
-                    -w "$(dirname -- $(dirname --  "$(dirname -- $package)"))" && \
-                    -d "$(dirname -- $(dirname -- "$package"))" ]]; then
-                mkdir -p $TMPDIR/node_modules
-                mv "$(dirname -- $(dirname -- "$package"))" $TMPDIR/node_modules
-                mkdir -p "$(dirname -- $(dirname -- "$package"))"
-                mv $TMPDIR/node_modules/* "$(dirname -- $(dirname -- "$package"))"
-                rm -rf $TMPDIR/node_modules
-             fi
-              if [[ ! -w "$(dirname -- $package)" && -w "$(dirname -- $(dirname -- "$package"))" ]]; then
-                mkdir -p $TMPDIR/node_modules
-                mv "$(dirname -- "$package")" $TMPDIR/node_modules
-                mkdir -p "$(dirname -- "$package")"
-                mv $TMPDIR/node_modules/* "$(dirname -- "$package")"
-                find $TMPDIR -type l -delete
-                rm -rf $TMPDIR/node_modules
-              fi
-              if [[ ! -d "$(pwd)/node_modules/$(basename -- "$package")" && -d "$package" ]]; then
-                if [[ ! -L "$(dirname $package)" ]]; then
-                  mv "$package" "$(pwd)/node_modules"
-                else
-                  mkdir -p "$TMPDIR/$package"
-                  cp -rfL $package "$TMPDIR/$package"
-                  rm "$package"
-                  mv "$TMPDIR/$package" "$(pwd)/node_modules"
-                  rm -rf "$TMPDIR/$package"
-                  if [[ $(echo "''${topLevel[@]}" | grep -o "$(basename $package)" | wc -w) ]]; then
-                    rm -rf $package
-                  fi
-                fi
-              else
-                set +e
-                rm -rf "$package" 1>/dev/null 2>/dev/null || true
-                set -e
-              fi
-            fi
-          fi
-        done
-        find $TMPDIR -type l -delete
-        rm -rf $TMPDIR
+    ${goFlatten}/bin/flatten
 '';
   sanitizeName = nm: lib.strings.sanitizeDerivationName
     (builtins.replaceStrings [ "@" "/" ] [ "_at_" "_" ] nm);
@@ -202,7 +105,7 @@ let
                                 (p: (((lib.findSingle (px: px == p.packageName) "none" "found" skipUnpackFor) == "none") &&
                                       (lib.findSingle (px: px == p.packageName) "none" "found" copyUnpackFor) == "found"))
                                 (if (builtins.hasAttr "extraDependencies" drv) then drv.extraDependencies else []));
-         nodeModules = runCommand "${sanitizeName packageNix.name}_node_modules" { buildInputs = [ nodejs perl ]; } ''
+         nodeModules = runCommand "${sanitizeName packageNix.name}_node_modules" { buildInputs = [ nodejs ripgrep ]; } ''
            echo 'unpack, dedupe and flatten dependencies...'
            mkdir -p $out/lib/node_modules
            cd $out/lib
@@ -224,6 +127,7 @@ let
            ${flattenScript}
         '';
     in stdenv.mkDerivation (drv // {
+      inherit nodeModules;
       version = packageNix.version;
       name = sanitizeName packageNix.name;
       preUnpackBan_ = mkPhaseBan "preUnpack" drv;
@@ -246,6 +150,7 @@ let
         cp -rfT ${nodeModules}/lib/node_modules node_modules
         export NODE_PATH="$(pwd)/node_modules:$NODE_PATH"
         export NODE_OPTIONS="--preserve-symlinks"
+        echo ${toPackageJson { inherit jsnixDeps; }} > package.json
       '';
       configurePhase = ''
         source $unpackFlattenDedupePath
@@ -380,6 +285,20 @@ let
       done
       runHook postInstall
     '';
+  goFlatten = pkgs.buildGoModule {
+  pname = "flatten";
+  version = "0.0.0";
+  vendorSha256 = null;
+  src = pkgs.fetchFromGitHub {
+    owner = "hlolli";
+    repo = "jsnix";
+    rev = "a79fa8510106b692a07d79d58f65077eccc74e6c";
+    sha256 = "sha256-gEe06QXUAnCsUu0wgGZpw8oCcMPhwbBzTdxJp50yODI=";
+  };
+  preBuild = ''
+    cd go
+  '';
+};
   sources = rec {
     "@arrows/array-1.4.1" = {dependencies ? []}:
 
@@ -403,6 +322,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@arrows/array"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@arrows/array/-/array-1.4.1.tgz";
         sha512 = "MGYS8xi3c4tTy1ivhrVntFvufoNzje0PchjEz6G/SsWRgUKxL4tKwS6iPdO8vsaJYldagAeWMd5KRD0aX3Q39g==";
@@ -430,6 +352,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@arrows/composition"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@arrows/composition/-/composition-1.2.2.tgz";
         sha512 = "9fh1yHwrx32lundiB3SlZ/VwuStPB4QakPsSLrGJFH6rCXvdrd060ivAZ7/2vlqPnEjBkPRRXOcG1YOu19p2GQ==";
@@ -457,6 +382,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@arrows/dispatch"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@arrows/dispatch/-/dispatch-1.0.3.tgz";
         sha512 = "v/HwvrFonitYZM2PmBlAlCqVqxrkIIoiEuy5bQgn0BdfvlL0ooSBzcPzTMrtzY8eYktPyYcHg8fLbSgyybXEqw==";
@@ -484,6 +412,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@arrows/error"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@arrows/error/-/error-1.0.2.tgz";
         sha512 = "yvkiv1ay4Z3+Z6oQsUkedsQm5aFdyPpkBUQs8vejazU/RmANABx6bMMcBPPHI4aW43VPQmXFfBzr/4FExwWTEA==";
@@ -511,6 +442,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@arrows/multimethod"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@arrows/multimethod/-/multimethod-1.1.7.tgz";
         sha512 = "EjHD3XuGAV4G28rm7mu8k7zQJh/EOizh104/p9i2ofGcnL5mgKONFH/Bq6H3SJjM+WDAlKcR9WBpNhaAKCnH2g==";
@@ -538,6 +472,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/code-frame"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/code-frame/-/code-frame-7.12.11.tgz";
         sha512 = "Zt1yodBx1UcyiePMSkWnU4hPqhwq7hGi2nFL1LeA3EUl+q2LQx16MISgJ0+z7dnmgvP9QtIleuETGOiOH1RcIw==";
@@ -565,6 +502,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/code-frame"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/code-frame/-/code-frame-7.14.5.tgz";
         sha512 = "9pzDqyc6OLDaqe+zbACgFkb6fKMNG6CObKpnYXChRsvYGyEdc7CA2BaqeOM+vOtCS5ndmJicPJhKAwYRI6UfFw==";
@@ -592,6 +532,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/compat-data"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/compat-data/-/compat-data-7.14.7.tgz";
         sha512 = "nS6dZaISCXJ3+518CWiBfEr//gHyMO02uDxBkXTKZDN5POruCnOZ1N4YBRZDCabwF8nZMWBpRxIicmXtBs+fvw==";
@@ -619,6 +562,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/core"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/core/-/core-7.12.13.tgz";
         sha512 = "BQKE9kXkPlXHPeqissfxo0lySWJcYdEP0hdtJOH/iJfDdhOCcgtNCjftCJg3qqauB4h+lz2N6ixM++b9DN1Tcw==";
@@ -646,6 +592,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/core"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/core/-/core-7.14.6.tgz";
         sha512 = "gJnOEWSqTk96qG5BoIrl5bVtc23DCycmIePPYnamY9RboYdI4nFy5vAQMSl81O5K/W0sLDWfGysnOECC+KUUCA==";
@@ -673,6 +622,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/generator"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/generator/-/generator-7.14.5.tgz";
         sha512 = "y3rlP+/G25OIX3mYKKIOlQRcqj7YgrvHxOLbVmyLJ9bPmi5ttvUmpydVjcFjZphOktWuA7ovbx91ECloWTfjIA==";
@@ -700,6 +652,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-annotate-as-pure"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helper-annotate-as-pure/-/helper-annotate-as-pure-7.14.5.tgz";
         sha512 = "EivH9EgBIb+G8ij1B2jAwSH36WnGvkQSEC6CkX/6v6ZFlw5fVOHvsgGF4uiEHO2GzMvunZb6tDLQEQSdrdocrA==";
@@ -727,6 +682,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-builder-binary-assignment-operator-visitor"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helper-builder-binary-assignment-operator-visitor/-/helper-builder-binary-assignment-operator-visitor-7.14.5.tgz";
         sha512 = "YTA/Twn0vBXDVGJuAX6PwW7x5zQei1luDDo2Pl6q1qZ7hVNl0RZrhHCQG/ArGpR29Vl7ETiB8eJyrvpuRp300w==";
@@ -754,6 +712,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-compilation-targets"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helper-compilation-targets/-/helper-compilation-targets-7.14.5.tgz";
         sha512 = "v+QtZqXEiOnpO6EYvlImB6zCD2Lel06RzOPzmkz/D/XgQiUu3C/Jb1LOqSt/AIA34TYi/Q+KlT8vTQrgdxkbLw==";
@@ -781,6 +742,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-create-class-features-plugin"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helper-create-class-features-plugin/-/helper-create-class-features-plugin-7.14.6.tgz";
         sha512 = "Z6gsfGofTxH/+LQXqYEK45kxmcensbzmk/oi8DmaQytlQCgqNZt9XQF8iqlI/SeXWVjaMNxvYvzaYw+kh42mDg==";
@@ -808,6 +772,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-create-regexp-features-plugin"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helper-create-regexp-features-plugin/-/helper-create-regexp-features-plugin-7.14.5.tgz";
         sha512 = "TLawwqpOErY2HhWbGJ2nZT5wSkR192QpN+nBg1THfBfftrlvOh+WbhrxXCH4q4xJ9Gl16BGPR/48JA+Ryiho/A==";
@@ -835,6 +802,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-explode-assignable-expression"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helper-explode-assignable-expression/-/helper-explode-assignable-expression-7.14.5.tgz";
         sha512 = "Htb24gnGJdIGT4vnRKMdoXiOIlqOLmdiUYpAQ0mYfgVT/GDm8GOYhgi4GL+hMKrkiPRohO4ts34ELFsGAPQLDQ==";
@@ -862,6 +832,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-function-name"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helper-function-name/-/helper-function-name-7.14.5.tgz";
         sha512 = "Gjna0AsXWfFvrAuX+VKcN/aNNWonizBj39yGwUzVDVTlMYJMK2Wp6xdpy72mfArFq5uK+NOuexfzZlzI1z9+AQ==";
@@ -889,6 +862,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-get-function-arity"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helper-get-function-arity/-/helper-get-function-arity-7.14.5.tgz";
         sha512 = "I1Db4Shst5lewOM4V+ZKJzQ0JGGaZ6VY1jYvMghRjqs6DWgxLCIyFt30GlnKkfUeFLpJt2vzbMVEXVSXlIFYUg==";
@@ -916,6 +892,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-hoist-variables"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helper-hoist-variables/-/helper-hoist-variables-7.14.5.tgz";
         sha512 = "R1PXiz31Uc0Vxy4OEOm07x0oSjKAdPPCh3tPivn/Eo8cvz6gveAeuyUUPB21Hoiif0uoPQSSdhIPS3352nvdyQ==";
@@ -943,6 +922,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-member-expression-to-functions"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helper-member-expression-to-functions/-/helper-member-expression-to-functions-7.14.7.tgz";
         sha512 = "TMUt4xKxJn6ccjcOW7c4hlwyJArizskAhoSTOCkA0uZ+KghIaci0Qg9R043kUMWI9mtQfgny+NQ5QATnZ+paaA==";
@@ -970,6 +952,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-module-imports"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helper-module-imports/-/helper-module-imports-7.14.5.tgz";
         sha512 = "SwrNHu5QWS84XlHwGYPDtCxcA0hrSlL2yhWYLgeOc0w7ccOl2qv4s/nARI0aYZW+bSwAL5CukeXA47B/1NKcnQ==";
@@ -997,6 +982,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-module-transforms"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helper-module-transforms/-/helper-module-transforms-7.14.5.tgz";
         sha512 = "iXpX4KW8LVODuAieD7MzhNjmM6dzYY5tfRqT+R9HDXWl0jPn/djKmA+G9s/2C2T9zggw5tK1QNqZ70USfedOwA==";
@@ -1024,6 +1012,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-optimise-call-expression"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helper-optimise-call-expression/-/helper-optimise-call-expression-7.14.5.tgz";
         sha512 = "IqiLIrODUOdnPU9/F8ib1Fx2ohlgDhxnIDU7OEVi+kAbEZcyiF7BLU8W6PfvPi9LzztjS7kcbzbmL7oG8kD6VA==";
@@ -1051,6 +1042,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-plugin-utils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helper-plugin-utils/-/helper-plugin-utils-7.14.5.tgz";
         sha512 = "/37qQCE3K0vvZKwoK4XU/irIJQdIfCJuhU5eKnNxpFDsOkgFaUAwbv+RYw6eYgsC0E4hS7r5KqGULUogqui0fQ==";
@@ -1078,6 +1072,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-remap-async-to-generator"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helper-remap-async-to-generator/-/helper-remap-async-to-generator-7.14.5.tgz";
         sha512 = "rLQKdQU+HYlxBwQIj8dk4/0ENOUEhA/Z0l4hN8BexpvmSMN9oA9EagjnhnDpNsRdWCfjwa4mn/HyBXO9yhQP6A==";
@@ -1105,6 +1102,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-replace-supers"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helper-replace-supers/-/helper-replace-supers-7.14.5.tgz";
         sha512 = "3i1Qe9/8x/hCHINujn+iuHy+mMRLoc77b2nI9TB0zjH1hvn9qGlXjWlggdwUcju36PkPCy/lpM7LLUdcTyH4Ow==";
@@ -1132,6 +1132,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-simple-access"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helper-simple-access/-/helper-simple-access-7.14.5.tgz";
         sha512 = "nfBN9xvmCt6nrMZjfhkl7i0oTV3yxR4/FztsbOASyTvVcoYd0TRHh7eMLdlEcCqobydC0LAF3LtC92Iwxo0wyw==";
@@ -1159,6 +1162,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-skip-transparent-expression-wrappers"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helper-skip-transparent-expression-wrappers/-/helper-skip-transparent-expression-wrappers-7.14.5.tgz";
         sha512 = "dmqZB7mrb94PZSAOYtr+ZN5qt5owZIAgqtoTuqiFbHFtxgEcmQlRJVI+bO++fciBunXtB6MK7HrzrfcAzIz2NQ==";
@@ -1186,6 +1192,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-split-export-declaration"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helper-split-export-declaration/-/helper-split-export-declaration-7.14.5.tgz";
         sha512 = "hprxVPu6e5Kdp2puZUmvOGjaLv9TCe58E/Fl6hRq4YiVQxIcNvuq6uTM2r1mT/oPskuS9CgR+I94sqAYv0NGKA==";
@@ -1213,6 +1222,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-validator-identifier"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helper-validator-identifier/-/helper-validator-identifier-7.14.5.tgz";
         sha512 = "5lsetuxCLilmVGyiLEfoHBRX8UCFD+1m2x3Rj97WrW3V7H3u4RWRXA4evMjImCsin2J2YT0QaVDGf+z8ondbAg==";
@@ -1240,6 +1252,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-validator-option"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helper-validator-option/-/helper-validator-option-7.14.5.tgz";
         sha512 = "OX8D5eeX4XwcroVW45NMvoYaIuFI+GQpA2a8Gi+X/U/cDUIRsV37qQfF905F0htTRCREQIB4KqPeaveRJUl3Ow==";
@@ -1267,6 +1282,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helper-wrap-function"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helper-wrap-function/-/helper-wrap-function-7.14.5.tgz";
         sha512 = "YEdjTCq+LNuNS1WfxsDCNpgXkJaIyqco6DAelTUjT4f2KIWC1nBcaCaSdHTBqQVLnTBexBcVcFhLSU1KnYuePQ==";
@@ -1294,6 +1312,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/helpers"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/helpers/-/helpers-7.14.6.tgz";
         sha512 = "yesp1ENQBiLI+iYHSJdoZKUtRpfTlL1grDIX9NRlAVppljLw/4tTyYupIB7uIYmC3stW/imAv8EqaKaS/ibmeA==";
@@ -1321,6 +1342,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/highlight"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/highlight/-/highlight-7.14.5.tgz";
         sha512 = "qf9u2WFWVV0MppaL877j2dBtQIDgmidgjGk5VIMw3OadXvYaXn66U1BFlH2t4+t3i+8PhedppRv+i40ABzd+gg==";
@@ -1348,6 +1372,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/parser"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/parser/-/parser-7.14.7.tgz";
         sha512 = "X67Z5y+VBJuHB/RjwECp8kSl5uYi0BvRbNeWqkaJCVh+LiTPl19WBUfG627psSgp9rSf6ojuXghQM3ha6qHHdA==";
@@ -1375,6 +1402,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-async-generator-functions"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-proposal-async-generator-functions/-/plugin-proposal-async-generator-functions-7.14.7.tgz";
         sha512 = "RK8Wj7lXLY3bqei69/cc25gwS5puEc3dknoFPFbqfy3XxYQBQFvu4ioWpafMBAB+L9NyptQK4nMOa5Xz16og8Q==";
@@ -1402,6 +1432,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-class-properties"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-proposal-class-properties/-/plugin-proposal-class-properties-7.14.5.tgz";
         sha512 = "q/PLpv5Ko4dVc1LYMpCY7RVAAO4uk55qPwrIuJ5QJ8c6cVuAmhu7I/49JOppXL6gXf7ZHzpRVEUZdYoPLM04Gg==";
@@ -1429,6 +1462,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-dynamic-import"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-proposal-dynamic-import/-/plugin-proposal-dynamic-import-7.14.5.tgz";
         sha512 = "ExjiNYc3HDN5PXJx+bwC50GIx/KKanX2HiggnIUAYedbARdImiCU4RhhHfdf0Kd7JNXGpsBBBCOm+bBVy3Gb0g==";
@@ -1456,6 +1492,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-export-namespace-from"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-proposal-export-namespace-from/-/plugin-proposal-export-namespace-from-7.14.5.tgz";
         sha512 = "g5POA32bXPMmSBu5Dx/iZGLGnKmKPc5AiY7qfZgurzrCYgIztDlHFbznSNCoQuv57YQLnQfaDi7dxCtLDIdXdA==";
@@ -1483,6 +1522,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-json-strings"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-proposal-json-strings/-/plugin-proposal-json-strings-7.14.5.tgz";
         sha512 = "NSq2fczJYKVRIsUJyNxrVUMhB27zb7N7pOFGQOhBKJrChbGcgEAqyZrmZswkPk18VMurEeJAaICbfm57vUeTbQ==";
@@ -1510,6 +1552,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-logical-assignment-operators"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-proposal-logical-assignment-operators/-/plugin-proposal-logical-assignment-operators-7.14.5.tgz";
         sha512 = "YGn2AvZAo9TwyhlLvCCWxD90Xq8xJ4aSgaX3G5D/8DW94L8aaT+dS5cSP+Z06+rCJERGSr9GxMBZ601xoc2taw==";
@@ -1537,6 +1582,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-nullish-coalescing-operator"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-proposal-nullish-coalescing-operator/-/plugin-proposal-nullish-coalescing-operator-7.14.5.tgz";
         sha512 = "gun/SOnMqjSb98Nkaq2rTKMwervfdAoz6NphdY0vTfuzMfryj+tDGb2n6UkDKwez+Y8PZDhE3D143v6Gepp4Hg==";
@@ -1564,6 +1612,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-numeric-separator"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-proposal-numeric-separator/-/plugin-proposal-numeric-separator-7.14.5.tgz";
         sha512 = "yiclALKe0vyZRZE0pS6RXgjUOt87GWv6FYa5zqj15PvhOGFO69R5DusPlgK/1K5dVnCtegTiWu9UaBSrLLJJBg==";
@@ -1591,6 +1642,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-object-rest-spread"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-proposal-object-rest-spread/-/plugin-proposal-object-rest-spread-7.12.13.tgz";
         sha512 = "WvA1okB/0OS/N3Ldb3sziSrXg6sRphsBgqiccfcQq7woEn5wQLNX82Oc4PlaFcdwcWHuQXAtb8ftbS8Fbsg/sg==";
@@ -1618,6 +1672,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-object-rest-spread"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-proposal-object-rest-spread/-/plugin-proposal-object-rest-spread-7.14.7.tgz";
         sha512 = "082hsZz+sVabfmDWo1Oct1u1AgbKbUAyVgmX4otIc7bdsRgHBXwTwb3DpDmD4Eyyx6DNiuz5UAATT655k+kL5g==";
@@ -1645,6 +1702,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-optional-catch-binding"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-proposal-optional-catch-binding/-/plugin-proposal-optional-catch-binding-7.14.5.tgz";
         sha512 = "3Oyiixm0ur7bzO5ybNcZFlmVsygSIQgdOa7cTfOYCMY+wEPAYhZAJxi3mixKFCTCKUhQXuCTtQ1MzrpL3WT8ZQ==";
@@ -1672,6 +1732,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-optional-chaining"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-proposal-optional-chaining/-/plugin-proposal-optional-chaining-7.14.5.tgz";
         sha512 = "ycz+VOzo2UbWNI1rQXxIuMOzrDdHGrI23fRiz/Si2R4kv2XZQ1BK8ccdHwehMKBlcH/joGW/tzrUmo67gbJHlQ==";
@@ -1699,6 +1762,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-private-methods"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-proposal-private-methods/-/plugin-proposal-private-methods-7.14.5.tgz";
         sha512 = "838DkdUA1u+QTCplatfq4B7+1lnDa/+QMI89x5WZHBcnNv+47N8QEj2k9I2MUU9xIv8XJ4XvPCviM/Dj7Uwt9g==";
@@ -1726,6 +1792,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-proposal-unicode-property-regex"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-proposal-unicode-property-regex/-/plugin-proposal-unicode-property-regex-7.14.5.tgz";
         sha512 = "6axIeOU5LnY471KenAB9vI8I5j7NQ2d652hIYwVyRfgaZT5UpiqFKCuVXCDMSrU+3VFafnu2c5m3lrWIlr6A5Q==";
@@ -1753,6 +1822,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-async-generators"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-syntax-async-generators/-/plugin-syntax-async-generators-7.8.4.tgz";
         sha512 = "tycmZxkGfZaxhMRbXlPXuVFpdWlXpir2W4AMhSJgRKzk/eDlIXOhb2LHWoLpDF7TEHylV5zNhykX6KAgHJmTNw==";
@@ -1780,6 +1852,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-bigint"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-syntax-bigint/-/plugin-syntax-bigint-7.8.3.tgz";
         sha512 = "wnTnFlG+YxQm3vDxpGE57Pj0srRU4sHE/mDkt1qv2YJJSeUAec2ma4WLUnUPeKjyrfntVwe/N6dCXpU+zL3Npg==";
@@ -1807,6 +1882,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-class-properties"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-syntax-class-properties/-/plugin-syntax-class-properties-7.12.13.tgz";
         sha512 = "fm4idjKla0YahUNgFNLCB0qySdsoPiZP3iQE3rky0mBUtMZ23yDJ9SJdg6dXTSDnulOVqiF3Hgr9nbXvXTQZYA==";
@@ -1834,6 +1912,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-dynamic-import"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-syntax-dynamic-import/-/plugin-syntax-dynamic-import-7.8.3.tgz";
         sha512 = "5gdGbFon+PszYzqs83S3E5mpi7/y/8M9eC90MRTZfduQOYW76ig6SOSPNe41IG5LoP3FGBn2N0RjVDSQiS94kQ==";
@@ -1861,6 +1942,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-export-namespace-from"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-syntax-export-namespace-from/-/plugin-syntax-export-namespace-from-7.8.3.tgz";
         sha512 = "MXf5laXo6c1IbEbegDmzGPwGNTsHZmEy6QGznu5Sh2UCWvueywb2ee+CCE4zQiZstxU9BMoQO9i6zUFSY0Kj0Q==";
@@ -1888,6 +1972,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-import-meta"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-syntax-import-meta/-/plugin-syntax-import-meta-7.10.4.tgz";
         sha512 = "Yqfm+XDx0+Prh3VSeEQCPU81yC+JWZ2pDPFSS4ZdpfZhp4MkFMaDC1UqseovEKwSUpnIL7+vK+Clp7bfh0iD7g==";
@@ -1915,6 +2002,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-json-strings"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-syntax-json-strings/-/plugin-syntax-json-strings-7.8.3.tgz";
         sha512 = "lY6kdGpWHvjoe2vk4WrAapEuBR69EMxZl+RoGRhrFGNYVK8mOPAW8VfbT/ZgrFbXlDNiiaxQnAtgVCZ6jv30EA==";
@@ -1942,6 +2032,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-jsx"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-syntax-jsx/-/plugin-syntax-jsx-7.14.5.tgz";
         sha512 = "ohuFIsOMXJnbOMRfX7/w7LocdR6R7whhuRD4ax8IipLcLPlZGJKkBxgHp++U4N/vKyU16/YDQr2f5seajD3jIw==";
@@ -1969,6 +2062,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-logical-assignment-operators"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-syntax-logical-assignment-operators/-/plugin-syntax-logical-assignment-operators-7.10.4.tgz";
         sha512 = "d8waShlpFDinQ5MtvGU9xDAOzKH47+FFoney2baFIoMr952hKOLp1HR7VszoZvOsV/4+RRszNY7D17ba0te0ig==";
@@ -1996,6 +2092,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-nullish-coalescing-operator"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-syntax-nullish-coalescing-operator/-/plugin-syntax-nullish-coalescing-operator-7.8.3.tgz";
         sha512 = "aSff4zPII1u2QD7y+F8oDsz19ew4IGEJg9SVW+bqwpwtfFleiQDMdzA/R+UlWDzfnHFCxxleFT0PMIrR36XLNQ==";
@@ -2023,6 +2122,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-numeric-separator"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-syntax-numeric-separator/-/plugin-syntax-numeric-separator-7.10.4.tgz";
         sha512 = "9H6YdfkcK/uOnY/K7/aA2xpzaAgkQn37yzWUMRK7OaPOqOpGS1+n0H5hxT9AUw9EsSjPW8SVyMJwYRtWs3X3ug==";
@@ -2050,6 +2152,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-object-rest-spread"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-syntax-object-rest-spread/-/plugin-syntax-object-rest-spread-7.8.3.tgz";
         sha512 = "XoqMijGZb9y3y2XskN+P1wUGiVwWZ5JmoDRwx5+3GmEplNyVM2s2Dg8ILFQm8rWM48orGy5YpI5Bl8U1y7ydlA==";
@@ -2077,6 +2182,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-optional-catch-binding"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-syntax-optional-catch-binding/-/plugin-syntax-optional-catch-binding-7.8.3.tgz";
         sha512 = "6VPD0Pc1lpTqw0aKoeRTMiB+kWhAoT24PA+ksWSBrFtl5SIRVpZlwN3NNPQjehA2E/91FV3RjLWoVTglWcSV3Q==";
@@ -2104,6 +2212,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-optional-chaining"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-syntax-optional-chaining/-/plugin-syntax-optional-chaining-7.8.3.tgz";
         sha512 = "KoK9ErH1MBlCPxV0VANkXW2/dw4vlbGDrFgz8bmUsBGYkFRcbRwMh6cIJubdPrkxRwuGdtCk0v/wPTKbQgBjkg==";
@@ -2131,6 +2242,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-top-level-await"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-syntax-top-level-await/-/plugin-syntax-top-level-await-7.14.5.tgz";
         sha512 = "hx++upLv5U1rgYfwe1xBQUhRmU41NEvpUvrp8jkrSCdvGSnM5/qdRMtylJ6PG5OFkBaHkbTAKTnd3/YyESRHFw==";
@@ -2158,6 +2272,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-syntax-typescript"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-syntax-typescript/-/plugin-syntax-typescript-7.14.5.tgz";
         sha512 = "u6OXzDaIXjEstBRRoBCQ/uKQKlbuaeE5in0RvWdA4pN6AhqxTIwUsnHPU1CFZA/amYObMsuWhYfRl3Ch90HD0Q==";
@@ -2185,6 +2302,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-arrow-functions"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-arrow-functions/-/plugin-transform-arrow-functions-7.14.5.tgz";
         sha512 = "KOnO0l4+tD5IfOdi4x8C1XmEIRWUjNRV8wc6K2vz/3e8yAOoZZvsRXRRIF/yo/MAOFb4QjtAw9xSxMXbSMRy8A==";
@@ -2212,6 +2332,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-async-to-generator"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-async-to-generator/-/plugin-transform-async-to-generator-7.14.5.tgz";
         sha512 = "szkbzQ0mNk0rpu76fzDdqSyPu0MuvpXgC+6rz5rpMb5OIRxdmHfQxrktL8CYolL2d8luMCZTR0DpIMIdL27IjA==";
@@ -2239,6 +2362,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-block-scoped-functions"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-block-scoped-functions/-/plugin-transform-block-scoped-functions-7.14.5.tgz";
         sha512 = "dtqWqdWZ5NqBX3KzsVCWfQI3A53Ft5pWFCT2eCVUftWZgjc5DpDponbIF1+c+7cSGk2wN0YK7HGL/ezfRbpKBQ==";
@@ -2266,6 +2392,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-block-scoping"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-block-scoping/-/plugin-transform-block-scoping-7.14.5.tgz";
         sha512 = "LBYm4ZocNgoCqyxMLoOnwpsmQ18HWTQvql64t3GvMUzLQrNoV1BDG0lNftC8QKYERkZgCCT/7J5xWGObGAyHDw==";
@@ -2293,6 +2422,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-classes"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-classes/-/plugin-transform-classes-7.14.5.tgz";
         sha512 = "J4VxKAMykM06K/64z9rwiL6xnBHgB1+FVspqvlgCdwD1KUbQNfszeKVVOMh59w3sztHYIZDgnhOC4WbdEfHFDA==";
@@ -2320,6 +2452,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-computed-properties"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-computed-properties/-/plugin-transform-computed-properties-7.14.5.tgz";
         sha512 = "pWM+E4283UxaVzLb8UBXv4EIxMovU4zxT1OPnpHJcmnvyY9QbPPTKZfEj31EUvG3/EQRbYAGaYEUZ4yWOBC2xg==";
@@ -2347,6 +2482,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-destructuring"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-destructuring/-/plugin-transform-destructuring-7.14.7.tgz";
         sha512 = "0mDE99nK+kVh3xlc5vKwB6wnP9ecuSj+zQCa/n0voENtP/zymdT4HH6QEb65wjjcbqr1Jb/7z9Qp7TF5FtwYGw==";
@@ -2374,6 +2512,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-dotall-regex"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-dotall-regex/-/plugin-transform-dotall-regex-7.14.5.tgz";
         sha512 = "loGlnBdj02MDsFaHhAIJzh7euK89lBrGIdM9EAtHFo6xKygCUGuuWe07o1oZVk287amtW1n0808sQM99aZt3gw==";
@@ -2401,6 +2542,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-duplicate-keys"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-duplicate-keys/-/plugin-transform-duplicate-keys-7.14.5.tgz";
         sha512 = "iJjbI53huKbPDAsJ8EmVmvCKeeq21bAze4fu9GBQtSLqfvzj2oRuHVx4ZkDwEhg1htQ+5OBZh/Ab0XDf5iBZ7A==";
@@ -2428,6 +2572,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-exponentiation-operator"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-exponentiation-operator/-/plugin-transform-exponentiation-operator-7.14.5.tgz";
         sha512 = "jFazJhMBc9D27o9jDnIE5ZErI0R0m7PbKXVq77FFvqFbzvTMuv8jaAwLZ5PviOLSFttqKIW0/wxNSDbjLk0tYA==";
@@ -2455,6 +2602,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-for-of"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-for-of/-/plugin-transform-for-of-7.14.5.tgz";
         sha512 = "CfmqxSUZzBl0rSjpoQSFoR9UEj3HzbGuGNL21/iFTmjb5gFggJp3ph0xR1YBhexmLoKRHzgxuFvty2xdSt6gTA==";
@@ -2482,6 +2632,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-function-name"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-function-name/-/plugin-transform-function-name-7.14.5.tgz";
         sha512 = "vbO6kv0fIzZ1GpmGQuvbwwm+O4Cbm2NrPzwlup9+/3fdkuzo1YqOZcXw26+YUJB84Ja7j9yURWposEHLYwxUfQ==";
@@ -2509,6 +2662,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-literals"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-literals/-/plugin-transform-literals-7.14.5.tgz";
         sha512 = "ql33+epql2F49bi8aHXxvLURHkxJbSmMKl9J5yHqg4PLtdE6Uc48CH1GS6TQvZ86eoB/ApZXwm7jlA+B3kra7A==";
@@ -2536,6 +2692,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-member-expression-literals"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-member-expression-literals/-/plugin-transform-member-expression-literals-7.14.5.tgz";
         sha512 = "WkNXxH1VXVTKarWFqmso83xl+2V3Eo28YY5utIkbsmXoItO8Q3aZxN4BTS2k0hz9dGUloHK26mJMyQEYfkn/+Q==";
@@ -2563,6 +2722,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-modules-amd"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-modules-amd/-/plugin-transform-modules-amd-7.14.5.tgz";
         sha512 = "3lpOU8Vxmp3roC4vzFpSdEpGUWSMsHFreTWOMMLzel2gNGfHE5UWIh/LN6ghHs2xurUp4jRFYMUIZhuFbody1g==";
@@ -2590,6 +2752,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-modules-commonjs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-modules-commonjs/-/plugin-transform-modules-commonjs-7.14.5.tgz";
         sha512 = "en8GfBtgnydoao2PS+87mKyw62k02k7kJ9ltbKe0fXTHrQmG6QZZflYuGI1VVG7sVpx4E1n7KBpNlPb8m78J+A==";
@@ -2617,6 +2782,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-modules-systemjs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-modules-systemjs/-/plugin-transform-modules-systemjs-7.14.5.tgz";
         sha512 = "mNMQdvBEE5DcMQaL5LbzXFMANrQjd2W7FPzg34Y4yEz7dBgdaC+9B84dSO+/1Wba98zoDbInctCDo4JGxz1VYA==";
@@ -2644,6 +2812,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-modules-umd"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-modules-umd/-/plugin-transform-modules-umd-7.14.5.tgz";
         sha512 = "RfPGoagSngC06LsGUYyM9QWSXZ8MysEjDJTAea1lqRjNECE3y0qIJF/qbvJxc4oA4s99HumIMdXOrd+TdKaAAA==";
@@ -2671,6 +2842,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-named-capturing-groups-regex"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-named-capturing-groups-regex/-/plugin-transform-named-capturing-groups-regex-7.14.7.tgz";
         sha512 = "DTNOTaS7TkW97xsDMrp7nycUVh6sn/eq22VaxWfEdzuEbRsiaOU0pqU7DlyUGHVsbQbSghvjKRpEl+nUCKGQSg==";
@@ -2698,6 +2872,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-new-target"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-new-target/-/plugin-transform-new-target-7.14.5.tgz";
         sha512 = "Nx054zovz6IIRWEB49RDRuXGI4Gy0GMgqG0cII9L3MxqgXz/+rgII+RU58qpo4g7tNEx1jG7rRVH4ihZoP4esQ==";
@@ -2725,6 +2902,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-object-super"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-object-super/-/plugin-transform-object-super-7.14.5.tgz";
         sha512 = "MKfOBWzK0pZIrav9z/hkRqIk/2bTv9qvxHzPQc12RcVkMOzpIKnFCNYJip00ssKWYkd8Sf5g0Wr7pqJ+cmtuFg==";
@@ -2752,6 +2932,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-parameters"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-parameters/-/plugin-transform-parameters-7.14.5.tgz";
         sha512 = "Tl7LWdr6HUxTmzQtzuU14SqbgrSKmaR77M0OKyq4njZLQTPfOvzblNKyNkGwOfEFCEx7KeYHQHDI0P3F02IVkA==";
@@ -2779,6 +2962,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-property-literals"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-property-literals/-/plugin-transform-property-literals-7.14.5.tgz";
         sha512 = "r1uilDthkgXW8Z1vJz2dKYLV1tuw2xsbrp3MrZmD99Wh9vsfKoob+JTgri5VUb/JqyKRXotlOtwgu4stIYCmnw==";
@@ -2806,6 +2992,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-react-jsx"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-react-jsx/-/plugin-transform-react-jsx-7.14.5.tgz";
         sha512 = "7RylxNeDnxc1OleDm0F5Q/BSL+whYRbOAR+bwgCxIr0L32v7UFh/pz1DLMZideAUxKT6eMoS2zQH6fyODLEi8Q==";
@@ -2833,6 +3022,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-regenerator"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-regenerator/-/plugin-transform-regenerator-7.14.5.tgz";
         sha512 = "NVIY1W3ITDP5xQl50NgTKlZ0GrotKtLna08/uGY6ErQt6VEQZXla86x/CTddm5gZdcr+5GSsvMeTmWA5Ii6pkg==";
@@ -2860,6 +3052,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-reserved-words"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-reserved-words/-/plugin-transform-reserved-words-7.14.5.tgz";
         sha512 = "cv4F2rv1nD4qdexOGsRQXJrOcyb5CrgjUH9PKrrtyhSDBNWGxd0UIitjyJiWagS+EbUGjG++22mGH1Pub8D6Vg==";
@@ -2887,6 +3082,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-shorthand-properties"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-shorthand-properties/-/plugin-transform-shorthand-properties-7.14.5.tgz";
         sha512 = "xLucks6T1VmGsTB+GWK5Pl9Jl5+nRXD1uoFdA5TSO6xtiNjtXTjKkmPdFXVLGlK5A2/or/wQMKfmQ2Y0XJfn5g==";
@@ -2914,6 +3112,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-spread"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-spread/-/plugin-transform-spread-7.14.6.tgz";
         sha512 = "Zr0x0YroFJku7n7+/HH3A2eIrGMjbmAIbJSVv0IZ+t3U2WUQUA64S/oeied2e+MaGSjmt4alzBCsK9E8gh+fag==";
@@ -2941,6 +3142,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-sticky-regex"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-sticky-regex/-/plugin-transform-sticky-regex-7.14.5.tgz";
         sha512 = "Z7F7GyvEMzIIbwnziAZmnSNpdijdr4dWt+FJNBnBLz5mwDFkqIXU9wmBcWWad3QeJF5hMTkRe4dAq2sUZiG+8A==";
@@ -2968,6 +3172,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-template-literals"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-template-literals/-/plugin-transform-template-literals-7.14.5.tgz";
         sha512 = "22btZeURqiepOfuy/VkFr+zStqlujWaarpMErvay7goJS6BWwdd6BY9zQyDLDa4x2S3VugxFb162IZ4m/S/+Gg==";
@@ -2995,6 +3202,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-typeof-symbol"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-typeof-symbol/-/plugin-transform-typeof-symbol-7.14.5.tgz";
         sha512 = "lXzLD30ffCWseTbMQzrvDWqljvZlHkXU+CnseMhkMNqU1sASnCsz3tSzAaH3vCUXb9PHeUb90ZT1BdFTm1xxJw==";
@@ -3022,6 +3232,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-unicode-escapes"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-unicode-escapes/-/plugin-transform-unicode-escapes-7.14.5.tgz";
         sha512 = "crTo4jATEOjxj7bt9lbYXcBAM3LZaUrbP2uUdxb6WIorLmjNKSpHfIybgY4B8SRpbf8tEVIWH3Vtm7ayCrKocA==";
@@ -3049,6 +3262,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/plugin-transform-unicode-regex"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/plugin-transform-unicode-regex/-/plugin-transform-unicode-regex-7.14.5.tgz";
         sha512 = "UygduJpC5kHeCiRw/xDVzC+wj8VaYSoKl5JNVmbP7MadpNinAm3SvZCxZ42H37KZBKztz46YC73i9yV34d0Tzw==";
@@ -3076,6 +3292,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/preset-env"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/preset-env/-/preset-env-7.12.13.tgz";
         sha512 = "JUVlizG8SoFTz4LmVUL8++aVwzwxcvey3N0j1tRbMAXVEy95uQ/cnEkmEKHN00Bwq4voAV3imQGnQvpkLAxsrw==";
@@ -3103,6 +3322,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/preset-modules"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/preset-modules/-/preset-modules-0.1.4.tgz";
         sha512 = "J36NhwnfdzpmH41M1DrnkkgAqhZaqr/NBdPfQ677mLzlaXo+oDiv1deyCDtgAhz8p328otdob0Du7+xgHGZbKg==";
@@ -3130,6 +3352,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/runtime"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/runtime/-/runtime-7.14.6.tgz";
         sha512 = "/PCB2uJ7oM44tz8YhC4Z/6PeOKXp4K588f+5M3clr1M4zbqztlo0XEfJ2LEzj/FgwfgGcIdl8n7YYjTCI0BYwg==";
@@ -3157,6 +3382,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/template"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/template/-/template-7.14.5.tgz";
         sha512 = "6Z3Po85sfxRGachLULUhOmvAaOo7xCvqGQtxINai2mEGPFm6pQ4z5QInFnUrRpfoSV60BnjyF5F3c+15fxFV1g==";
@@ -3184,6 +3412,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/traverse"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/traverse/-/traverse-7.14.7.tgz";
         sha512 = "9vDr5NzHu27wgwejuKL7kIOm4bwEtaPQ4Z6cpCmjSuaRqpH/7xc4qcGEscwMqlkwgcXl6MvqoAjZkQ24uSdIZQ==";
@@ -3211,6 +3442,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@babel/types"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@babel/types/-/types-7.14.5.tgz";
         sha512 = "M/NzBpEL95I5Hh4dwhin5JlE7EzO5PHMAuzjxss3tiOBD46KfQvVedN/3jEPZvdRvtsK2222XfdHogNIttFgcg==";
@@ -3238,6 +3472,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@bcoe/v8-coverage"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz";
         sha512 = "0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==";
@@ -3265,6 +3502,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@cnakazawa/watch"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@cnakazawa/watch/-/watch-1.0.4.tgz";
         sha512 = "v9kIhKwjeZThiWrLmj0y17CWoyddASLj9O2yvbZkbvw/N3rWOYy9zkV66ursAoVr0mV15bL8g0c4QZUE6cdDoQ==";
@@ -3292,6 +3532,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@definitelytyped/header-parser"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@definitelytyped/header-parser/-/header-parser-0.0.85.tgz";
         sha512 = "fH37Yt5VjBKFu/2rFzn6xrjkASaIEqjED77V7vxb8JFCalTvGhiPpTrWzfp2EjK0Lhd8bkCZhRpYoW8GKatcdA==";
@@ -3319,6 +3562,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@definitelytyped/typescript-versions"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@definitelytyped/typescript-versions/-/typescript-versions-0.0.85.tgz";
         sha512 = "+yHqi887UMZ4TlLBkA2QcYNP/EZSKGKSAFJtSWY6J5DiBQq3k0yLN1yTfbLonQ52IBenI1iJo/4ePr5A3co5ZQ==";
@@ -3346,6 +3592,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@definitelytyped/utils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@definitelytyped/utils/-/utils-0.0.85.tgz";
         sha512 = "GHfMwIroQf3jrvps3a0rClpm5thyHajXGkMUTk4tJ4ew5I53wCnJSPMwlknsFD70F7a1hNDJGySu0PRg4px32Q==";
@@ -3373,6 +3622,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@eslint/eslintrc"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@eslint/eslintrc/-/eslintrc-0.2.2.tgz";
         sha512 = "EfB5OHNYp1F4px/LI/FEnGylop7nOqkQ1LRzCM0KccA2U8tvV8w01KBv37LbO7nW4H+YhKyo2LcJhRwjjV17QQ==";
@@ -3400,6 +3652,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@eslint/eslintrc"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@eslint/eslintrc/-/eslintrc-0.4.2.tgz";
         sha512 = "8nmGq/4ycLpIwzvhI4tNDmQztZ8sp+hI7cyG8i1nQDhkAbRzHpXPidRAHlNvCZQpJTKw5ItIpMw9RSToGF00mg==";
@@ -3427,6 +3682,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@humanwhocodes/config-array"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@humanwhocodes/config-array/-/config-array-0.5.0.tgz";
         sha512 = "FagtKFz74XrTl7y6HCzQpwDfXP0yhxe9lHLD1UZxjvZIcbyRz8zTFF/yYNfSfzU414eDwZ1SrO0Qvtyf+wFMQg==";
@@ -3454,6 +3712,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@humanwhocodes/object-schema"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@humanwhocodes/object-schema/-/object-schema-1.2.0.tgz";
         sha512 = "wdppn25U8z/2yiaT6YGquE6X8sSv7hNMWSXYSSU1jGv/yd6XqjXgTDJ8KP4NgjTXfJ3GbRjeeb8RTV7a/VpM+w==";
@@ -3481,6 +3742,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@istanbuljs/load-nyc-config"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@istanbuljs/load-nyc-config/-/load-nyc-config-1.1.0.tgz";
         sha512 = "VjeHSlIzpv/NyD3N0YuHfXOPDIixcA1q2ZV98wsMqcYlPmv2n3Yb2lYP9XMElnaFVXg5A7YLTeLu6V84uQDjmQ==";
@@ -3508,6 +3772,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@istanbuljs/schema"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@istanbuljs/schema/-/schema-0.1.3.tgz";
         sha512 = "ZXRY4jNvVgSVQ8DL3LTcakaAtXwTVUxE81hslsyD2AtoXW/wVob10HkOJ1X/pAlcI7D+2YoZKg5do8G/w6RYgA==";
@@ -3535,6 +3802,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/console"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/console/-/console-24.9.0.tgz";
         sha512 = "Zuj6b8TnKXi3q4ymac8EQfc3ea/uhLeCGThFqXeC8H9/raaH8ARPUTdId+XyGd03Z4In0/VjD2OYFcBF09fNLQ==";
@@ -3562,6 +3832,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/console"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/console/-/console-26.6.2.tgz";
         sha512 = "IY1R2i2aLsLr7Id3S6p2BA82GNWryt4oSvEXLAKc+L2zdi89dSkE8xC1C+0kpATG4JhBJREnQOH7/zmccM2B0g==";
@@ -3589,6 +3862,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/console"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/console/-/console-27.0.6.tgz";
         sha512 = "fMlIBocSHPZ3JxgWiDNW/KPj6s+YRd0hicb33IrmelCcjXo/pXPwvuiKFmZz+XuqI/1u7nbUK10zSsWL/1aegg==";
@@ -3616,6 +3892,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/core"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/core/-/core-26.6.3.tgz";
         sha512 = "xvV1kKbhfUqFVuZ8Cyo+JPpipAHHAV3kcDBftiduK8EICXmTFddryy3P7NfZt8Pv37rA9nEJBKCCkglCPt/Xjw==";
@@ -3643,6 +3922,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/core"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/core/-/core-27.0.6.tgz";
         sha512 = "SsYBm3yhqOn5ZLJCtccaBcvD/ccTLCeuDv8U41WJH/V1MW5eKUkeMHT9U+Pw/v1m1AIWlnIW/eM2XzQr0rEmow==";
@@ -3670,6 +3952,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/environment"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/environment/-/environment-26.6.2.tgz";
         sha512 = "nFy+fHl28zUrRsCeMB61VDThV1pVTtlEokBRgqPrcT1JNq4yRNIyTHfyht6PqtUvY9IsuLGTrbG8kPXjSZIZwA==";
@@ -3697,6 +3982,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/environment"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/environment/-/environment-27.0.6.tgz";
         sha512 = "4XywtdhwZwCpPJ/qfAkqExRsERW+UaoSRStSHCCiQTUpoYdLukj+YJbQSFrZjhlUDRZeNiU9SFH0u7iNimdiIg==";
@@ -3724,6 +4012,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/fake-timers"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/fake-timers/-/fake-timers-26.6.2.tgz";
         sha512 = "14Uleatt7jdzefLPYM3KLcnUl1ZNikaKq34enpb5XG9i81JpppDb5muZvonvKyrl7ftEHkKS5L5/eB/kxJ+bvA==";
@@ -3751,6 +4042,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/fake-timers"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/fake-timers/-/fake-timers-27.0.6.tgz";
         sha512 = "sqd+xTWtZ94l3yWDKnRTdvTeZ+A/V7SSKrxsrOKSqdyddb9CeNRF8fbhAU0D7ZJBpTTW2nbp6MftmKJDZfW2LQ==";
@@ -3778,6 +4072,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/globals"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/globals/-/globals-26.6.2.tgz";
         sha512 = "85Ltnm7HlB/KesBUuALwQ68YTU72w9H2xW9FjZ1eL1U3lhtefjjl5c2MiUbpXt/i6LaPRvoOFJ22yCBSfQ0JIA==";
@@ -3805,6 +4102,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/globals"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/globals/-/globals-27.0.6.tgz";
         sha512 = "DdTGCP606rh9bjkdQ7VvChV18iS7q0IMJVP1piwTWyWskol4iqcVwthZmoJEf7obE1nc34OpIyoVGPeqLC+ryw==";
@@ -3832,6 +4132,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/reporters"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/reporters/-/reporters-26.6.2.tgz";
         sha512 = "h2bW53APG4HvkOnVMo8q3QXa6pcaNt1HkwVsOPMBV6LD/q9oSpxNSYZQYkAnjdMjrJ86UuYeLo+aEZClV6opnw==";
@@ -3859,6 +4162,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/reporters"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/reporters/-/reporters-27.0.6.tgz";
         sha512 = "TIkBt09Cb2gptji3yJXb3EE+eVltW6BjO7frO7NEfjI9vSIYoISi5R3aI3KpEDXlB1xwB+97NXIqz84qYeYsfA==";
@@ -3886,6 +4192,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/source-map"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/source-map/-/source-map-24.9.0.tgz";
         sha512 = "/Xw7xGlsZb4MJzNDgB7PW5crou5JqWiBQaz6xyPd3ArOg2nfn/PunV8+olXbbEZzNl591o5rWKE9BRDaFAuIBg==";
@@ -3913,6 +4222,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/source-map"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/source-map/-/source-map-26.6.2.tgz";
         sha512 = "YwYcCwAnNmOVsZ8mr3GfnzdXDAl4LaenZP5z+G0c8bzC9/dugL8zRmxZzdoTl4IaS3CryS1uWnROLPFmb6lVvA==";
@@ -3940,6 +4252,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/source-map"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/source-map/-/source-map-27.0.6.tgz";
         sha512 = "Fek4mi5KQrqmlY07T23JRi0e7Z9bXTOOD86V/uS0EIW4PClvPDqZOyFlLpNJheS6QI0FNX1CgmPjtJ4EA/2M+g==";
@@ -3967,6 +4282,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/test-result"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/test-result/-/test-result-24.9.0.tgz";
         sha512 = "XEFrHbBonBJ8dGp2JmF8kP/nQI/ImPpygKHwQ/SY+es59Z3L5PI4Qb9TQQMAEeYsThG1xF0k6tmG0tIKATNiiA==";
@@ -3994,6 +4312,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/test-result"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/test-result/-/test-result-26.6.2.tgz";
         sha512 = "5O7H5c/7YlojphYNrK02LlDIV2GNPYisKwHm2QTKjNZeEzezCbwYs9swJySv2UfPMyZ0VdsmMv7jIlD/IKYQpQ==";
@@ -4021,6 +4342,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/test-result"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/test-result/-/test-result-27.0.6.tgz";
         sha512 = "ja/pBOMTufjX4JLEauLxE3LQBPaI2YjGFtXexRAjt1I/MbfNlMx0sytSX3tn5hSLzQsR3Qy2rd0hc1BWojtj9w==";
@@ -4048,6 +4372,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/test-sequencer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/test-sequencer/-/test-sequencer-26.6.3.tgz";
         sha512 = "YHlVIjP5nfEyjlrSr8t/YdNfU/1XEt7c5b4OxcXCjyRhjzLYu/rO69/WHPuYcbCWkz8kAeZVZp2N2+IOLLEPGw==";
@@ -4075,6 +4402,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/test-sequencer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/test-sequencer/-/test-sequencer-27.0.6.tgz";
         sha512 = "bISzNIApazYOlTHDum9PwW22NOyDa6VI31n6JucpjTVM0jD6JDgqEZ9+yn575nDdPF0+4csYDxNNW13NvFQGZA==";
@@ -4102,6 +4432,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/transform"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/transform/-/transform-26.6.2.tgz";
         sha512 = "E9JjhUgNzvuQ+vVAL21vlyfy12gP0GhazGgJC4h6qUt1jSdUXGWJ1wfu/X7Sd8etSgxV4ovT1pb9v5D6QW4XgA==";
@@ -4129,6 +4462,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/transform"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/transform/-/transform-27.0.6.tgz";
         sha512 = "rj5Dw+mtIcntAUnMlW/Vju5mr73u8yg+irnHwzgtgoeI6cCPOvUwQ0D1uQtc/APmWgvRweEb1g05pkUpxH3iCA==";
@@ -4156,6 +4492,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/types"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/types/-/types-24.9.0.tgz";
         sha512 = "XKK7ze1apu5JWQ5eZjHITP66AX+QsLlbaJRBGYr8pNzwcAE2JVkwnf0yqjHTsDRcjR0mujy/NmZMXw5kl+kGBw==";
@@ -4183,6 +4522,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/types"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/types/-/types-26.6.2.tgz";
         sha512 = "fC6QCp7Sc5sX6g8Tvbmj4XUTbyrik0akgRy03yjXbQaBWWNWGE7SGtJk98m0N8nzegD/7SggrUlivxo5ax4KWQ==";
@@ -4210,6 +4552,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@jest/types"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@jest/types/-/types-27.0.6.tgz";
         sha512 = "aSquT1qa9Pik26JK5/3rvnYb4bGtm1VFNesHKmNTwmPIgOrixvhL2ghIvFRNEpzy3gU+rUgjIF/KodbkFAl++g==";
@@ -4237,6 +4582,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@nodelib/fs.scandir"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz";
         sha512 = "vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==";
@@ -4264,6 +4612,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@nodelib/fs.stat"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@nodelib/fs.stat/-/fs.stat-2.0.5.tgz";
         sha512 = "RkhPPp2zrqDAQA/2jNhnztcPAlv64XdhIp7a7454A5ovI7Bukxgt7MX7udwAu3zg1DcpPU0rz3VV1SeaqvY4+A==";
@@ -4291,6 +4642,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@nodelib/fs.walk"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@nodelib/fs.walk/-/fs.walk-1.2.8.tgz";
         sha512 = "oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==";
@@ -4318,6 +4672,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@npmcli/lint"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@npmcli/lint/-/lint-1.0.1.tgz";
         sha512 = "QKIavvvSp8g+Uo63Vyr/pKZRccHy8RdwtrU/pzjoH/wlz1wdLJLGW6xPAQeZC7gXAgkGIO8o+lcsk4WAjlEfxw==";
@@ -4345,6 +4702,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@npmcli/move-file"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@npmcli/move-file/-/move-file-1.1.2.tgz";
         sha512 = "1SUf/Cg2GzGDyaf15aR9St9TWlb+XvbZXWpDx8YKs7MLzMH/BCeopv+y9vzrzgkfykCGuWOlSu3mZhj2+FQcrg==";
@@ -4372,6 +4732,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@rollup/plugin-babel"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@rollup/plugin-babel/-/plugin-babel-5.2.3.tgz";
         sha512 = "DOMc7nx6y5xFi86AotrFssQqCen6CxYn+zts5KSI879d4n1hggSb4TH3mjVgG17Vc3lZziWWfcXzrEmVdzPMdw==";
@@ -4399,6 +4762,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@rollup/plugin-commonjs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@rollup/plugin-commonjs/-/plugin-commonjs-17.1.0.tgz";
         sha512 = "PoMdXCw0ZyvjpCMT5aV4nkL0QywxP29sODQsSGeDpr/oI49Qq9tRtAsb/LbYbDzFlOydVEqHmmZWFtXJEAX9ew==";
@@ -4426,6 +4792,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@rollup/plugin-json"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@rollup/plugin-json/-/plugin-json-4.1.0.tgz";
         sha512 = "yfLbTdNS6amI/2OpmbiBoW12vngr5NW2jCJVZSBEz+H5KfUJZ2M7sDjk0U6GOOdCWFVScShte29o9NezJ53TPw==";
@@ -4453,6 +4822,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@rollup/plugin-node-resolve"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@rollup/plugin-node-resolve/-/plugin-node-resolve-11.1.1.tgz";
         sha512 = "zlBXR4eRS+2m79TsUZWhsd0slrHUYdRx4JF+aVQm+MI0wsKdlpC2vlDVjmlGvtZY1vsefOT9w3JxvmWSBei+Lg==";
@@ -4480,6 +4852,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@rollup/plugin-replace"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@rollup/plugin-replace/-/plugin-replace-2.3.4.tgz";
         sha512 = "waBhMzyAtjCL1GwZes2jaE9MjuQ/DQF2BatH3fRivUF3z0JBFrU0U6iBNC/4WR+2rLKhaAhPWDNPYp4mI6RqdQ==";
@@ -4507,6 +4882,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@rollup/pluginutils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@rollup/pluginutils/-/pluginutils-3.1.0.tgz";
         sha512 = "GksZ6pr6TpIjHm8h9lSQ8pi8BE9VeubNT0OMJ3B5uZJ8pz73NPiqOtCog/x2/QzM1ENChPKxMDhiQuRHsqc+lg==";
@@ -4534,6 +4912,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@shinnn/eslint-config"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@shinnn/eslint-config/-/eslint-config-6.10.4.tgz";
         sha512 = "AA2YIFW76EKb1ifCgr2YJPTdj5nsLcRlXyA4Pvmvukpww15uV/gy9VLyljtf2fPDM9m+pOQD98oy8/8yDyEEbA==";
@@ -4561,6 +4942,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@sinonjs/commons"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@sinonjs/commons/-/commons-1.8.3.tgz";
         sha512 = "xkNcLAn/wZaX14RPlwizcKicDk9G3F8m2nU3L7Ukm5zBgTwiT0wsoFAHx9Jq56fJA1z/7uKGtCRu16sOUCLIHQ==";
@@ -4588,6 +4972,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@sinonjs/fake-timers"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@sinonjs/fake-timers/-/fake-timers-6.0.1.tgz";
         sha512 = "MZPUxrmFubI36XS1DI3qmI0YdN1gks62JtFZvxR67ljjSNCeK6U08Zx4msEWOXuofgqUt6zPHSi1H9fbjR/NRA==";
@@ -4615,6 +5002,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@sinonjs/fake-timers"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@sinonjs/fake-timers/-/fake-timers-7.1.2.tgz";
         sha512 = "iQADsW4LBMISqZ6Ci1dupJL9pprqwcVFTcOsEmQOEhW+KLCVn/Y4Jrvg2k19fIHCp+iFprriYPTdRcQR8NbUPg==";
@@ -4642,6 +5032,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@tootallnate/once"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@tootallnate/once/-/once-1.1.2.tgz";
         sha512 = "RbzJvlNzmRq5c3O09UipeuXno4tA1FE6ikOjxZK0tuxVv3412l64l5t1W5pj4+rJq9vpkm/kwiR07aZXnsKPxw==";
@@ -4669,6 +5062,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@tsd/typescript"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@tsd/typescript/-/typescript-4.3.5.tgz";
         sha512 = "Xwxv8bIwyI3ggPz9bwoWEoiaz79MJs+VGf27S1N2tapfDVo60Lz741j5diL9RwszZSXt6IkTAuw7Lai7jSXRJg==";
@@ -4696,6 +5092,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/babel__core"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/babel__core/-/babel__core-7.1.15.tgz";
         sha512 = "bxlMKPDbY8x5h6HBwVzEOk2C8fb6SLfYQ5Jw3uBYuYF1lfWk/kbLd81la82vrIkBb0l+JdmrZaDikPrNxpS/Ew==";
@@ -4723,6 +5122,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/babel__generator"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/babel__generator/-/babel__generator-7.6.3.tgz";
         sha512 = "/GWCmzJWqV7diQW54smJZzWbSFf4QYtF71WCKhcx6Ru/tFyQIY2eiiITcCAeuPbNSvT9YCGkVMqqvSk2Z0mXiA==";
@@ -4750,6 +5152,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/babel__template"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/babel__template/-/babel__template-7.4.1.tgz";
         sha512 = "azBFKemX6kMg5Io+/rdGT0dkGreboUVR0Cdm3fz9QJWpaQGJRQXl7C+6hOTCZcMll7KFyEQpgbYI2lHdsS4U7g==";
@@ -4777,6 +5182,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/babel__traverse"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/babel__traverse/-/babel__traverse-7.14.2.tgz";
         sha512 = "K2waXdXBi2302XUdcHcR1jCeU0LL4TD9HRs/gk0N2Xvrht+G/BfJa4QObBQZfhMdxiCpV3COl5Nfq4uKTeTnJA==";
@@ -4804,6 +5212,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/eslint"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/eslint/-/eslint-7.2.14.tgz";
         sha512 = "pESyhSbUOskqrGcaN+bCXIQDyT5zTaRWfj5ZjjSlMatgGjIn3QQPfocAu4WSabUR7CGyLZ2CQaZyISOEX7/saw==";
@@ -4831,6 +5242,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/estree"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/estree/-/estree-0.0.39.tgz";
         sha512 = "EYNwp3bU+98cpU4lAWYYL7Zz+2gryWH1qbdDTidVd6hkiR6weksdbMadyXKXNPEkQFhXM+hVO9ZygomHXp+AIw==";
@@ -4858,6 +5272,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/estree"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/estree/-/estree-0.0.50.tgz";
         sha512 = "C6N5s2ZFtuZRj54k2/zyRhNDjJwwcViAM3Nbm8zjBpbqAdZ00mr0CFxvSKeO8Y/e03WVFLpQMdHYVfUd6SB+Hw==";
@@ -4885,6 +5302,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/graceful-fs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/graceful-fs/-/graceful-fs-4.1.5.tgz";
         sha512 = "anKkLmZZ+xm4p8JWBf4hElkM4XR+EZeA2M9BAkkTldmcyDY4mbdIJnRghDJH3Ov5ooY7/UAoENtmdMSkaAd7Cw==";
@@ -4912,6 +5332,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/istanbul-lib-coverage"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/istanbul-lib-coverage/-/istanbul-lib-coverage-2.0.3.tgz";
         sha512 = "sz7iLqvVUg1gIedBOvlkxPlc8/uVzyS5OwGz1cKjXzkl3FpL3al0crU8YGU1WoHkxn0Wxbw5tyi6hvzJKNzFsw==";
@@ -4939,6 +5362,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/istanbul-lib-report"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/istanbul-lib-report/-/istanbul-lib-report-3.0.0.tgz";
         sha512 = "plGgXAPfVKFoYfa9NpYDAkseG+g6Jr294RqeqcqDixSbU34MZVJRi/P+7Y8GDpzkEwLaGZZOpKIEmeVZNtKsrg==";
@@ -4966,6 +5392,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/istanbul-reports"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/istanbul-reports/-/istanbul-reports-1.1.2.tgz";
         sha512 = "P/W9yOX/3oPZSpaYOCQzGqgCQRXn0FFO/V8bWrCQs+wLmvVVxk6CRBXALEvNs9OHIatlnlFokfhuDo2ug01ciw==";
@@ -4993,6 +5422,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/istanbul-reports"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/istanbul-reports/-/istanbul-reports-3.0.1.tgz";
         sha512 = "c3mAZEuK0lvBp8tmuL74XRKn1+y2dcwOUpH7x4WrF6gk1GIgiluDRgMYQtw2OFcBvAJWlt6ASU3tSqxp0Uu0Aw==";
@@ -5020,6 +5452,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/jest"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/jest/-/jest-26.0.20.tgz";
         sha512 = "9zi2Y+5USJRxd0FsahERhBwlcvFh6D2GLQnY2FH2BzK8J9s9omvNHIbvABwIluXa0fD8XVKMLTO0aOEuUfACAA==";
@@ -5047,6 +5482,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/jest"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/jest/-/jest-26.0.24.tgz";
         sha512 = "E/X5Vib8BWqZNRlDxj9vYXhsDwPYbPINqKF9BsnSoon4RQ0D9moEuLD8txgyypFLH7J4+Lho9Nr/c8H0Fi+17w==";
@@ -5074,6 +5512,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/json-schema"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/json-schema/-/json-schema-7.0.8.tgz";
         sha512 = "YSBPTLTVm2e2OoQIDYx8HaeWJ5tTToLH67kXR7zYNGupXMEHa2++G8k+DczX2cFVgalypqtyZIcU19AFcmOpmg==";
@@ -5101,6 +5542,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/minimist"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/minimist/-/minimist-1.2.2.tgz";
         sha512 = "jhuKLIRrhvCPLqwPcx6INqmKeiA5EWrsCOPhrlFSrbrmU4ZMPjj5Ul/oLCMDO98XRUIwVm78xICz4EPCektzeQ==";
@@ -5128,6 +5572,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/node"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/node/-/node-14.17.5.tgz";
         sha512 = "bjqH2cX/O33jXT/UmReo2pM7DIJREPMnarixbQ57DOOzzFaI6D2+IcwaJQaJpv0M1E9TIhPCYVxrkcityLjlqA==";
@@ -5155,6 +5602,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/node"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/node/-/node-16.3.1.tgz";
         sha512 = "N87VuQi7HEeRJkhzovao/JviiqKjDKMVKxKMfUvSKw+MbkbW8R0nA3fi/MQhhlxV2fQ+2ReM+/Nt4efdrJx3zA==";
@@ -5182,6 +5632,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/normalize-package-data"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/normalize-package-data/-/normalize-package-data-2.4.1.tgz";
         sha512 = "Gj7cI7z+98M282Tqmp2K5EIsoouUEzbBJhQQzDE3jSIRk6r9gsz0oUokqIUR4u1R3dMHo0pDHM7sNOHyhulypw==";
@@ -5209,6 +5662,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/parsimmon"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/parsimmon/-/parsimmon-1.10.6.tgz";
         sha512 = "FwAQwMRbkhx0J6YELkwIpciVzCcgEqXEbIrIn3a2P5d3kGEHQ3wVhlN3YdVepYP+bZzCYO6OjmD4o9TGOZ40rA==";
@@ -5236,6 +5692,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/prettier"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/prettier/-/prettier-2.3.2.tgz";
         sha512 = "eI5Yrz3Qv4KPUa/nSIAi0h+qX0XyewOliug5F2QAtuRg6Kjg6jfmxe1GIwoIRhZspD1A0RP8ANrPwvEXXtRFog==";
@@ -5263,6 +5722,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/ramda"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/ramda/-/ramda-0.27.38.tgz";
         sha512 = "tZoQ0lv1WKkrpBHemL8yCkI9p8kUk/1PSMwhl0eeyqMQjD+2ePUtVLV8PpNS9Kq3OktObwOx9I3k+HumxTviRg==";
@@ -5290,6 +5752,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/resolve"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/resolve/-/resolve-1.17.1.tgz";
         sha512 = "yy7HuzQhj0dhGpD8RLXSZWEkLsV9ibvxvi6EiJ3bkqLAO1RGo0WbkWQiwpRlSFymTJRz0d3k5LM3kkx8ArDbLw==";
@@ -5317,6 +5782,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/stack-utils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/stack-utils/-/stack-utils-1.0.1.tgz";
         sha512 = "l42BggppR6zLmpfU6fq9HEa2oGPEI8yrSPL3GITjfRInppYFahObbIQOQK3UGxEnyQpltZLaPe75046NOZQikw==";
@@ -5344,6 +5812,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/stack-utils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/stack-utils/-/stack-utils-2.0.1.tgz";
         sha512 = "Hl219/BT5fLAaz6NDkSuhzasy49dwQS/DSdu4MdggFB8zcXv7vflBI3xp7FEmkmdDkBUI2bPUNeMttp2knYdxw==";
@@ -5371,6 +5842,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/tinycolor2"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/tinycolor2/-/tinycolor2-1.4.3.tgz";
         sha512 = "Kf1w9NE5HEgGxCRyIcRXR/ZYtDv0V8FVPtYHwLxl0O+maGX0erE77pQlD0gpP+/KByMZ87mOA79SjifhSB3PjQ==";
@@ -5398,6 +5872,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/yargs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/yargs/-/yargs-13.0.12.tgz";
         sha512 = "qCxJE1qgz2y0hA4pIxjBR+PelCH0U5CK1XJXFwCNqfmliatKp47UCXXE9Dyk1OXBDLvsCF57TqQEJaeLfDYEOQ==";
@@ -5425,6 +5902,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/yargs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/yargs/-/yargs-15.0.14.tgz";
         sha512 = "yEJzHoxf6SyQGhBhIYGXQDSCkJjB6HohDShto7m8vaKg9Yp0Yn8+71J9eakh2bnPg6BfsH9PRMhiRTZnd4eXGQ==";
@@ -5452,6 +5932,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/yargs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/yargs/-/yargs-16.0.4.tgz";
         sha512 = "T8Yc9wt/5LbJyCaLiHPReJa0kApcIgJ7Bn735GjItUfh08Z1pJvu8QZqb9s+mMvKV6WUQRV7K2R46YbjMXTTJw==";
@@ -5479,6 +5962,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@types/yargs-parser"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@types/yargs-parser/-/yargs-parser-20.2.1.tgz";
         sha512 = "7tFImggNeNBVMsn0vLrpn1H1uPrUBdnARPTpZoitY37ZrdJREzf7I16tMrlK3hen349gr1NYh8CmZQa7CTG6Aw==";
@@ -5506,6 +5992,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@typescript-eslint/eslint-plugin"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@typescript-eslint/eslint-plugin/-/eslint-plugin-4.28.2.tgz";
         sha512 = "PGqpLLzHSxq956rzNGasO3GsAPf2lY9lDUBXhS++SKonglUmJypaUtcKzRtUte8CV7nruwnDxtLUKpVxs0wQBw==";
@@ -5533,6 +6022,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@typescript-eslint/experimental-utils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@typescript-eslint/experimental-utils/-/experimental-utils-4.28.2.tgz";
         sha512 = "MwHPsL6qo98RC55IoWWP8/opTykjTp4JzfPu1VfO2Z0MshNP0UZ1GEV5rYSSnZSUI8VD7iHvtIPVGW5Nfh7klQ==";
@@ -5560,6 +6052,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@typescript-eslint/parser"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@typescript-eslint/parser/-/parser-4.28.2.tgz";
         sha512 = "Q0gSCN51eikAgFGY+gnd5p9bhhCUAl0ERMiDKrTzpSoMYRubdB8MJrTTR/BBii8z+iFwz8oihxd0RAdP4l8w8w==";
@@ -5587,6 +6082,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@typescript-eslint/scope-manager"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@typescript-eslint/scope-manager/-/scope-manager-4.28.2.tgz";
         sha512 = "MqbypNjIkJFEFuOwPWNDjq0nqXAKZvDNNs9yNseoGBB1wYfz1G0WHC2AVOy4XD7di3KCcW3+nhZyN6zruqmp2A==";
@@ -5614,6 +6112,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@typescript-eslint/types"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@typescript-eslint/types/-/types-4.28.2.tgz";
         sha512 = "Gr15fuQVd93uD9zzxbApz3wf7ua3yk4ZujABZlZhaxxKY8ojo448u7XTm/+ETpy0V0dlMtj6t4VdDvdc0JmUhA==";
@@ -5641,6 +6142,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@typescript-eslint/typescript-estree"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@typescript-eslint/typescript-estree/-/typescript-estree-4.28.2.tgz";
         sha512 = "86lLstLvK6QjNZjMoYUBMMsULFw0hPHJlk1fzhAVoNjDBuPVxiwvGuPQq3fsBMCxuDJwmX87tM/AXoadhHRljg==";
@@ -5668,6 +6172,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@typescript-eslint/visitor-keys"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@typescript-eslint/visitor-keys/-/visitor-keys-4.28.2.tgz";
         sha512 = "aT2B4PLyyRDUVUafXzpZFoc0C9t0za4BJAKP5sgWIhG+jHECQZUEjuQSCIwZdiJJ4w4cgu5r3Kh20SOdtEBl0w==";
@@ -5695,6 +6202,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "@ungap/promise-all-settled"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/@ungap/promise-all-settled/-/promise-all-settled-1.1.2.tgz";
         sha512 = "sL/cEvJWAnClXw0wHk85/2L0G6Sj8UB0Ctc1TEMbKSsmpRosqhwj9gWgFRZSrBr2f9tiXISwNhCPmlfqUqyb9Q==";
@@ -5722,6 +6232,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "JSONStream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/JSONStream/-/JSONStream-1.3.5.tgz";
         sha512 = "E+iruNOY8VV9s4JEbe1aNEm6MiszPRr/UfcHMz0TQh1BXSxHK+ASV1R6W4HpjBhSeS+54PIsAMCBmwD06LLsqQ==";
@@ -5749,6 +6262,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "abab"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/abab/-/abab-2.0.5.tgz";
         sha512 = "9IK9EadsbHo6jLWIpxpR6pL0sazTXV6+SQv25ZB+F7Bj9mJNaOc4nCRabwd5M/JwmUa8idz6Eci6eKfJryPs6Q==";
@@ -5776,6 +6292,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "abbrev"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/abbrev/-/abbrev-1.0.9.tgz";
         sha1 = "91b4792588a7738c25f35dd6f63752a2f8776135";
@@ -5803,6 +6322,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "abbrev"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/abbrev/-/abbrev-1.1.1.tgz";
         sha512 = "nne9/IiQ/hzIhY6pdDnbBtz7DjPTKrY00P/zvPSm5pOFkl6xuGrGnXn/VtTNNfNtAfZ9/1RtehkszU9qcTii0Q==";
@@ -5830,6 +6352,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "acorn"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/acorn/-/acorn-3.3.0.tgz";
         sha1 = "45e37fb39e8da3f25baee3ff5369e2bb5f22017a";
@@ -5857,6 +6382,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "acorn"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/acorn/-/acorn-6.4.2.tgz";
         sha512 = "XtGIhXwF8YM8bJhGxG5kXgjkEuNGLTkoYqVE+KMR+aspr4KGYmKYg7yUe3KghyQ9yheNwLnjmzh/7+gfDBmHCQ==";
@@ -5884,6 +6412,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "acorn"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/acorn/-/acorn-7.4.1.tgz";
         sha512 = "nQyp0o1/mNdbTO1PO6kHkwSrmgZ0MT/jCCpNiwbUjGoRN4dlBhqJtoQuCnEOKzgTVwg0ZWiCoQy6SxMebQVh8A==";
@@ -5911,6 +6442,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "acorn"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/acorn/-/acorn-8.4.1.tgz";
         sha512 = "asabaBSkEKosYKMITunzX177CXxQ4Q8BSSzMTKD+FefUhipQC70gfW5SiUDhYQ3vk8G+81HqQk7Fv9OXwwn9KA==";
@@ -5938,6 +6472,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "acorn-globals"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/acorn-globals/-/acorn-globals-6.0.0.tgz";
         sha512 = "ZQl7LOWaF5ePqqcX4hLuv/bLXYQNfNWw2c0/yX/TsPRKamzHcTGQnlCjHT3TsmkOUVEPS3crCxiPfdzE/Trlhg==";
@@ -5965,6 +6502,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "acorn-jsx"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/acorn-jsx/-/acorn-jsx-3.0.1.tgz";
         sha1 = "afdf9488fb1ecefc8348f6fb22f464e32a58b36b";
@@ -5992,6 +6532,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "acorn-jsx"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/acorn-jsx/-/acorn-jsx-5.3.2.tgz";
         sha512 = "rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==";
@@ -6019,6 +6562,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "acorn-node"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/acorn-node/-/acorn-node-1.8.2.tgz";
         sha512 = "8mt+fslDufLYntIoPAaIMUe/lrbrehIiwmR3t2k9LljIzoigEPF27eLk2hy8zSGzmR/ogr7zbRKINMo1u0yh5A==";
@@ -6046,6 +6592,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "acorn-walk"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/acorn-walk/-/acorn-walk-7.2.0.tgz";
         sha512 = "OPdCF6GsMIP+Az+aWfAAOEt2/+iVDKE7oy6lJ098aoe59oAmK76qV6Gw60SbZ8jHuG2wH058GF4pLFbYamYrVA==";
@@ -6073,6 +6622,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "agent-base"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/agent-base/-/agent-base-6.0.2.tgz";
         sha512 = "RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==";
@@ -6100,6 +6652,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "agentkeepalive"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/agentkeepalive/-/agentkeepalive-4.1.4.tgz";
         sha512 = "+V/rGa3EuU74H6wR04plBb7Ks10FbtUQgRj/FQOG7uUIEuaINI+AiqJR1k6t3SVNs7o7ZjIdus6706qqzVq8jQ==";
@@ -6127,6 +6682,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "aggregate-error"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/aggregate-error/-/aggregate-error-3.1.0.tgz";
         sha512 = "4I7Td01quW/RpocfNayFdFVk1qSuoh0E7JrbRJ16nH01HhKFQ88INq9Sd+nd72zqRySlr9BmDA8xlEJ6vJMrYA==";
@@ -6154,6 +6712,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ajv"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ajv/-/ajv-4.11.8.tgz";
         sha1 = "82ffb02b29e662ae53bdc20af15947706739c536";
@@ -6181,6 +6742,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ajv"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ajv/-/ajv-6.12.6.tgz";
         sha512 = "j3fVLgvTo527anyYyJOGTYJbG+vnnQYvE0m5mmkc1TK+nxAppkCLMIL0aZ4dblVCNoGShhm+kzE4ZUykBoMg4g==";
@@ -6208,6 +6772,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ajv"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ajv/-/ajv-8.6.1.tgz";
         sha512 = "42VLtQUOLefAvKFAQIxIZDaThq6om/PrfP0CYk3/vn+y4BMNkKnbli8ON2QCiHov4KkzOSJ/xSoBJdayiiYvVQ==";
@@ -6235,6 +6802,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ajv-keywords"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ajv-keywords/-/ajv-keywords-1.5.1.tgz";
         sha1 = "314dd0a4b3368fad3dfcdc54ede6171b886daf3c";
@@ -6262,6 +6832,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-align"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ansi-align/-/ansi-align-3.0.0.tgz";
         sha512 = "ZpClVKqXN3RGBmKibdfWzqCY4lnjEuoNzU5T0oEFpfd/z5qJHVarukridD4juLO2FXMiwUQxr9WqQtaYa8XRYw==";
@@ -6289,6 +6862,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-colors"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ansi-colors/-/ansi-colors-3.2.3.tgz";
         sha512 = "LEHHyuhlPY3TmuUYMh2oz89lTShfvgbmzaBcxve9t/9Wuy7Dwf4yoAKcND7KFT1HAQfqZ12qtc+DUrBMeKF9nw==";
@@ -6316,6 +6892,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-colors"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ansi-colors/-/ansi-colors-4.1.1.tgz";
         sha512 = "JoX0apGbHaUJBNl6yF+p6JAFYZ666/hhCGKN5t9QFjbJQKUU/g8MNbFDbvfrgKXvI1QpZplPOnwIo99lX/AAmA==";
@@ -6343,6 +6922,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-escapes"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ansi-escapes/-/ansi-escapes-1.4.0.tgz";
         sha1 = "d3a8a83b319aa67793662b13e761c7911422306e";
@@ -6370,6 +6952,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-escapes"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ansi-escapes/-/ansi-escapes-3.2.0.tgz";
         sha512 = "cBhpre4ma+U0T1oM5fXg7Dy1Jw7zzwv7lt/GoCpr+hDQJoYnKVPLL4dCvSEFMmQurOQvSrwT7SL/DAlhBI97RQ==";
@@ -6397,6 +6982,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-escapes"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ansi-escapes/-/ansi-escapes-4.3.2.tgz";
         sha512 = "gKXj5ALrKWQLsYG9jlTRmR/xKluxHV+Z9QEwNIgCfM1/uwPMCuzVVnh5mwTd+OuBZcwSIMbqssNWRm1lE51QaQ==";
@@ -6424,6 +7012,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-regex"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ansi-regex/-/ansi-regex-2.1.1.tgz";
         sha1 = "c3b33ab5ee360d86e0e628f0468ae7ef27d654df";
@@ -6451,6 +7042,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-regex"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ansi-regex/-/ansi-regex-3.0.0.tgz";
         sha1 = "ed0317c322064f79466c02966bddb605ab37d998";
@@ -6478,6 +7072,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-regex"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ansi-regex/-/ansi-regex-4.1.0.tgz";
         sha512 = "1apePfXM1UOSqw0o9IiFAovVz9M5S1Dg+4TrDwfMewQ6p/rmMueb7tWZjQ1rx4Loy1ArBggoqGpfqqdI4rondg==";
@@ -6505,6 +7102,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-regex"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ansi-regex/-/ansi-regex-5.0.0.tgz";
         sha512 = "bY6fj56OUQ0hU1KjFNDQuJFezqKdrAyFdIevADiqrWHwSlbmBNMHp5ak2f40Pm8JTFyM2mqxkG6ngkHO11f/lg==";
@@ -6532,6 +7132,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-styles"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ansi-styles/-/ansi-styles-2.2.1.tgz";
         sha1 = "b432dd3358b634cf75e1e4664368240533c1ddbe";
@@ -6559,6 +7162,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-styles"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ansi-styles/-/ansi-styles-3.2.1.tgz";
         sha512 = "VT0ZI6kZRdTh8YyJw3SMbYm/u+NqfsAxEpWO0Pf9sq8/e94WxxOpPKx9FR1FlyCtOVDNOQ+8ntlqFxiRc+r5qA==";
@@ -6586,6 +7192,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-styles"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ansi-styles/-/ansi-styles-4.3.0.tgz";
         sha512 = "zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg==";
@@ -6613,6 +7222,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansi-styles"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ansi-styles/-/ansi-styles-5.2.0.tgz";
         sha512 = "Cxwpt2SfTzTtXcfOlzGEee8O+c+MmUgGrNiBcXnuWxuFJHe6a5Hz7qwhwe5OgaSYI0IJvkLqWX1ASG+cJOkEiA==";
@@ -6640,6 +7252,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ansy"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ansy/-/ansy-1.0.15.tgz";
         sha512 = "mQyNSn58HN7aEthofkap0hn8jg7/5SJWrB0ypExgcECOwLppc0njH+QBA9X5VMiEN9SM0JlFZWJQGycxxInAqg==";
@@ -6667,6 +7282,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "anymatch"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/anymatch/-/anymatch-2.0.0.tgz";
         sha512 = "5teOsQWABXHHBFP9y3skS5P3d/WfWXpv3FUpy+LorMrNYaT9pI4oLMQX7jzQ2KklNpGpWHzdCXTDT2Y3XGlZBw==";
@@ -6694,6 +7312,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "anymatch"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/anymatch/-/anymatch-3.1.2.tgz";
         sha512 = "P43ePfOAIupkguHUycrc4qJ9kz8ZiuOUijaETwX7THt0Y/GNK7v0aa8rY816xWjZ7rJdA5XdMcpVFTKMq+RvWg==";
@@ -6721,6 +7342,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "append-transform"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/append-transform/-/append-transform-1.0.0.tgz";
         sha512 = "P009oYkeHyU742iSZJzZZywj4QRJdnTWffaKuJQLablCZ1uz6/cW4yaRgcDaoQ+uwOxxnt0gRUcwfsNP2ri0gw==";
@@ -6748,6 +7372,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "append-transform"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/append-transform/-/append-transform-2.0.0.tgz";
         sha512 = "7yeyCEurROLQJFv5Xj4lEGTy0borxepjFv1g22oAdqFu//SrAlDl1O1Nxx15SH1RoliUml6p8dwJW9jvZughhg==";
@@ -6775,6 +7402,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "append-type"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/append-type/-/append-type-1.0.2.tgz";
         sha512 = "hac740vT/SAbrFBLgLIWZqVT5PUAcGTWS5UkDDhr+OCizZSw90WKw6sWAEgGaYd2viIblggypMXwpjzHXOvAQg==";
@@ -6802,6 +7432,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "aproba"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/aproba/-/aproba-1.2.0.tgz";
         sha512 = "Y9J6ZjXtoYh8RnXVCMOU/ttDmk1aBjunq9vO0ta5x85WDQiQfUF9sIPBITdbiiIVcBo03Hi3jMxigBtsddlXRw==";
@@ -6829,6 +7462,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "archy"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/archy/-/archy-1.0.0.tgz";
         sha1 = "f9c8c13757cc1dd7bc379ac77b2c62a5c2868c40";
@@ -6856,6 +7492,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "are-we-there-yet"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/are-we-there-yet/-/are-we-there-yet-1.1.5.tgz";
         sha512 = "5hYdAkZlcG8tOLujVDTgCT+uPX0VnpAH28gWsLfzpXYm7wP6mp5Q/gYyR7YQ0cKVJcXJnl3j2kpBan13PtQf6w==";
@@ -6883,6 +7522,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "arg"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/arg/-/arg-4.1.3.tgz";
         sha512 = "58S9QDqG0Xx27YwPSt9fJxivjYl432YCwfDMfZ+71RAqUrZef7LrKQZ3LHLOwCS4FLNBplP533Zx895SeOCHvA==";
@@ -6910,6 +7552,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "argparse"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/argparse/-/argparse-1.0.10.tgz";
         sha512 = "o5Roy6tNG4SL/FOkCAN6RzjiakZS25RLYFrcMttJqbdd8BWrnA+fGz57iN5Pb06pvBGvl5gQ0B48dJlslXvoTg==";
@@ -6937,6 +7582,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "argparse"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/argparse/-/argparse-2.0.1.tgz";
         sha512 = "8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==";
@@ -6964,6 +7612,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "arr-diff"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/arr-diff/-/arr-diff-4.0.0.tgz";
         sha1 = "d6461074febfec71e7e15235761a329a5dc7c520";
@@ -6991,6 +7642,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "arr-flatten"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/arr-flatten/-/arr-flatten-1.1.0.tgz";
         sha512 = "L3hKV5R/p5o81R7O02IGnwpDmkp6E982XhtbuwSe3O4qOtMMMtodicASA1Cny2U+aCXcNpml+m4dPsvsJ3jatg==";
@@ -7018,6 +7672,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "arr-union"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/arr-union/-/arr-union-3.1.0.tgz";
         sha1 = "e39b09aea9def866a8f206e288af63919bae39c4";
@@ -7045,6 +7702,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "array-includes"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/array-includes/-/array-includes-3.1.3.tgz";
         sha512 = "gcem1KlBU7c9rB+Rq8/3PPKsK2kjqeEBa3bD5kkQo4nYlOHQCJqIJFqBXDEfwaRuYTT4E+FxA9xez7Gf/e3Q7A==";
@@ -7072,6 +7732,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "array-to-sentence"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/array-to-sentence/-/array-to-sentence-1.1.0.tgz";
         sha1 = "c804956dafa53232495b205a9452753a258d39fc";
@@ -7099,6 +7762,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "array-union"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/array-union/-/array-union-2.1.0.tgz";
         sha512 = "HGyxoOTYUyCM6stUe6EJgnd4EoewAI7zMdfqO+kGjnlZmBDz/cR5pf8r/cR4Wq60sL/p0IkcjUEEPwS3GFrIyw==";
@@ -7126,6 +7792,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "array-unique"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/array-unique/-/array-unique-0.3.2.tgz";
         sha1 = "a894b75d4bc4f6cd679ef3244a9fd8f46ae2d428";
@@ -7153,6 +7822,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "array.prototype.flat"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/array.prototype.flat/-/array.prototype.flat-1.2.4.tgz";
         sha512 = "4470Xi3GAPAjZqFcljX2xzckv1qeKPizoNkiS0+O4IoPR2ZNpcjE0pkhdihlDouK+x6QOast26B4Q/O9DJnwSg==";
@@ -7180,6 +7852,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "array.prototype.flatmap"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/array.prototype.flatmap/-/array.prototype.flatmap-1.2.4.tgz";
         sha512 = "r9Z0zYoxqHz60vvQbWEdXIEtCwHF0yxaWfno9qzXeNHvfyl3BZqygmGzb84dsubyaXLH4husF+NFgMSdpZhk2Q==";
@@ -7207,6 +7882,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "arrify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/arrify/-/arrify-1.0.1.tgz";
         sha1 = "898508da2226f380df904728456849c1501a4b0d";
@@ -7234,6 +7912,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "asn1"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/asn1/-/asn1-0.2.4.tgz";
         sha512 = "jxwzQpLQjSmWXgwaCZE9Nz+glAG01yF1QnWgbhGwHI5A6FRIEY6IVqtHhIepHqI7/kyEyQEagBC5mBEFlIYvdg==";
@@ -7261,6 +7942,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "asn1.js"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/asn1.js/-/asn1.js-5.4.1.tgz";
         sha512 = "+I//4cYPccV8LdmBLiX8CYvf9Sp3vQsrqu2QNXRcrbiWvcx/UdlFiqUJJzxRQxgsZmvhXhn4cSKeSmoFjVdupA==";
@@ -7288,6 +7972,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "assert"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/assert/-/assert-1.5.0.tgz";
         sha512 = "EDsgawzwoun2CZkCgtxJbv392v4nbk9XDD06zI+kQYoBM/3RBWLlEyJARDOmhAAosBjWACEkKL6S+lIZtcAubA==";
@@ -7315,6 +8002,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "assert-plus"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/assert-plus/-/assert-plus-0.2.0.tgz";
         sha1 = "d74e1b87e7affc0db8aadb7021f3fe48101ab234";
@@ -7342,6 +8032,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "assert-plus"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/assert-plus/-/assert-plus-1.0.0.tgz";
         sha1 = "f12e0f3c5d77b0b1cdd9146942e4e96c1e4dd525";
@@ -7369,6 +8062,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "assert-valid-glob-opts"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/assert-valid-glob-opts/-/assert-valid-glob-opts-1.0.0.tgz";
         sha512 = "/mttty5Xh7wE4o7ttKaUpBJl0l04xWe3y6muy1j27gyzSsnceK0AYU9owPtUoL9z8+9hnPxztmuhdFZ7jRoyWw==";
@@ -7396,6 +8092,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "assertion-error"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/assertion-error/-/assertion-error-1.1.0.tgz";
         sha512 = "jgsaNduz+ndvGyFt3uSuWqvy4lCnIJiovtouQN5JZHOKCS2QuhEdbcQHFhVksz2N2U9hXJo8odG7ETyWlEeuDw==";
@@ -7423,6 +8122,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "assign-symbols"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/assign-symbols/-/assign-symbols-1.0.0.tgz";
         sha1 = "59667f41fadd4f20ccbc2bb96b8d4f7f78ec0367";
@@ -7450,6 +8152,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "astral-regex"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/astral-regex/-/astral-regex-1.0.0.tgz";
         sha512 = "+Ryf6g3BKoRc7jfp7ad8tM4TtMiaWvbF/1/sQcZPkkS7ag3D5nMBCe2UfOTONtAkaG0tO0ij3C5Lwmf1EiyjHg==";
@@ -7477,6 +8182,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "astral-regex"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/astral-regex/-/astral-regex-2.0.0.tgz";
         sha512 = "Z7tMw1ytTXt5jqMcOP+OQteU1VuNK9Y02uuJtKQ1Sv69jXQKKg5cibLwGJow8yzZP+eAc18EmLGPal0bp36rvQ==";
@@ -7504,6 +8212,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "async"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/async/-/async-0.1.22.tgz";
         sha1 = "0fc1aaa088a0e3ef0ebe2d8831bab0dcf8845061";
@@ -7531,6 +8242,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "async"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/async/-/async-1.5.2.tgz";
         sha1 = "ec6a61ae56480c0c3cb241c95618e20892f9672a";
@@ -7558,6 +8272,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "async-hook-domain"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/async-hook-domain/-/async-hook-domain-1.1.3.tgz";
         sha512 = "ZovMxSbADV3+biB7oR1GL5lGyptI24alp0LWHlmz1OFc5oL47pz3EiIF6nXOkDW7yLqih4NtsiYduzdDW0i+Wg==";
@@ -7585,6 +8302,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "async-hook-domain"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/async-hook-domain/-/async-hook-domain-2.0.3.tgz";
         sha512 = "MadiLLDEZRZzZwcm0dgS+K99qXZ4H2saAUwUgwzFulbAkXrKi3AX5FvWS3FFTQtLMwrqcGqAJe6o12KrObejQA==";
@@ -7612,6 +8332,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "asynckit"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/asynckit/-/asynckit-0.4.0.tgz";
         sha1 = "c79ed97f7f34cb8f2ba1bc9790bcc366474b4b79";
@@ -7639,6 +8362,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "at-least-node"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/at-least-node/-/at-least-node-1.0.0.tgz";
         sha512 = "+q/t7Ekv1EDY2l6Gda6LLiX14rU9TV20Wa3ofeQmwPFZbOMo9DXrLbOjFaaclkXKWidIaopwAObQDqwWtGUjqg==";
@@ -7666,6 +8392,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "atob"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/atob/-/atob-2.1.2.tgz";
         sha512 = "Wm6ukoaOGJi/73p/cl2GvLjTI5JM1k/O14isD73YML8StrH/7/lRFgmg8nICZgD3bZZvjwCGxtMOD3wWNAu8cg==";
@@ -7693,6 +8422,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "available-typed-arrays"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/available-typed-arrays/-/available-typed-arrays-1.0.4.tgz";
         sha512 = "SA5mXJWrId1TaQjfxUYghbqQ/hYioKmLJvPJyDuYRtXXenFNMjj4hSSt1Cf1xsuXSXrtxrVC5Ot4eU6cOtBDdA==";
@@ -7720,6 +8452,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "aws-sign2"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/aws-sign2/-/aws-sign2-0.6.0.tgz";
         sha1 = "14342dd38dbcc94d0e5b87d763cd63612c0e794f";
@@ -7747,6 +8482,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "aws-sign2"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/aws-sign2/-/aws-sign2-0.7.0.tgz";
         sha1 = "b46e890934a9591f2d2f6f86d7e6a9f1b3fe76a8";
@@ -7774,6 +8512,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "aws4"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/aws4/-/aws4-1.11.0.tgz";
         sha512 = "xh1Rl34h6Fi1DC2WWKfxUTVqRsNnr6LsKz2+hfwDxQJWmrx8+c7ylaqBMcHfl1U1r2dsifOvKX3LQuLNZ+XSvA==";
@@ -7801,6 +8542,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-code-frame"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-code-frame/-/babel-code-frame-6.26.0.tgz";
         sha1 = "63fd43f7dc1e3bb7ce35947db8fe369a3f58c74b";
@@ -7828,6 +8572,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-helper-evaluate-path"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-helper-evaluate-path/-/babel-helper-evaluate-path-0.5.0.tgz";
         sha512 = "mUh0UhS607bGh5wUMAQfOpt2JX2ThXMtppHRdRU1kL7ZLRWIXxoV2UIV1r2cAeeNeU1M5SB5/RSUgUxrK8yOkA==";
@@ -7855,6 +8602,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-helper-flip-expressions"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-helper-flip-expressions/-/babel-helper-flip-expressions-0.4.3.tgz";
         sha1 = "3696736a128ac18bc25254b5f40a22ceb3c1d3fd";
@@ -7882,6 +8632,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-helper-is-nodes-equiv"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-helper-is-nodes-equiv/-/babel-helper-is-nodes-equiv-0.0.1.tgz";
         sha1 = "34e9b300b1479ddd98ec77ea0bbe9342dfe39684";
@@ -7909,6 +8662,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-helper-is-void-0"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-helper-is-void-0/-/babel-helper-is-void-0-0.4.3.tgz";
         sha1 = "7d9c01b4561e7b95dbda0f6eee48f5b60e67313e";
@@ -7936,6 +8692,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-helper-mark-eval-scopes"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-helper-mark-eval-scopes/-/babel-helper-mark-eval-scopes-0.4.3.tgz";
         sha1 = "d244a3bef9844872603ffb46e22ce8acdf551562";
@@ -7963,6 +8722,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-helper-remove-or-void"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-helper-remove-or-void/-/babel-helper-remove-or-void-0.4.3.tgz";
         sha1 = "a4f03b40077a0ffe88e45d07010dee241ff5ae60";
@@ -7990,6 +8752,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-helper-to-multiple-sequence-expressions"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-helper-to-multiple-sequence-expressions/-/babel-helper-to-multiple-sequence-expressions-0.5.0.tgz";
         sha512 = "m2CvfDW4+1qfDdsrtf4dwOslQC3yhbgyBFptncp4wvtdrDHqueW7slsYv4gArie056phvQFhT2nRcGS4bnm6mA==";
@@ -8017,6 +8782,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-jest"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-jest/-/babel-jest-26.6.3.tgz";
         sha512 = "pl4Q+GAVOHwvjrck6jKjvmGhnO3jHX/xuB9d27f+EJZ/6k+6nMuPjorrYp7s++bKKdANwzElBWnLWaObvTnaZA==";
@@ -8044,6 +8812,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-jest"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-jest/-/babel-jest-27.0.6.tgz";
         sha512 = "iTJyYLNc4wRofASmofpOc5NK9QunwMk+TLFgGXsTFS8uEqmd8wdI7sga0FPe2oVH3b5Agt/EAK1QjPEuKL8VfA==";
@@ -8071,6 +8842,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-minify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-minify/-/babel-minify-0.5.1.tgz";
         sha512 = "ftEYu5OCDXEqaX/eINIaekPgkCaVPJNwFHzXKKARnRLggK8g4a9dEOflLKDgRNYOwhcLVoicUchZG6FYyOpqSA==";
@@ -8098,6 +8872,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-dynamic-import-node"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-dynamic-import-node/-/babel-plugin-dynamic-import-node-2.3.3.tgz";
         sha512 = "jZVI+s9Zg3IqA/kdi0i6UDCybUI3aSBLnglhYbSSjKlV7yF1F/5LWv8MakQmvYpnbJDS6fcBL2KzHSxNCMtWSQ==";
@@ -8125,6 +8902,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-istanbul"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-istanbul/-/babel-plugin-istanbul-6.0.0.tgz";
         sha512 = "AF55rZXpe7trmEylbaE1Gv54wn6rwU03aptvRoVIGP8YykoSxqdVLV1TfwflBCE/QtHmqtP8SWlTENqbK8GCSQ==";
@@ -8152,6 +8932,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-jest-hoist"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-jest-hoist/-/babel-plugin-jest-hoist-26.6.2.tgz";
         sha512 = "PO9t0697lNTmcEHH69mdtYiOIkkOlj9fySqfO3K1eCcdISevLAE0xY59VLLUj0SoiPiTX/JU2CYFpILydUa5Lw==";
@@ -8179,6 +8962,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-jest-hoist"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-jest-hoist/-/babel-plugin-jest-hoist-27.0.6.tgz";
         sha512 = "CewFeM9Vv2gM7Yr9n5eyyLVPRSiBnk6lKZRjgwYnGKSl9M14TMn2vkN02wTF04OGuSDLEzlWiMzvjXuW9mB6Gw==";
@@ -8206,6 +8992,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-minify-builtins"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-minify-builtins/-/babel-plugin-minify-builtins-0.5.0.tgz";
         sha512 = "wpqbN7Ov5hsNwGdzuzvFcjgRlzbIeVv1gMIlICbPj0xkexnfoIDe7q+AZHMkQmAE/F9R5jkrB6TLfTegImlXag==";
@@ -8233,6 +9022,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-minify-constant-folding"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-minify-constant-folding/-/babel-plugin-minify-constant-folding-0.5.0.tgz";
         sha512 = "Vj97CTn/lE9hR1D+jKUeHfNy+m1baNiJ1wJvoGyOBUx7F7kJqDZxr9nCHjO/Ad+irbR3HzR6jABpSSA29QsrXQ==";
@@ -8260,6 +9052,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-minify-dead-code-elimination"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-minify-dead-code-elimination/-/babel-plugin-minify-dead-code-elimination-0.5.1.tgz";
         sha512 = "x8OJOZIrRmQBcSqxBcLbMIK8uPmTvNWPXH2bh5MDCW1latEqYiRMuUkPImKcfpo59pTUB2FT7HfcgtG8ZlR5Qg==";
@@ -8287,6 +9082,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-minify-flip-comparisons"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-minify-flip-comparisons/-/babel-plugin-minify-flip-comparisons-0.4.3.tgz";
         sha1 = "00ca870cb8f13b45c038b3c1ebc0f227293c965a";
@@ -8314,6 +9112,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-minify-guarded-expressions"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-minify-guarded-expressions/-/babel-plugin-minify-guarded-expressions-0.4.4.tgz";
         sha512 = "RMv0tM72YuPPfLT9QLr3ix9nwUIq+sHT6z8Iu3sLbqldzC1Dls8DPCywzUIzkTx9Zh1hWX4q/m9BPoPed9GOfA==";
@@ -8341,6 +9142,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-minify-infinity"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-minify-infinity/-/babel-plugin-minify-infinity-0.4.3.tgz";
         sha1 = "dfb876a1b08a06576384ef3f92e653ba607b39ca";
@@ -8368,6 +9172,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-minify-mangle-names"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-minify-mangle-names/-/babel-plugin-minify-mangle-names-0.5.0.tgz";
         sha512 = "3jdNv6hCAw6fsX1p2wBGPfWuK69sfOjfd3zjUXkbq8McbohWy23tpXfy5RnToYWggvqzuMOwlId1PhyHOfgnGw==";
@@ -8395,6 +9202,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-minify-numeric-literals"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-minify-numeric-literals/-/babel-plugin-minify-numeric-literals-0.4.3.tgz";
         sha1 = "8e4fd561c79f7801286ff60e8c5fd9deee93c0bc";
@@ -8422,6 +9232,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-minify-replace"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-minify-replace/-/babel-plugin-minify-replace-0.5.0.tgz";
         sha512 = "aXZiaqWDNUbyNNNpWs/8NyST+oU7QTpK7J9zFEFSA0eOmtUNMU3fczlTTTlnCxHmq/jYNFEmkkSG3DDBtW3Y4Q==";
@@ -8449,6 +9262,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-minify-simplify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-minify-simplify/-/babel-plugin-minify-simplify-0.5.1.tgz";
         sha512 = "OSYDSnoCxP2cYDMk9gxNAed6uJDiDz65zgL6h8d3tm8qXIagWGMLWhqysT6DY3Vs7Fgq7YUDcjOomhVUb+xX6A==";
@@ -8476,6 +9292,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-minify-type-constructors"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-minify-type-constructors/-/babel-plugin-minify-type-constructors-0.4.3.tgz";
         sha1 = "1bc6f15b87f7ab1085d42b330b717657a2156500";
@@ -8503,6 +9322,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-transform-inline-consecutive-adds"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-transform-inline-consecutive-adds/-/babel-plugin-transform-inline-consecutive-adds-0.4.3.tgz";
         sha1 = "323d47a3ea63a83a7ac3c811ae8e6941faf2b0d1";
@@ -8530,6 +9352,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-transform-member-expression-literals"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-transform-member-expression-literals/-/babel-plugin-transform-member-expression-literals-6.9.4.tgz";
         sha1 = "37039c9a0c3313a39495faac2ff3a6b5b9d038bf";
@@ -8557,6 +9382,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-transform-merge-sibling-variables"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-transform-merge-sibling-variables/-/babel-plugin-transform-merge-sibling-variables-6.9.4.tgz";
         sha1 = "85b422fc3377b449c9d1cde44087203532401dae";
@@ -8584,6 +9412,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-transform-minify-booleans"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-transform-minify-booleans/-/babel-plugin-transform-minify-booleans-6.9.4.tgz";
         sha1 = "acbb3e56a3555dd23928e4b582d285162dd2b198";
@@ -8611,6 +9442,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-transform-property-literals"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-transform-property-literals/-/babel-plugin-transform-property-literals-6.9.4.tgz";
         sha1 = "98c1d21e255736573f93ece54459f6ce24985d39";
@@ -8638,6 +9472,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-transform-regexp-constructors"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-transform-regexp-constructors/-/babel-plugin-transform-regexp-constructors-0.4.3.tgz";
         sha1 = "58b7775b63afcf33328fae9a5f88fbd4fb0b4965";
@@ -8665,6 +9502,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-transform-remove-console"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-transform-remove-console/-/babel-plugin-transform-remove-console-6.9.4.tgz";
         sha1 = "b980360c067384e24b357a588d807d3c83527780";
@@ -8692,6 +9532,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-transform-remove-debugger"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-transform-remove-debugger/-/babel-plugin-transform-remove-debugger-6.9.4.tgz";
         sha1 = "42b727631c97978e1eb2d199a7aec84a18339ef2";
@@ -8719,6 +9562,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-transform-remove-undefined"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-transform-remove-undefined/-/babel-plugin-transform-remove-undefined-0.5.0.tgz";
         sha512 = "+M7fJYFaEE/M9CXa0/IRkDbiV3wRELzA1kKQFCJ4ifhrzLKn/9VCCgj9OFmYWwBd8IB48YdgPkHYtbYq+4vtHQ==";
@@ -8746,6 +9592,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-transform-simplify-comparison-operators"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-transform-simplify-comparison-operators/-/babel-plugin-transform-simplify-comparison-operators-6.9.4.tgz";
         sha1 = "f62afe096cab0e1f68a2d753fdf283888471ceb9";
@@ -8773,6 +9622,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-plugin-transform-undefined-to-void"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-plugin-transform-undefined-to-void/-/babel-plugin-transform-undefined-to-void-6.9.4.tgz";
         sha1 = "be241ca81404030678b748717322b89d0c8fe280";
@@ -8800,6 +9652,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-preset-current-node-syntax"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-preset-current-node-syntax/-/babel-preset-current-node-syntax-1.0.1.tgz";
         sha512 = "M7LQ0bxarkxQoN+vz5aJPsLBn77n8QgTFmo8WK0/44auK2xlCXrYcUxHFxgU7qW5Yzw/CjmLRK2uJzaCd7LvqQ==";
@@ -8827,6 +9682,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-preset-jest"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-preset-jest/-/babel-preset-jest-26.6.2.tgz";
         sha512 = "YvdtlVm9t3k777c5NPQIv6cxFFFapys25HiUmuSgHwIZhfifweR5c5Sf5nwE3MAbfu327CYSvps8Yx6ANLyleQ==";
@@ -8854,6 +9712,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-preset-jest"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-preset-jest/-/babel-preset-jest-27.0.6.tgz";
         sha512 = "WObA0/Biw2LrVVwZkF/2GqbOdzhKD6Fkdwhoy9ASIrOWr/zodcSpQh72JOkEn6NWyjmnPDjNSqaGN4KnpKzhXw==";
@@ -8881,6 +9742,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "babel-preset-minify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/babel-preset-minify/-/babel-preset-minify-0.5.1.tgz";
         sha512 = "1IajDumYOAPYImkHbrKeiN5AKKP9iOmRoO2IPbIuVp0j2iuCcj0n7P260z38siKMZZ+85d3mJZdtW8IgOv+Tzg==";
@@ -8908,6 +9772,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "balanced-match"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/balanced-match/-/balanced-match-1.0.2.tgz";
         sha512 = "3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==";
@@ -8935,6 +9802,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "base"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/base/-/base-0.11.2.tgz";
         sha512 = "5T6P4xPgpp0YDFvSWwEZ4NoE3aM4QBQXDzmVbraCkFj8zHM+mba8SyqB5DbZWyR7mYHo6Y7BdQo3MoA4m0TeQg==";
@@ -8962,6 +9832,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "base64-js"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/base64-js/-/base64-js-1.5.1.tgz";
         sha512 = "AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==";
@@ -8989,6 +9862,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bcrypt-pbkdf"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/bcrypt-pbkdf/-/bcrypt-pbkdf-1.0.2.tgz";
         sha1 = "a4301d389b6a43f9b67ff3ca11a3f6637e360e9e";
@@ -9016,6 +9892,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "benchmark"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/benchmark/-/benchmark-2.1.4.tgz";
         sha1 = "09f3de31c916425d498cc2ee565a0ebf3c2a5629";
@@ -9043,6 +9922,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "benny"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/benny/-/benny-3.6.15.tgz";
         sha512 = "kq6XVGGYVou3Y8KNPs3SEF881vi5fJ8sIf9w69D2rreiNfRicWVWK6u6/mObMw6BiexoHHumtipn5gcu0Tngng==";
@@ -9070,6 +9952,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "binary-extensions"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/binary-extensions/-/binary-extensions-2.2.0.tgz";
         sha512 = "jDctJ/IVQbZoJykoeHbhXpOlNBqGNcwXJKJog42E5HDPUwQTSdjCHdihjj0DlnheQ7blbT6dHOafNAiS8ooQKA==";
@@ -9097,6 +9982,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bind-obj-methods"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/bind-obj-methods/-/bind-obj-methods-2.0.2.tgz";
         sha512 = "bUkRdEOppT1Xg/jG0+bp0JSjUD9U0r7skxb/42WeBUjfBpW6COQTIgQmKX5J2Z3aMXcORKgN2N+d7IQwTK3pag==";
@@ -9124,6 +10012,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bind-obj-methods"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/bind-obj-methods/-/bind-obj-methods-3.0.0.tgz";
         sha512 = "nLEaaz3/sEzNSyPWRsN9HNsqwk1AUyECtGj+XwGdIi3xABnEqecvXtIJ0wehQXuuER5uZ/5fTs2usONgYjG+iw==";
@@ -9151,6 +10042,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bl"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/bl/-/bl-0.9.5.tgz";
         sha1 = "c06b797af085ea00bc527afc8efcf11de2232054";
@@ -9178,6 +10072,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bl"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/bl/-/bl-1.2.3.tgz";
         sha512 = "pvcNpa0UU69UT341rO6AYy4FVAIkUHuZXRIWbq+zHnsVcRzDDjIAhGuuYoi0d//cwIwtt4pkpKycWEfjdV+vww==";
@@ -9205,6 +10102,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bl"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/bl/-/bl-4.1.0.tgz";
         sha512 = "1W07cM9gS6DcLperZfFSj+bWLtaPGSOHWhPiGzXmvVJbRLdG82sH/Kn8EtW1VqWVA54AKf2h5k5BbnIbwF3h6w==";
@@ -9232,6 +10132,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "block-stream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/block-stream/-/block-stream-0.0.9.tgz";
         sha1 = "13ebfe778a03205cfe03751481ebb4b3300c126a";
@@ -9259,6 +10162,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bluebird"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/bluebird/-/bluebird-3.7.2.tgz";
         sha512 = "XpNj6GDQzdfW+r2Wnn7xiSAd7TM3jzkxGXBGTtWKuSXv1xUV+azxAm8jdWZN06QTQk+2N2XB9jRDkvbmQmcRtg==";
@@ -9286,6 +10192,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bn.js"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/bn.js/-/bn.js-4.12.0.tgz";
         sha512 = "c98Bf3tPniI+scsdk237ku1Dc3ujXQTSgyiPUDEOe7tRkhrqridvh8klBv0HCEso1OLOYcHuCv/cS6DNxKH+ZA==";
@@ -9313,6 +10222,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bn.js"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/bn.js/-/bn.js-5.2.0.tgz";
         sha512 = "D7iWRBvnZE8ecXiLj/9wbxH7Tk79fAh8IHaTNq1RWRixsS02W+5qS+iE9yq6RYl0asXx5tw0bLhmT5pIfbSquw==";
@@ -9340,6 +10252,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "boom"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/boom/-/boom-2.10.1.tgz";
         sha1 = "39c8918ceff5799f83f9492a848f625add0c766f";
@@ -9367,6 +10282,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "boxen"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/boxen/-/boxen-5.0.0.tgz";
         sha512 = "5bvsqw+hhgUi3oYGK0Vf4WpIkyemp60WBInn7+WNfoISzAqk/HX4L7WNROq38E6UR/y3YADpv6pEm4BfkeEAdA==";
@@ -9394,6 +10312,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "brace-expansion"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/brace-expansion/-/brace-expansion-1.1.11.tgz";
         sha512 = "iCuPHDFgrHX7H2vEI/5xpz07zSHB00TpugqhmYtVmMO6518mCuRMoOYFldEBl0g187ufozdaHgWKcYFb61qGiA==";
@@ -9421,6 +10342,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "braces"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/braces/-/braces-2.3.2.tgz";
         sha512 = "aNdbnj9P8PjdXU4ybaWLK2IF3jc/EoDYbC7AazW6to3TRsfXxscC9UXOB5iDiEQrkyIbWp2SLQda4+QAa7nc3w==";
@@ -9448,6 +10372,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "braces"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/braces/-/braces-3.0.2.tgz";
         sha512 = "b8um+L1RzM3WDSzvhm6gIz1yfTbBt6YTlcEKAvsmqCZZFw46z626lVj9j1yEPW33H5H+lBQpZMP1k8l+78Ha0A==";
@@ -9475,6 +10402,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "brorand"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/brorand/-/brorand-1.1.0.tgz";
         sha1 = "12c25efe40a45e3c323eb8675a0a0ce57b22371f";
@@ -9502,6 +10432,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browser-pack"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/browser-pack/-/browser-pack-6.1.0.tgz";
         sha512 = "erYug8XoqzU3IfcU8fUgyHqyOXqIE4tUTTQ+7mqUjQlvnXkOO6OlT9c/ZoJVHYoAaqGxr09CN53G7XIsO4KtWA==";
@@ -9529,6 +10462,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browser-process-hrtime"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/browser-process-hrtime/-/browser-process-hrtime-1.0.0.tgz";
         sha512 = "9o5UecI3GhkpM6DrXr69PblIuWxPKk9Y0jHBRhdocZ2y7YECBFCsHm79Pr3OyR2AvjhDkabFJaDJMYRazHgsow==";
@@ -9556,6 +10492,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browser-resolve"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/browser-resolve/-/browser-resolve-2.0.0.tgz";
         sha512 = "7sWsQlYL2rGLy2IWm8WL8DCTJvYLc/qlOnsakDac87SOoCd16WLsaAMdCiAqsTNHIe+SXfaqyxyo6THoWqs8WQ==";
@@ -9583,6 +10522,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browser-stdout"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/browser-stdout/-/browser-stdout-1.3.1.tgz";
         sha512 = "qhAVI1+Av2X7qelOfAIYwXONood6XlZE/fXaBSmW/T5SzLAmCgzi+eiWE7fUvbHaeNBQH13UftjpXxsfLkMpgw==";
@@ -9610,6 +10552,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browserify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/browserify/-/browserify-16.5.2.tgz";
         sha512 = "TkOR1cQGdmXU9zW4YukWzWVSJwrxmNdADFbqbE3HFgQWe5wqZmOawqZ7J/8MPCwk/W8yY7Y0h+7mOtcZxLP23g==";
@@ -9637,6 +10582,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browserify-aes"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/browserify-aes/-/browserify-aes-1.2.0.tgz";
         sha512 = "+7CHXqGuspUn/Sl5aO7Ea0xWGAtETPXNSAjHo48JfLdPWcMng33Xe4znFvQweqc/uzk5zSOI3H52CYnjCfb5hA==";
@@ -9664,6 +10612,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browserify-cipher"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/browserify-cipher/-/browserify-cipher-1.0.1.tgz";
         sha512 = "sPhkz0ARKbf4rRQt2hTpAHqn47X3llLkUGn+xEJzLjwY8LRs2p0v7ljvI5EyoRO/mexrNunNECisZs+gw2zz1w==";
@@ -9691,6 +10642,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browserify-des"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/browserify-des/-/browserify-des-1.0.2.tgz";
         sha512 = "BioO1xf3hFwz4kc6iBhI3ieDFompMhrMlnDFC4/0/vd5MokpuAc3R+LYbwTA9A5Yc9pq9UYPqffKpW2ObuwX5A==";
@@ -9718,6 +10672,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browserify-rsa"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/browserify-rsa/-/browserify-rsa-4.1.0.tgz";
         sha512 = "AdEER0Hkspgno2aR97SAf6vi0y0k8NuOpGnVH3O99rcA5Q6sh8QxcngtHuJ6uXwnfAXNM4Gn1Gb7/MV1+Ymbog==";
@@ -9745,6 +10702,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browserify-sign"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/browserify-sign/-/browserify-sign-4.2.1.tgz";
         sha512 = "/vrA5fguVAKKAVTNJjgSm1tRQDHUU6DbwO9IROu/0WAzC8PKhucDSh18J0RMvVeHAn5puMd+QHC2erPRNf8lmg==";
@@ -9772,6 +10732,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browserify-zlib"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/browserify-zlib/-/browserify-zlib-0.2.0.tgz";
         sha512 = "Z942RysHXmJrhqk88FmKBVq/v5tqmSkDz7p54G/MGyjMnCFFnC79XWNbg+Vta8W6Wb2qtSZTSxIGkJrRpCFEiA==";
@@ -9799,6 +10762,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "browserslist"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/browserslist/-/browserslist-4.16.6.tgz";
         sha512 = "Wspk/PqO+4W9qp5iUTJsa1B/QrYn1keNCcEP5OvP7WBwT4KaDly0uONYmC6Xa3Z5IqnUgS0KcgLYu1l74x0ZXQ==";
@@ -9826,6 +10792,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bs-logger"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/bs-logger/-/bs-logger-0.2.6.tgz";
         sha512 = "pd8DCoxmbgc7hyPKOvxtqNcjYoOsABPQdcCUjGp3d42VR2CX1ORhk2A87oqqu5R1kk+76nsxZupkmyd+MVtCog==";
@@ -9853,6 +10822,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bser"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/bser/-/bser-2.1.1.tgz";
         sha512 = "gQxTNE/GAfIIrmHLUE3oJyp5FO6HRBfhjnw4/wMmA63ZGDJnWBmgY/lyQBpnDUkGmAhbSe39tx2d/iTOAfglwQ==";
@@ -9880,6 +10852,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "buffer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/buffer/-/buffer-5.2.1.tgz";
         sha512 = "c+Ko0loDaFfuPWiL02ls9Xd3GO3cPVmUobQ6t3rXNUk304u6hGq+8N/kFi+QEIKhzK3uwolVhLzszmfLmMLnqg==";
@@ -9907,6 +10882,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "buffer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/buffer/-/buffer-5.7.1.tgz";
         sha512 = "EHcyIPBQ4BSGlvjB16k5KgAJ27CIsHY/2JBmCRReo48y9rQ3MaUzWX3KVlBa4U7MyX02HdVj0K7C3WaB3ju7FQ==";
@@ -9934,6 +10912,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "buffer-alloc"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/buffer-alloc/-/buffer-alloc-1.2.0.tgz";
         sha512 = "CFsHQgjtW1UChdXgbyJGtnm+O/uLQeZdtbDo8mfUgYXCHSM1wgrVxXm6bSyrUuErEb+4sYVGCzASBRot7zyrow==";
@@ -9961,6 +10942,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "buffer-alloc-unsafe"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/buffer-alloc-unsafe/-/buffer-alloc-unsafe-1.1.0.tgz";
         sha512 = "TEM2iMIEQdJ2yjPJoSIsldnleVaAk1oW3DBVUykyOLsEsFmEc9kn+SFFPz+gl54KQNxlDnAwCXosOS9Okx2xAg==";
@@ -9988,6 +10972,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "buffer-equal"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/buffer-equal/-/buffer-equal-0.0.2.tgz";
         sha1 = "ecbb790f568d40098a6242b54805c75805eb938f";
@@ -10015,6 +11002,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "buffer-fill"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/buffer-fill/-/buffer-fill-1.0.0.tgz";
         sha1 = "f8f78b76789888ef39f205cd637f68e702122b2c";
@@ -10042,6 +11032,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "buffer-from"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/buffer-from/-/buffer-from-1.1.1.tgz";
         sha512 = "MQcXEUbCKtEo7bhqEs6560Hyd4XaovZlO/k9V3hjVUF/zwW7KBVdSK4gIt/bzwS9MbR5qob+F5jusZsb0YQK2A==";
@@ -10069,6 +11062,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "buffer-xor"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/buffer-xor/-/buffer-xor-1.0.3.tgz";
         sha1 = "26e61ed1422fb70dd42e6e36729ed51d855fe8d9";
@@ -10096,6 +11092,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "builtin-modules"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/builtin-modules/-/builtin-modules-1.1.1.tgz";
         sha1 = "270f076c5a72c02f5b65a47df94c5fe3a278892f";
@@ -10123,6 +11122,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "builtin-modules"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/builtin-modules/-/builtin-modules-3.2.0.tgz";
         sha512 = "lGzLKcioL90C7wMczpkY0n/oART3MbBa8R9OFGE1rJxoVI86u4WAGfEk8Wjv10eKSyTHVGkSo3bvBylCEtk7LA==";
@@ -10150,6 +11152,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "builtin-status-codes"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/builtin-status-codes/-/builtin-status-codes-3.0.0.tgz";
         sha1 = "85982878e21b98e1c66425e03d0174788f569ee8";
@@ -10177,6 +11182,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "builtins"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/builtins/-/builtins-1.0.3.tgz";
         sha1 = "cb94faeb61c8696451db36534e1422f94f0aee88";
@@ -10204,6 +11212,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "bunker"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/bunker/-/bunker-0.1.2.tgz";
         sha1 = "c88992464a8e2a6ede86930375f92b58077ef97c";
@@ -10231,6 +11242,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "burrito"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/burrito/-/burrito-0.2.12.tgz";
         sha1 = "d0d6e6ac81d5e99789c6fa4accb0b0031ea54f6b";
@@ -10258,6 +11272,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cacache"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cacache/-/cacache-15.2.0.tgz";
         sha512 = "uKoJSHmnrqXgthDFx/IU6ED/5xd+NNGe+Bb+kLZy7Ku4P+BaiWEUflAKPZ7eAzsYGcsAGASJZsybXp+quEcHTw==";
@@ -10285,6 +11302,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cache-base"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cache-base/-/cache-base-1.0.1.tgz";
         sha512 = "AKcdTnFSWATd5/GCPRxr2ChwIJ85CeyrEyjRHlKxQ56d4XJMGym0uAiKn0xbLOGOl3+yRpOTi484dVCEc5AUzQ==";
@@ -10312,6 +11332,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cached-path-relative"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cached-path-relative/-/cached-path-relative-1.0.2.tgz";
         sha512 = "5r2GqsoEb4qMTTN9J+WzXfjov+hjxT+j3u5K+kIVNIwAd99DLCJE9pBIMP1qVeybV6JiijL385Oz0DcYxfbOIg==";
@@ -10339,6 +11362,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "caching-transform"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/caching-transform/-/caching-transform-3.0.2.tgz";
         sha512 = "Mtgcv3lh3U0zRii/6qVgQODdPA4G3zhG+jtbCWj39RXuUFTMzH0vcdMtaJS1jPowd+It2Pqr6y3NJMQqOqCE2w==";
@@ -10366,6 +11392,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "caching-transform"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/caching-transform/-/caching-transform-4.0.0.tgz";
         sha512 = "kpqOvwXnjjN44D89K5ccQC+RUrsy7jB/XLlRrx0D7/2HNcTPqzsb6XgYoErwko6QsV184CA2YgS1fxDiiDZMWA==";
@@ -10393,6 +11422,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "call-bind"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/call-bind/-/call-bind-1.0.2.tgz";
         sha512 = "7O+FbCihrB5WGbFYesctwmTKae6rOiIzmz1icreWJ+0aA7LJfuqhEso2T9ncpcFtzMQtzXf2QGGueWJGTYsqrA==";
@@ -10420,6 +11452,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "caller"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/caller/-/caller-1.0.1.tgz";
         sha1 = "b851860f70e195db3d277395aa1a7e23ea30ecf5";
@@ -10447,6 +11482,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "caller-callsite"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/caller-callsite/-/caller-callsite-2.0.0.tgz";
         sha1 = "847e0fce0a223750a9a027c54b33731ad3154134";
@@ -10474,6 +11512,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "caller-path"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/caller-path/-/caller-path-0.1.0.tgz";
         sha1 = "94085ef63581ecd3daa92444a8fe94e82577751f";
@@ -10501,6 +11542,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "caller-path"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/caller-path/-/caller-path-2.0.0.tgz";
         sha1 = "468f83044e369ab2010fac5f06ceee15bb2cb1f4";
@@ -10528,6 +11572,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "callsites"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/callsites/-/callsites-0.2.0.tgz";
         sha1 = "afab96262910a7f33c19a5775825c69f34e350ca";
@@ -10555,6 +11602,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "callsites"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/callsites/-/callsites-2.0.0.tgz";
         sha1 = "06eb84f00eea413da86affefacbffb36093b3c50";
@@ -10582,6 +11632,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "callsites"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/callsites/-/callsites-3.1.0.tgz";
         sha512 = "P8BjAsXvZS+VIDUI11hHCQEv74YT67YUi5JJFNWIqL235sBmjX4+qx9Muvls5ivyNENctx46xQLQ3aTuE7ssaQ==";
@@ -10609,6 +11662,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "camelcase"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/camelcase/-/camelcase-2.1.1.tgz";
         sha1 = "7c1d16d679a1bbe59ca02cacecfb011e201f5a1f";
@@ -10636,6 +11692,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "camelcase"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/camelcase/-/camelcase-4.1.0.tgz";
         sha1 = "d545635be1e33c542649c69173e5de6acfae34dd";
@@ -10663,6 +11722,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "camelcase"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/camelcase/-/camelcase-5.3.1.tgz";
         sha512 = "L28STB170nwWS63UjtlEOE3dldQApaJXZkOI1uMFfzf3rRuPegHaHesyee+YxQ+W6SvRDQV6UrdOdRiR153wJg==";
@@ -10690,6 +11752,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "camelcase"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/camelcase/-/camelcase-6.2.0.tgz";
         sha512 = "c7wVvbw3f37nuobQNtgsgG9POC9qMbNuMQmTCqZv23b6MIz0fcYpBiOlv9gEN/hdLdnZTDQhg6e9Dq5M1vKvfg==";
@@ -10717,6 +11782,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "camelcase-keys"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/camelcase-keys/-/camelcase-keys-6.2.2.tgz";
         sha512 = "YrwaA0vEKazPBkn0ipTiMpSajYDSe+KjQfrjhcBMxJt/znbvlHd8Pw/Vamaz5EB4Wfhs3SUR3Z9mwRu/P3s3Yg==";
@@ -10744,6 +11812,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "camelo"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/camelo/-/camelo-1.1.14.tgz";
         sha512 = "u2HiBzrRWquCSDvRhbKeNA87pSDqCH2ptTDZ9+LtVvA11B48sIw5JPcADVRsggrMZsL8AqgihJ4j8GcjtfCAfA==";
@@ -10771,6 +11842,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "caniuse-lite"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001243.tgz";
         sha512 = "vNxw9mkTBtkmLFnJRv/2rhs1yufpDfCkBZexG3Y0xdOH2Z/eE/85E4Dl5j1YUN34nZVsSp6vVRFQRrez9wJMRA==";
@@ -10798,6 +11872,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "capture-exit"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/capture-exit/-/capture-exit-2.0.0.tgz";
         sha512 = "PiT/hQmTonHhl/HFGN+Lx3JJUznrVYJ3+AQsnthneZbvW7x+f08Tk7yLJTLEOUvBTbduLeeBkxEaYXUOUrRq6g==";
@@ -10825,6 +11902,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "caseless"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/caseless/-/caseless-0.11.0.tgz";
         sha1 = "715b96ea9841593cc33067923f5ec60ebda4f7d7";
@@ -10852,6 +11932,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "caseless"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/caseless/-/caseless-0.12.0.tgz";
         sha1 = "1b681c21ff84033c826543090689420d187151dc";
@@ -10879,6 +11962,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "caseless"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/caseless/-/caseless-0.6.0.tgz";
         sha1 = "8167c1ab8397fb5bb95f96d28e5a81c50f247ac4";
@@ -10906,6 +11992,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "catharsis"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/catharsis/-/catharsis-0.9.0.tgz";
         sha512 = "prMTQVpcns/tzFgFVkVp6ak6RykZyWb3gu8ckUpd6YkTlacOd3DXGJjIpD4Q6zJirizvaiAjSSHlOsA+6sNh2A==";
@@ -10933,6 +12022,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cfonts"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cfonts/-/cfonts-2.9.1.tgz";
         sha512 = "POZzm27BA8J/fgTeTpfKMmZKdij6L+8k2JsYJsrM5V7+HSFy0I03IEysng/IxGnzhteM7+PyH0rmZx+NeNMR2Q==";
@@ -10960,6 +12052,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "chai"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/chai/-/chai-4.3.4.tgz";
         sha512 = "yS5H68VYOCtN1cjfwumDSuzn/9c+yza4f3reKXlE5rUg7SFcCEy90gJvydNgOYtblyf4Zi6jIWRnXOgErta0KA==";
@@ -10987,6 +12082,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "chalk"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/chalk/-/chalk-1.1.3.tgz";
         sha1 = "a8115c55e4a702fe4d150abd3872822a7e09fc98";
@@ -11014,6 +12112,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "chalk"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/chalk/-/chalk-2.4.2.tgz";
         sha512 = "Mti+f9lpJNcwF4tWV8/OrTTtF1gZi+f8FqlyAdouralcFWFQWF2+NgCHShjkCb+IFBLq9buZwE1xckQU4peSuQ==";
@@ -11041,6 +12142,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "chalk"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/chalk/-/chalk-4.1.0.tgz";
         sha512 = "qwx12AxXe2Q5xQ43Ac//I6v5aXTipYrSESdOgzrN+9XjgEpyjpKuvSGaN4qE93f7TQTlerQQ8S+EQ0EyDoVL1A==";
@@ -11068,6 +12172,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "chalk"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/chalk/-/chalk-4.1.1.tgz";
         sha512 = "diHzdDKxcU+bAsUboHLPEDQiw0qEe0qd7SYUn3HgcFlWgbDcfLGswOHYeGrHKzG9z6UYf01d9VFMfZxPM1xZSg==";
@@ -11095,6 +12202,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "char-regex"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/char-regex/-/char-regex-1.0.2.tgz";
         sha512 = "kWWXztvZ5SBQV+eRgKFeh8q5sLuZY2+8WUIzlxWVTg+oGwY14qylx1KbKzHd8P6ZYkAg0xyIDU9JMHhyJMZ1jw==";
@@ -11122,6 +12232,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "chardet"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/chardet/-/chardet-0.7.0.tgz";
         sha512 = "mT8iDcrh03qDGRRmoA2hmBJnxpllMR+0/0qlzjqZES6NdiWDcZkCNAk4rPFZ9Q85r27unkiNNg8ZOiwZXBHwcA==";
@@ -11149,6 +12262,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "charm"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/charm/-/charm-0.1.2.tgz";
         sha1 = "06c21eed1a1b06aeb67553cdc53e23274bac2296";
@@ -11176,6 +12292,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "charm"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/charm/-/charm-1.0.2.tgz";
         sha1 = "8add367153a6d9a581331052c4090991da995e35";
@@ -11203,6 +12322,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "check-error"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/check-error/-/check-error-1.0.2.tgz";
         sha1 = "574d312edd88bb5dd8912e9286dd6c0aed4aac82";
@@ -11230,6 +12352,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "chmodr"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/chmodr/-/chmodr-1.2.0.tgz";
         sha512 = "Y5uI7Iq/Az6HgJEL6pdw7THVd7jbVOTPwsmcPOBjQL8e3N+pz872kzK5QxYGEy21iRys+iHWV0UZQXDFJo1hyA==";
@@ -11257,6 +12382,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "chokidar"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/chokidar/-/chokidar-3.5.1.tgz";
         sha512 = "9+s+Od+W0VJJzawDma/gvBNQqkTiqYTWLuZoyAsivsI4AaWTCzHG06/TMjsf1cYe9Cb97UCEhjz7HvnPk2p/tw==";
@@ -11284,6 +12412,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "chokidar"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/chokidar/-/chokidar-3.5.2.tgz";
         sha512 = "ekGhOnNVPgT77r4K/U3GDhu+FQ2S8TnK/s2KbIGXi0SZWuwkZ2QNyfWdZW+TVfn84DpEP7rLeCt2UI6bJ8GwbQ==";
@@ -11311,6 +12442,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "chownr"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/chownr/-/chownr-1.1.4.tgz";
         sha512 = "jJ0bqzaylmJtVnNgzTeSOs8DPavpbYgEr/b0YL8/2GO3xJEhInFmhKMUnEJQjZumK7KXGFhUy89PrsJWlakBVg==";
@@ -11338,6 +12472,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "chownr"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/chownr/-/chownr-2.0.0.tgz";
         sha512 = "bIomtDF5KGpdogkLd9VspvFzk9KfpyyGlS8YFVZl7TGPBHL5snIOnxeshwVgPteQ9b4Eydl+pVbIyE1DcvCWgQ==";
@@ -11365,6 +12502,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ci-info"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ci-info/-/ci-info-2.0.0.tgz";
         sha512 = "5tK7EtrZ0N+OLFMthtqOj4fI2Jeb88C4CAZPu25LDVUgXJ0A3Js4PMGqrn0JU1W0Mh1/Z8wZzYPxqUrXeBboCQ==";
@@ -11392,6 +12532,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ci-info"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ci-info/-/ci-info-3.2.0.tgz";
         sha512 = "dVqRX7fLUm8J6FgHJ418XuIgDLZDkYcDFTeL6TA2gt5WlIZUQrrH6EZrNClwT/H0FateUsZkGIOPRrLbP+PR9A==";
@@ -11419,6 +12562,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cipher-base"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cipher-base/-/cipher-base-1.0.4.tgz";
         sha512 = "Kkht5ye6ZGmwv40uUDZztayT2ThLQGfnj/T71N/XzeZeo3nf8foyW7zGTsPYkEya3m5f3cAypH+qe7YOrM1U2Q==";
@@ -11446,6 +12592,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "circular-json"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/circular-json/-/circular-json-0.3.3.tgz";
         sha512 = "UZK3NBx2Mca+b5LsG7bY183pHWt5Y1xts4P3Pz7ENTwGVnJOUWbRb3ocjvX7hx9tq/yTAdclXm9sZ38gNuem4A==";
@@ -11473,6 +12622,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cjs-module-lexer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cjs-module-lexer/-/cjs-module-lexer-0.6.0.tgz";
         sha512 = "uc2Vix1frTfnuzxxu1Hp4ktSvM3QaI4oXl4ZUqL1wjTu/BGki9TrCWoqLTg/drR1KwAEarXuRFCG2Svr1GxPFw==";
@@ -11500,6 +12652,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cjs-module-lexer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cjs-module-lexer/-/cjs-module-lexer-1.2.1.tgz";
         sha512 = "jVamGdJPDeuQilKhvVn1h3knuMOZzr8QDnpk+M9aMlCaMkTDd6fBWPhiDqFvFZ07pL0liqabAiuy8SY4jGHeaw==";
@@ -11527,6 +12682,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "class-utils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/class-utils/-/class-utils-0.3.6.tgz";
         sha512 = "qOhPa/Fj7s6TY8H8esGu5QNpMMQxz79h+urzrNYN6mn+9BnxlDGf5QZ+XeCDsxSjPqsSR56XOZOJmpeurnLMeg==";
@@ -11554,6 +12712,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "clean-stack"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/clean-stack/-/clean-stack-2.2.0.tgz";
         sha512 = "4diC9HaTE+KRAMWhDhrGOECgWZxoevMc5TlkObMqNSsVU62PYzXZ/SMTjzyGAFF1YusgxGcSWTEXBhp0CPwQ1A==";
@@ -11581,6 +12742,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "clean-yaml-object"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/clean-yaml-object/-/clean-yaml-object-0.1.0.tgz";
         sha1 = "63fb110dc2ce1a84dc21f6d9334876d010ae8b68";
@@ -11608,6 +12772,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cli-boxes"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cli-boxes/-/cli-boxes-2.2.1.tgz";
         sha512 = "y4coMcylgSCdVinjiDBuR8PCC2bLjyGTwEmPb9NHR/QaNU6EUOXcTY/s6VjGMD6ENSEaeQYHCY0GNGS5jfMwPw==";
@@ -11635,6 +12802,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cli-cursor"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cli-cursor/-/cli-cursor-1.0.2.tgz";
         sha1 = "64da3f7d56a54412e59794bd62dc35295e8f2987";
@@ -11662,6 +12832,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cli-cursor"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cli-cursor/-/cli-cursor-2.1.0.tgz";
         sha1 = "b35dac376479facc3e94747d41d0d0f5238ffcb5";
@@ -11689,6 +12862,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cli-cursor"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cli-cursor/-/cli-cursor-3.1.0.tgz";
         sha512 = "I/zHAwsKf9FqGoXM4WWRACob9+SNukZTd94DWF57E4toouRulbCxcUh6RKUEOQlYTHJnzkPMySvPNaaSLNfLZw==";
@@ -11716,6 +12892,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cli-width"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cli-width/-/cli-width-2.2.1.tgz";
         sha512 = "GRMWDxpOB6Dgk2E5Uo+3eEBvtOOlimMmpbFiKuLFnQzYDavtLFY3K5ona41jgN/WdRZtG7utuVSVTL4HbZHGkw==";
@@ -11743,6 +12922,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cli-width"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cli-width/-/cli-width-3.0.0.tgz";
         sha512 = "FxqpkPPwu1HjuN93Omfm4h8uIanXofW0RxVEW3k5RKx+mJJYSthzNhp32Kzxxy3YAEZ/Dc/EWN1vZRY0+kOhbw==";
@@ -11770,6 +12952,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cliui"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cliui/-/cliui-3.2.0.tgz";
         sha1 = "120601537a916d29940f934da3b48d585a39213d";
@@ -11797,6 +12982,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cliui"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cliui/-/cliui-4.1.0.tgz";
         sha512 = "4FG+RSG9DL7uEwRUZXZn3SS34DiDPfzP0VOiEwtUWlE+AR2EIg+hSyvrIgUUfhdgR/UkAeW2QHgeP+hWrXs7jQ==";
@@ -11824,6 +13012,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cliui"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cliui/-/cliui-5.0.0.tgz";
         sha512 = "PYeGSEmmHM6zvoef2w8TPzlrnNpXIjTipYK780YswmIP9vjxmd6Y2a3CB2Ks6/AU8NHjZugXvo8w3oWM2qnwXA==";
@@ -11851,6 +13042,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cliui"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cliui/-/cliui-6.0.0.tgz";
         sha512 = "t6wbgtoCXvAzst7QgXxJYqPt0usEfbgQdftEPbLL/cvv6HPE5VgvqCuAIDR0NgU52ds6rFwqrgakNLrHEjCbrQ==";
@@ -11878,6 +13072,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cliui"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cliui/-/cliui-7.0.4.tgz";
         sha512 = "OcRE68cOsVMXp1Yvonl/fzkQOyjLSu/8bhPDfQt0e0/Eb283TKP20Fs2MqoPsr9SwA595rRCA+QMzYc9nBP+JQ==";
@@ -11905,6 +13102,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "clone"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/clone/-/clone-1.0.4.tgz";
         sha1 = "da309cc263df15994c688ca902179ca3c7cd7c7e";
@@ -11932,6 +13132,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "co"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/co/-/co-4.6.0.tgz";
         sha1 = "6ea6bdf3d853ae54ccb8e47bfa0bf3f9031fb184";
@@ -11959,6 +13162,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "code-point-at"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/code-point-at/-/code-point-at-1.1.0.tgz";
         sha1 = "0d070b4d043a5bea33a2f1a40e2edb3d9a4ccf77";
@@ -11986,6 +13192,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "codecov.io"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/codecov.io/-/codecov.io-0.1.6.tgz";
         sha1 = "59dfd02da1ff31c2fb2b952ad8ad16fd3781b728";
@@ -12013,6 +13222,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "collect-v8-coverage"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/collect-v8-coverage/-/collect-v8-coverage-1.0.1.tgz";
         sha512 = "iBPtljfCNcTKNAto0KEtDfZ3qzjJvqE3aTGZsbhjSBlorqpXJlaWWtPO35D+ZImoC3KWejX64o+yPGxhWSTzfg==";
@@ -12040,6 +13252,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "collection-visit"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/collection-visit/-/collection-visit-1.0.0.tgz";
         sha1 = "4bc0373c164bc3291b4d368c829cf1a80a59dca0";
@@ -12067,6 +13282,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "color-convert"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/color-convert/-/color-convert-1.9.3.tgz";
         sha512 = "QfAUtd+vFdAtFQcC8CCyYt1fYWxSqAiK2cSD6zDB8N3cpsEBAvRxp9zOGg6G/SHHJYAT88/az/IuDGALsNVbGg==";
@@ -12094,6 +13312,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "color-convert"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/color-convert/-/color-convert-2.0.1.tgz";
         sha512 = "RRECPsj7iu/xb5oKYcsFHSppFNnsj/52OVTRKb4zP5onXwVF3zVmmToNcOfGC+CRDpfK/U584fMg38ZHCaElKQ==";
@@ -12121,6 +13342,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "color-it"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/color-it/-/color-it-1.2.12.tgz";
         sha512 = "15ymoygmMjfsrjfnxFcKGXk/7TFo0kuZ2ETBinKpBw4T4H5MZWDFa21fmwlwcJnOz4RzSGbYwi7lnUf2264vKw==";
@@ -12148,6 +13372,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "color-name"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/color-name/-/color-name-1.1.3.tgz";
         sha1 = "a7d0558bd89c42f795dd42328f740831ca53bc25";
@@ -12175,6 +13402,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "color-name"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/color-name/-/color-name-1.1.4.tgz";
         sha512 = "dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==";
@@ -12202,6 +13432,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "color-support"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/color-support/-/color-support-1.1.3.tgz";
         sha512 = "qiBjkpbMLO/HL68y+lh4q0/O1MZFj2RX6X/KmMa3+gJD3z+WwI1ZzDHysvqHGS3mP6mznPckpXmw1nI9cJjyRg==";
@@ -12229,6 +13462,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "colorette"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/colorette/-/colorette-1.2.2.tgz";
         sha512 = "MKGMzyfeuutC/ZJ1cba9NqcNpfeqMUcYmyF1ZFY6/Cn7CNSAKx6a+s48sqLqyAiZuaP2TcqMhoo+dlwFnVxT9w==";
@@ -12256,6 +13492,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "combinate"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/combinate/-/combinate-1.1.2.tgz";
         sha512 = "ZCYL7mF0Sq27f2QvAXIz/NlO9NFRKHPZvOdMQXH5/ec5oiqqWPbEkj6wAWGz17MC+4uVS/Z/PBBJvsg04xqJ+g==";
@@ -12283,6 +13522,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "combine-source-map"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/combine-source-map/-/combine-source-map-0.8.0.tgz";
         sha1 = "a58d0df042c186fcf822a8e8015f5450d2d79a8b";
@@ -12310,6 +13552,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "combined-stream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/combined-stream/-/combined-stream-1.0.8.tgz";
         sha512 = "FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg==";
@@ -12337,6 +13582,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "command-exists"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/command-exists/-/command-exists-1.2.9.tgz";
         sha512 = "LTQ/SGc+s0Xc0Fu5WaKnR0YiygZkm9eKFvyS+fRsU7/ZWFF8ykFM6Pc9aCVf1+xasOOZpO3BAVgVrKvsqKHV7w==";
@@ -12364,6 +13612,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "commander"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/commander/-/commander-2.15.1.tgz";
         sha512 = "VlfT9F3V0v+jr4yxPc5gg9s62/fIVWsd2Bk2iD435um1NlGMYdVCq+MjcXnhYq2icNOizHr1kK+5TI6H0Hy0ag==";
@@ -12391,6 +13642,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "commander"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/commander/-/commander-2.20.3.tgz";
         sha512 = "GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==";
@@ -12418,6 +13672,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "commander"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/commander/-/commander-6.2.1.tgz";
         sha512 = "U7VdrJFnJgo4xjrHpTzu0yrHPGImdsmD95ZlgYSEajAn2JKzDhDTPG9kBTefmObL2w/ngeZnilk+OV9CG3d7UA==";
@@ -12445,6 +13702,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "commondir"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/commondir/-/commondir-1.0.1.tgz";
         sha1 = "ddd800da0c66127393cca5950ea968a3aaf1253b";
@@ -12472,6 +13732,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "component-emitter"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/component-emitter/-/component-emitter-1.3.0.tgz";
         sha512 = "Rd3se6QB+sO1TwqZjscQrurpEPIfO0/yYnSin6Q/rD3mOutHvUrCAhJub3r90uNb+SESBuE0QYoB90YdfatsRg==";
@@ -12499,6 +13762,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "concat-map"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/concat-map/-/concat-map-0.0.1.tgz";
         sha1 = "d8a96bd77fd68df7793a73036a3ba0d5405d477b";
@@ -12526,6 +13792,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "concat-stream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/concat-stream/-/concat-stream-1.6.2.tgz";
         sha512 = "27HBghJxjiZtIk3Ycvn/4kbJk/1uZuJFfuPEns6LaEvpvG1f0hTea8lilrouyo9mVc2GWdcEZ8OLoGmSADlrCw==";
@@ -12553,6 +13822,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "config-chain"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/config-chain/-/config-chain-1.1.13.tgz";
         sha512 = "qj+f8APARXHrM0hraqXYb2/bOVSV4PvJQlNZ/DVj0QrmNM2q2euizkeuVckQ57J+W0mRH6Hvi+k50M4Jul2VRQ==";
@@ -12580,6 +13852,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "console-browserify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/console-browserify/-/console-browserify-1.2.0.tgz";
         sha512 = "ZMkYO/LkF17QvCPqM0gxw8yUzigAOZOSWSHg91FH6orS7vcEj5dVZTidN2fQ14yBSdg97RqhSNwLUXInd52OTA==";
@@ -12607,6 +13882,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "console-control-strings"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/console-control-strings/-/console-control-strings-1.1.0.tgz";
         sha1 = "3d7cf4464db6446ea644bf4b39507f9851008e8e";
@@ -12634,6 +13912,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "constants-browserify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/constants-browserify/-/constants-browserify-1.0.0.tgz";
         sha1 = "c20b96d8c617748aaf1c16021760cd27fcb8cb75";
@@ -12661,6 +13942,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "contains-path"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/contains-path/-/contains-path-0.1.0.tgz";
         sha1 = "fe8cf184ff6670b6baef01a9d4861a5cbec4120a";
@@ -12688,6 +13972,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "convert-source-map"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/convert-source-map/-/convert-source-map-1.1.3.tgz";
         sha1 = "4829c877e9fe49b3161f3bf3673888e204699860";
@@ -12715,6 +14002,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "convert-source-map"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/convert-source-map/-/convert-source-map-1.8.0.tgz";
         sha512 = "+OQdjP49zViI/6i7nIJpA8rAl4sV/JdPfU9nZs3VqOwGIgizICvuN2ru6fMd+4llL0tar18UYJXfZ/TWtmhUjA==";
@@ -12742,6 +14032,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "copy-descriptor"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/copy-descriptor/-/copy-descriptor-0.1.1.tgz";
         sha1 = "676f6eb3c39997c2ee1ac3a924fd6124748f578d";
@@ -12769,6 +14062,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "core-js-compat"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/core-js-compat/-/core-js-compat-3.15.2.tgz";
         sha512 = "Wp+BJVvwopjI+A1EFqm2dwUmWYXrvucmtIB2LgXn/Rb+gWPKYxtmb4GKHGKG/KGF1eK9jfjzT38DITbTOCX/SQ==";
@@ -12796,6 +14092,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "core-util-is"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/core-util-is/-/core-util-is-1.0.2.tgz";
         sha1 = "b5fd54220aa2bc5ab57aab7140c940754503c1a7";
@@ -12823,6 +14122,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "couleurs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/couleurs/-/couleurs-6.0.11.tgz";
         sha512 = "y5WUDtgQKw/tVViZCj3ACX8VseU0ONxiet8SRsE89uH4s/otRLXGOMymfVbKMFzedKOdxQpTcYWukRwkvgRYdw==";
@@ -12850,6 +14152,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "coveralls"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/coveralls/-/coveralls-2.13.3.tgz";
         sha512 = "iiAmn+l1XqRwNLXhW8Rs5qHZRFMYp9ZIPjEOVRpC/c4so6Y/f4/lFi0FfR5B9cCqgyhkJ5cZmbvcVRfP8MHchw==";
@@ -12877,6 +14182,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "coveralls"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/coveralls/-/coveralls-3.1.1.tgz";
         sha512 = "+dxnG2NHncSD1NrqbSM3dn/lE57O6Qf/koe9+I7c+wzkqRmEvcp0kgJdxKInzYzkICKkFMZsX3Vct3++tsF9ww==";
@@ -12904,6 +14212,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cp-file"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cp-file/-/cp-file-6.2.0.tgz";
         sha512 = "fmvV4caBnofhPe8kOcitBwSn2f39QLjnAnGq3gO9dfd75mUytzKNZB1hde6QHunW2Rt+OwuBOMc3i1tNElbszA==";
@@ -12931,6 +14242,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "create-ecdh"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/create-ecdh/-/create-ecdh-4.0.4.tgz";
         sha512 = "mf+TCx8wWc9VpuxfP2ht0iSISLZnt0JgWlrOKZiNqyUZWnjIaCIVNQArMHnCZKfEYRg6IM7A+NeJoN8gf/Ws0A==";
@@ -12958,6 +14272,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "create-hash"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/create-hash/-/create-hash-1.2.0.tgz";
         sha512 = "z00bCGNHDG8mHAkP7CtT1qVu+bFQUPjYq/4Iv3C3kWjTFV10zIjfSoeqXo9Asws8gwSHDGj/hl2u4OGIjapeCg==";
@@ -12985,6 +14302,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "create-hmac"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/create-hmac/-/create-hmac-1.1.7.tgz";
         sha512 = "MJG9liiZ+ogc4TzUwuvbER1JRdgvUFSB5+VR/g5h82fGaIRWMWddtKBHi7/sVhfjQZ6SehlyhvQYrcYkaUIpLg==";
@@ -13012,6 +14332,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cross-env"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cross-env/-/cross-env-7.0.3.tgz";
         sha512 = "+/HKd6EgcQCJGh2PSjZuUitQBQynKor4wrFbRg4DtAgS1aWO+gU52xpH7M9ScGgXSYmAVS9bIJ8EzuaGw0oNAw==";
@@ -13039,6 +14362,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cross-spawn"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cross-spawn/-/cross-spawn-4.0.2.tgz";
         sha1 = "7b9247621c23adfdd3856004a823cbe397424d41";
@@ -13066,6 +14392,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cross-spawn"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cross-spawn/-/cross-spawn-6.0.5.tgz";
         sha512 = "eTVLrBSt7fjbDygz805pMnstIs2VTBNkRm0qxZd+M7A5XDdxVRWO5MxGBXZhjY4cqLYLdtrGqRf8mBPmzwSpWQ==";
@@ -13093,6 +14422,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cross-spawn"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cross-spawn/-/cross-spawn-7.0.3.tgz";
         sha512 = "iRDPJKUPVEND7dHPO8rkbOnPpyDygcDFtWjpeWNCgy8WP2rXcxXL8TskReQl6OrB2G7+UJrags1q15Fudc7G6w==";
@@ -13120,6 +14452,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cryptiles"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cryptiles/-/cryptiles-2.0.5.tgz";
         sha1 = "3bdfecdc608147c1c67202fa291e7dca59eaa3b8";
@@ -13147,6 +14482,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "crypto-browserify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/crypto-browserify/-/crypto-browserify-3.12.0.tgz";
         sha512 = "fz4spIh+znjO2VjL+IdhEpRJ3YN6sMzITSBijk6FK2UvTqruSQW+/cCZTSNsMiZNvUeq0CqurF+dAbyiGOY6Wg==";
@@ -13174,6 +14512,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cssom"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cssom/-/cssom-0.3.8.tgz";
         sha512 = "b0tGHbfegbhPJpxpiBPU2sCkigAqtM9O121le6bbOlgyV+NyGyCmVfJ6QW9eRjz8CpNfWEOYBIMIGRYkLwsIYg==";
@@ -13201,6 +14542,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cssom"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cssom/-/cssom-0.4.4.tgz";
         sha512 = "p3pvU7r1MyyqbTk+WbNJIgJjG2VmTIaB10rI93LzVPrmDJKkzKYMtxxyAvQXR/NS6otuzveI7+7BBq3SjBS2mw==";
@@ -13228,6 +14572,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "cssstyle"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/cssstyle/-/cssstyle-2.3.0.tgz";
         sha512 = "AZL67abkUzIuvcHqk7c09cezpGNcxUxU4Ioi/05xHk4DQeTkWmGYftIE6ctU6AEt+Gn4n1lDStOtj7FKycP71A==";
@@ -13255,6 +14602,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "custom-return"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/custom-return/-/custom-return-1.0.12.tgz";
         sha512 = "Xy6IlEV6gW5Iu4YRoQe0A5RG1mzezawcTXzAk7u28oB2UilRfbbOc1C7RmWE6AJ1inSm8gghCkIpo0LUQfLbvw==";
@@ -13282,6 +14632,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "d"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/d/-/d-1.0.1.tgz";
         sha512 = "m62ShEObQ39CfralilEQRjH6oAMtNCV1xJyEx5LpRYUVN+EviphDgUc/F3hnYbADmkiNs67Y+3ylmlG7Lnu+FA==";
@@ -13309,6 +14662,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "dash-ast"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/dash-ast/-/dash-ast-1.0.0.tgz";
         sha512 = "Vy4dx7gquTeMcQR/hDkYLGUnwVil6vk4FOOct+djUnHOUWt+zJPJAaRIXaAFkPXtJjvlY7o3rfRu0/3hpnwoUA==";
@@ -13336,6 +14692,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "dashdash"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/dashdash/-/dashdash-1.14.1.tgz";
         sha1 = "853cfa0f7cbe2fed5de20326b8dd581035f6e2f0";
@@ -13363,6 +14722,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "data-urls"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/data-urls/-/data-urls-2.0.0.tgz";
         sha512 = "X5eWTSXO/BJmpdIKCRuKUgSCgAN0OwliVK3yPKbwIWU1Tdw5BRajxlzMidvh+gwko9AfQ9zIj52pzF91Q3YAvQ==";
@@ -13390,6 +14752,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "debug"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/debug/-/debug-2.6.9.tgz";
         sha512 = "bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==";
@@ -13417,6 +14782,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "debug"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/debug/-/debug-3.1.0.tgz";
         sha512 = "OX8XqP7/1a9cqkxYw2yXss15f26NKWBpDXQd0/uK/KPqdQhxbPa994hnzjcE2VqQpDslf55723cKPUOGSmMY3g==";
@@ -13444,6 +14812,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "debug"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/debug/-/debug-3.2.6.tgz";
         sha512 = "mel+jf7nrtEl5Pn1Qx46zARXKDpBbvzezse7p7LqINmdoIk8PYP5SySaxEmYv6TZ0JyEKA1hsCId6DIhgITtWQ==";
@@ -13471,6 +14842,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "debug"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/debug/-/debug-3.2.7.tgz";
         sha512 = "CFjzYYAi4ThfiQvizrFQevTTXHtnCqWfe7x1AhgEscTz6ZbLbfoLRLPugTQyBth6f8ZERVUSyWHFD/7Wu4t1XQ==";
@@ -13498,6 +14872,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "debug"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/debug/-/debug-4.3.1.tgz";
         sha512 = "doEwdvm4PCeK4K3RQN2ZC2BYUBaxwLARCqZmMjtF8a51J2Rb0xpVloFRnCODwqjpwnAoao4pelN8l3RJdv3gRQ==";
@@ -13525,6 +14902,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "debug"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/debug/-/debug-4.3.2.tgz";
         sha512 = "mOp8wKcvj7XxC78zLgw/ZA+6TSgkoE2C/ienthhRD298T7UNwAg9diBpLRxC0mOezLl4B0xV7M0cCO6P/O0Xhw==";
@@ -13552,6 +14932,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "debug-log"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/debug-log/-/debug-log-1.0.1.tgz";
         sha1 = "2307632d4c04382b8df8a32f70b895046d52745f";
@@ -13579,6 +14962,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "decamelize"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/decamelize/-/decamelize-1.2.0.tgz";
         sha1 = "f6534d15148269b20352e7bee26f501f9a191290";
@@ -13606,6 +14992,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "decamelize"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/decamelize/-/decamelize-4.0.0.tgz";
         sha512 = "9iE1PgSik9HeIIw2JO94IidnE3eBoQrFJ3w7sFuzSX4DpmZ3v5sZpUiV5Swcf6mQEF+Y0ru8Neo+p+nyh2J+hQ==";
@@ -13633,6 +15022,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "decamelize-keys"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/decamelize-keys/-/decamelize-keys-1.1.0.tgz";
         sha1 = "d171a87933252807eb3cb61dc1c1445d078df2d9";
@@ -13660,6 +15052,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "decimal.js"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/decimal.js/-/decimal.js-10.3.1.tgz";
         sha512 = "V0pfhfr8suzyPGOx3nmq4aHqabehUZn6Ch9kyFpV79TGDTWFmHqUqXdabR7QHqxzrYolF4+tVmJhUG4OURg5dQ==";
@@ -13687,6 +15082,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "decode-uri-component"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/decode-uri-component/-/decode-uri-component-0.2.0.tgz";
         sha1 = "eb3913333458775cb84cd1a1fae062106bb87545";
@@ -13714,6 +15112,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "dedent"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/dedent/-/dedent-0.7.0.tgz";
         sha1 = "2495ddbaf6eb874abb0e1be9df22d2e5a544326c";
@@ -13741,6 +15142,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "deep-eql"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/deep-eql/-/deep-eql-3.0.1.tgz";
         sha512 = "+QeIQyN5ZuO+3Uk5DYh6/1eKO0m0YmJFGNmFHGACpf1ClL1nmlV/p4gNgbl2pJGxgXb4faqo6UE+M5ACEMyVcw==";
@@ -13768,6 +15172,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "deep-equal"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/deep-equal/-/deep-equal-0.0.0.tgz";
         sha1 = "99679d3bbd047156fcd450d3d01eeb9068691e83";
@@ -13795,6 +15202,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "deep-equal"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/deep-equal/-/deep-equal-0.1.2.tgz";
         sha1 = "b246c2b80a570a47c11be1d9bd1070ec878b87ce";
@@ -13822,6 +15232,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "deep-equal"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/deep-equal/-/deep-equal-1.1.1.tgz";
         sha512 = "yd9c5AdiqVcR+JjcwUQb9DkhJc8ngNr0MahEBGvDiJw8puWab2yZlh+nkasOnZP+EGTAP6rRp2JzJhJZzvNF8g==";
@@ -13849,6 +15262,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "deep-is"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/deep-is/-/deep-is-0.1.3.tgz";
         sha1 = "b369d6fb5dbc13eecf524f91b070feedc357cf34";
@@ -13876,6 +15292,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "deeper"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/deeper/-/deeper-2.1.0.tgz";
         sha1 = "bc564e5f73174fdf201e08b00030e8a14da74368";
@@ -13903,6 +15322,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "deepmerge"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/deepmerge/-/deepmerge-4.2.2.tgz";
         sha512 = "FJ3UgI4gIl+PHZm53knsuSFpE+nESMr7M4v9QcgB7S63Kj/6WqMiFQJpBBYz1Pt+66bZpP3Q7Lye0Oo9MPKEdg==";
@@ -13930,6 +15352,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "default-require-extensions"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/default-require-extensions/-/default-require-extensions-2.0.0.tgz";
         sha1 = "f5f8fbb18a7d6d50b21f641f649ebb522cfe24f7";
@@ -13957,6 +15382,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "default-require-extensions"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/default-require-extensions/-/default-require-extensions-3.0.0.tgz";
         sha512 = "ek6DpXq/SCpvjhpFsLFRVtIxJCRw6fUR42lYMVZuUMK7n8eMz4Uh5clckdBjEpLhn/gEBZo7hDJnJcwdKLKQjg==";
@@ -13984,6 +15412,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "defaults"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/defaults/-/defaults-1.0.3.tgz";
         sha1 = "c656051e9817d9ff08ed881477f3fe4019f3ef7d";
@@ -14011,6 +15442,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "deffy"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/deffy/-/deffy-2.2.4.tgz";
         sha512 = "pLc9lsbsWjr6RxmJ2OLyvm+9l4j1yK69h+TML/gUit/t3vTijpkNGh8LioaJYTGO7F25m6HZndADcUOo2PsiUg==";
@@ -14038,6 +15472,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "define-properties"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/define-properties/-/define-properties-1.1.3.tgz";
         sha512 = "3MqfYKj2lLzdMSf8ZIZE/V+Zuy+BgD6f164e8K2w7dgnpKArBDerGYpM46IYYcjnkdPNMjPk9A6VFB8+3SKlXQ==";
@@ -14065,6 +15502,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "define-property"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/define-property/-/define-property-0.2.5.tgz";
         sha1 = "c35b1ef918ec3c990f9a5bc57be04aacec5c8116";
@@ -14092,6 +15532,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "define-property"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/define-property/-/define-property-1.0.0.tgz";
         sha1 = "769ebaaf3f4a63aad3af9e8d304c9bbe79bfb0e6";
@@ -14119,6 +15562,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "define-property"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/define-property/-/define-property-2.0.2.tgz";
         sha512 = "jwK2UV4cnPpbcG7+VRARKTZPUWowwXA8bzH5NP6ud0oeAxyYPuGZUAC7hMugpCdz4BeSZl2Dl9k66CHJ/46ZYQ==";
@@ -14146,6 +15592,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "defined"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/defined/-/defined-0.0.0.tgz";
         sha1 = "f35eea7d705e933baf13b2f03b3f83d921403b3e";
@@ -14173,6 +15622,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "defined"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/defined/-/defined-1.0.0.tgz";
         sha1 = "c98d9bcef75674188e110969151199e39b1fa693";
@@ -14200,6 +15652,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "deglob"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/deglob/-/deglob-1.1.2.tgz";
         sha1 = "76d577c25fe3f7329412a2b59eadea57ac500e3f";
@@ -14227,6 +15682,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "deglob"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/deglob/-/deglob-4.0.1.tgz";
         sha512 = "/g+RDZ7yf2HvoW+E5Cy+K94YhgcFgr6C8LuHZD1O5HoNPkf3KY6RfXJ0DBGlB/NkLi5gml+G9zqRzk9S0mHZCg==";
@@ -14254,6 +15712,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "delayed-stream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/delayed-stream/-/delayed-stream-1.0.0.tgz";
         sha1 = "df3ae199acadfb7d440aaae0b29e2272b24ec619";
@@ -14281,6 +15742,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "delegates"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/delegates/-/delegates-1.0.0.tgz";
         sha1 = "84c6e159b81904fdca59a0ef44cd870d31250f9a";
@@ -14308,6 +15772,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "depd"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/depd/-/depd-1.1.2.tgz";
         sha1 = "9bcd52e14c097763e749b274c4346ed2e560b5a9";
@@ -14335,6 +15802,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "deps-sort"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/deps-sort/-/deps-sort-2.0.1.tgz";
         sha512 = "1orqXQr5po+3KI6kQb9A4jnXT1PBwggGl2d7Sq2xsnOeI9GPcE/tGcF9UiSZtZBM7MukY4cAh7MemS6tZYipfw==";
@@ -14362,6 +15832,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "des.js"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/des.js/-/des.js-1.0.1.tgz";
         sha512 = "Q0I4pfFrv2VPd34/vfLrFOoRmlYj3OV50i7fskps1jZWK1kApMWWT9G6RRUeYedLcBDIhnSDaUvJMb3AhUlaEA==";
@@ -14389,6 +15862,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "detect-newline"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/detect-newline/-/detect-newline-3.1.0.tgz";
         sha512 = "TLz+x/vEXm/Y7P7wn1EJFNLxYpUD4TgMosxY6fAVJUnJMbupHBOncxyWUG9OpTaH9EBD7uFI5LfEgmMOc54DsA==";
@@ -14416,6 +15892,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "detective"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/detective/-/detective-5.2.0.tgz";
         sha512 = "6SsIx+nUUbuK0EthKjv0zrdnajCCXVYGmbYYiYjFVpzcjwEs/JMDZ8tPRG29J/HhN56t3GJp2cGSWDRjjot8Pg==";
@@ -14443,6 +15922,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "diff"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/diff/-/diff-1.4.0.tgz";
         sha1 = "7f28d2eb9ee7b15a97efd89ce63dcfdaa3ccbabf";
@@ -14470,6 +15952,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "diff"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/diff/-/diff-3.5.0.tgz";
         sha512 = "A46qtFgd+g7pDZinpnwiRJtxbC1hpgf0uzP3iG89scHk0AUC7A1TGxf5OiiOUv/JMZR8GOt8hL900hV0bOy5xA==";
@@ -14497,6 +15982,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "diff"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/diff/-/diff-4.0.2.tgz";
         sha512 = "58lmxKSA4BNyLz+HHMUzlOEpg09FV+ev6ZMe3vJihgdxzgcwZ8VoEEPmALCZG9LmqfVoNMMKpttIYTVG6uDY7A==";
@@ -14524,6 +16012,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "diff"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/diff/-/diff-5.0.0.tgz";
         sha512 = "/VTCrvm5Z0JGty/BWHljh+BAiw3IK+2j87NGMu8Nwc/f48WoDAC395uomO9ZD117ZOBaHmkX1oyLvkVM/aIT3w==";
@@ -14551,6 +16042,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "diff-frag"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/diff-frag/-/diff-frag-1.1.1.tgz";
         sha512 = "y0YLhUGviNXaypPimkzmOCaZf8ruocRb+dpOL/lfoicxBua2gkExddlbWxIP56Z5BpSg4gL5sAWhBN2iQm4HVQ==";
@@ -14578,6 +16072,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "diff-sequences"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/diff-sequences/-/diff-sequences-24.9.0.tgz";
         sha512 = "Dj6Wk3tWyTE+Fo1rW8v0Xhwk80um6yFYKbuAxc9c3EZxIHFDYwbi34Uk42u1CdnIiVorvt4RmlSDjIPyzGC2ew==";
@@ -14605,6 +16102,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "diff-sequences"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/diff-sequences/-/diff-sequences-26.6.2.tgz";
         sha512 = "Mv/TDa3nZ9sbc5soK+OoA74BsS3mL37yixCvUAQkiuA4Wz6YtwP/K47n2rv2ovzHZvoiQeA5FTQOschKkEwB0Q==";
@@ -14632,6 +16132,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "diff-sequences"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/diff-sequences/-/diff-sequences-27.0.6.tgz";
         sha512 = "ag6wfpBFyNXZ0p8pcuIDS//D8H062ZQJ3fzYxjpmeKjnz8W4pekL3AI8VohmyZmsWW2PWaHgjsmqR6L13101VQ==";
@@ -14659,6 +16162,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "diffie-hellman"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/diffie-hellman/-/diffie-hellman-5.0.3.tgz";
         sha512 = "kqag/Nl+f3GwyK25fhUMYj81BUOrZ9IuJsjIcDE5icNM9FJHAVm3VcUDxdLPoQtTuUylWm6ZIknYJwwaPxsUzg==";
@@ -14686,6 +16192,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "difflet"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/difflet/-/difflet-0.2.6.tgz";
         sha1 = "ab23b31f5649b6faa8e3d2acbd334467365ca6fa";
@@ -14713,6 +16222,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "difflet"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/difflet/-/difflet-1.0.1.tgz";
         sha1 = "189f8f9039e4ee4ac3ea943d4de66d259965b13c";
@@ -14740,6 +16252,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "dir-glob"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/dir-glob/-/dir-glob-3.0.1.tgz";
         sha512 = "WkrWp9GR4KXfKGYzOLmTuGVi1UWFfws377n9cc55/tb6DuqyF6pcQ5AbiHEshaDpY9v6oaSr2XCDidGmMwdzIA==";
@@ -14767,6 +16282,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "doctrine"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/doctrine/-/doctrine-1.5.0.tgz";
         sha1 = "379dce730f6166f76cefa4e6707a159b02c5a6fa";
@@ -14794,6 +16312,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "doctrine"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/doctrine/-/doctrine-2.1.0.tgz";
         sha512 = "35mSku4ZXK0vfCuHEDAwt55dg2jNajHZ1odvF+8SSr82EsZY4QmXfuWso8oEd8zRhVObSN18aM0CjSdoBX7zIw==";
@@ -14821,6 +16342,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "doctrine"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/doctrine/-/doctrine-3.0.0.tgz";
         sha512 = "yS+Q5i3hBf7GBkd4KG8a7eBNNWNGLTaEwwYWUijIYM7zrlYDM0BFXHjjPWlWZ1Rg7UaddZeIDmi9jF3HmqiQ2w==";
@@ -14848,6 +16372,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "dom-serializer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/dom-serializer/-/dom-serializer-0.2.2.tgz";
         sha512 = "2/xPb3ORsQ42nHYiSunXkDjPLBaEj/xTwUO4B7XCZQTRk7EBtTOPaygh10YAAh2OI1Qrp6NWfpAhzswj0ydt9g==";
@@ -14875,6 +16402,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "domain-browser"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/domain-browser/-/domain-browser-1.2.0.tgz";
         sha512 = "jnjyiM6eRyZl2H+W8Q/zLMA481hzi0eszAaBUzIVnmYVDBbnLxVNnfu1HgEBvCbL+71FrxMl3E6lpKH7Ge3OXA==";
@@ -14902,6 +16432,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "domelementtype"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/domelementtype/-/domelementtype-1.3.1.tgz";
         sha512 = "BSKB+TSpMpFI/HOxCNr1O8aMOTZ8hT3pM3GQ0w/mWRmkhEDSFJkkyzz4XQsBV44BChwGkrDfMyjVD0eA2aFV3w==";
@@ -14929,6 +16462,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "domelementtype"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/domelementtype/-/domelementtype-2.2.0.tgz";
         sha512 = "DtBMo82pv1dFtUmHyr48beiuq792Sxohr+8Hm9zoxklYPfa6n0Z3Byjj2IV7bmr2IyqClnqEQhfgHJJ5QF0R5A==";
@@ -14956,6 +16492,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "domexception"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/domexception/-/domexception-2.0.1.tgz";
         sha512 = "yxJ2mFy/sibVQlu5qHjOkf9J3K6zgmCxgJ94u2EdvDOV09H+32LtRswEcUsmUWN72pVLOEnTSRaIVVzVQgS0dg==";
@@ -14983,6 +16522,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "domhandler"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/domhandler/-/domhandler-2.4.2.tgz";
         sha512 = "JiK04h0Ht5u/80fdLMCEmV4zkNh2BcoMFBmZ/91WtYZ8qVXSKjiw7fXMgFPnHcSZgOo3XdinHvmnDUeMf5R4wA==";
@@ -15010,6 +16552,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "domutils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/domutils/-/domutils-1.7.0.tgz";
         sha512 = "Lgd2XcJ/NjEw+7tFvfKxOzCYKZsdct5lczQ2ZaQY8Djz7pfAD3Gbp8ySJWtreII/vDlMVmxwa6pHmdxIYgttDg==";
@@ -15037,6 +16582,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "dotignore"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/dotignore/-/dotignore-0.1.2.tgz";
         sha512 = "UGGGWfSauusaVJC+8fgV+NVvBXkCTmVv7sk6nojDZZvuOUNGUy0Zk4UpHQD6EDjS0jpBwcACvH4eofvyzBcRDw==";
@@ -15064,6 +16612,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "dts-critic"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/dts-critic/-/dts-critic-3.3.8.tgz";
         sha512 = "7kBza3f+RV/3hVCQ9yIskkrC+49kzDDM7qogbBFgLQCiGOLmUhpjE9FSw2iOWLVyeLagRNj7SmxAhD2SizJ49w==";
@@ -15091,6 +16642,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "dtslint"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/dtslint/-/dtslint-4.0.7.tgz";
         sha512 = "gwpBnxky+vUfCL74U5ao+wQf4sw9jD+cZ9ukiTFrkwkhNibqfyOZyg4cnFf1lB0Hm5ZFSQdi09DdjarDQLgofA==";
@@ -15118,6 +16672,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "duplexer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/duplexer/-/duplexer-0.1.2.tgz";
         sha512 = "jtD6YG370ZCIi/9GTaJKQxWTZD045+4R4hTk/x1UyoqadyJ9x9CgSi1RlVDQF8U2sxLLSnFkCaMihqljHIWgMg==";
@@ -15145,6 +16702,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "duplexer2"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/duplexer2/-/duplexer2-0.1.4.tgz";
         sha1 = "8b12dab878c0d69e3e7891051662a32fc6bddcc1";
@@ -15172,6 +16732,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ecc-jsbn"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ecc-jsbn/-/ecc-jsbn-0.1.2.tgz";
         sha1 = "3a83a904e54353287874c564b7549386849a98c9";
@@ -15199,6 +16762,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "electron-to-chromium"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.3.772.tgz";
         sha512 = "X/6VRCXWALzdX+RjCtBU6cyg8WZgoxm9YA02COmDOiNJEZ59WkQggDbWZ4t/giHi/3GS+cvdrP6gbLISANAGYA==";
@@ -15226,6 +16792,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "elliptic"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz";
         sha512 = "iLhC6ULemrljPZb+QutR5TQGB+pdW6KGD5RSegS+8sorOZT+rdQFbsQFJgvN3eRqNALqJer4oQ16YvJHlU8hzQ==";
@@ -15253,6 +16822,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "emittery"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/emittery/-/emittery-0.7.2.tgz";
         sha512 = "A8OG5SR/ij3SsJdWDJdkkSYUjQdCUx6APQXem0SaEePBSRg4eymGYwBkKo1Y6DU+af/Jn2dBQqDBvjnr9Vi8nQ==";
@@ -15280,6 +16852,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "emittery"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/emittery/-/emittery-0.8.1.tgz";
         sha512 = "uDfvUjVrfGJJhymx/kz6prltenw1u7WrCg1oa94zYY8xxVpLLUu045LAT0dhDZdXG58/EpPL/5kA180fQ/qudg==";
@@ -15307,6 +16882,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "emoji-logger"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/emoji-logger/-/emoji-logger-1.0.15.tgz";
         sha512 = "f1psExXXMEbYHDXDUntohNPAW/fPRefy0ONzcOIyEMCBgLYM4RP0gcFFRsl83WfPTOu8EtnAhaHZaQOIUE/9gA==";
@@ -15334,6 +16912,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "emoji-regex"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/emoji-regex/-/emoji-regex-7.0.3.tgz";
         sha512 = "CwBLREIQ7LvYFB0WyRvwhq5N5qPhc6PMjD6bYggFlI5YyDgl+0vxq5VHbMOFqLg7hfWzmu8T5Z1QofhmTIhItA==";
@@ -15361,6 +16942,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "emoji-regex"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/emoji-regex/-/emoji-regex-8.0.0.tgz";
         sha512 = "MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==";
@@ -15388,6 +16972,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "emojic"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/emojic/-/emojic-1.1.16.tgz";
         sha512 = "DcyFEqGy969KcHCsSaI9NeaLCnXhklfjLYHt5ags1prGze8UuN7Bh0WnOqVRko41/xAqjy68QXpcBgyExH9ieQ==";
@@ -15415,6 +17002,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "emojilib"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/emojilib/-/emojilib-2.4.0.tgz";
         sha512 = "5U0rVMU5Y2n2+ykNLQqMoqklN9ICBT/KsvC1Gz6vqHbz2AXXGkG+Pm5rMWk/8Vjrr/mY9985Hi8DYzn1F09Nyw==";
@@ -15442,6 +17032,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "end-of-stream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/end-of-stream/-/end-of-stream-1.4.4.tgz";
         sha512 = "+uw1inIHVPQoaVuHzRyXd21icM+cnt4CzD5rW+NC1wjOUSTOs+Te7FOv7AhN7vS9x/oIyhLP5PR1H+phQAHu5Q==";
@@ -15469,6 +17062,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "enquirer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/enquirer/-/enquirer-2.3.6.tgz";
         sha512 = "yjNnPr315/FjS4zIsUxYguYUPP2e1NK4d7E7ZOLiyYCcbFBiTMyID+2wvm2w6+pZ/odMA7cRkjhsPbltwBOrLg==";
@@ -15496,6 +17092,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "entities"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/entities/-/entities-1.1.2.tgz";
         sha512 = "f2LZMYl1Fzu7YSBKg+RoROelpOaNrcGmE9AZubeDfrCEia483oW4MI4VyFd5VNHIgQ/7qm1I0wUHK1eJnn2y2w==";
@@ -15523,6 +17122,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "entities"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/entities/-/entities-2.0.3.tgz";
         sha512 = "MyoZ0jgnLvB2X3Lg5HqpFmn1kybDiIfEQmKzTb5apr51Rb+T3KdmMiqa70T+bhGnyv7bQ6WMj2QMHpGMmlrUYQ==";
@@ -15550,6 +17152,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "entities"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/entities/-/entities-2.2.0.tgz";
         sha512 = "p92if5Nz619I0w+akJrLZH0MX0Pb5DX39XOwQTtXSdQQOaYH03S1uIQp4mhOZtAXrxq4ViO67YTiLBo2638o9A==";
@@ -15577,6 +17182,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "env-fn"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/env-fn/-/env-fn-2.2.0.tgz";
         sha512 = "hdR0Dpguc2GTA/d1lu7nBgze6gXB/bXkmN1nW6zlaRmRsw8mK4vTNuE0o4bbR0NfXTzgI7mecdGiHsqZRAeO9w==";
@@ -15604,6 +17212,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "err"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/err/-/err-1.1.1.tgz";
         sha1 = "eb928e2e11a316648f782833d0f97258ba43c2f8";
@@ -15631,6 +17242,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "err-code"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/err-code/-/err-code-2.0.3.tgz";
         sha512 = "2bmlRpNKBxT/CRmPOlyISQpNj+qSeYvcym/uT0Jx2bMOlKLtSy1ZmLuVxSEKKyor/N5yhvp/ZiG1oE3DEYMSFA==";
@@ -15658,6 +17272,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "error-ex"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/error-ex/-/error-ex-1.3.2.tgz";
         sha512 = "7dFHNmqeFSEt2ZBsCriorKnn3Z2pj+fd9kmI6QoWw4//DL+icEBfc0U7qJCisqrTsKTjw4fNFy2pW9OqStD84g==";
@@ -15685,6 +17302,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "errs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/errs/-/errs-0.1.1.tgz";
         sha1 = "d4493dcccf0848ed75ee4e3205f606058841baf2";
@@ -15712,6 +17332,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "es-abstract"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/es-abstract/-/es-abstract-1.18.3.tgz";
         sha512 = "nQIr12dxV7SSxE6r6f1l3DtAeEYdsGpps13dR0TwJg1S8gyp4ZPgy3FZcHBgbiQqnoqSTb+oC+kO4UQ0C/J8vw==";
@@ -15739,6 +17362,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "es-get-iterator"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/es-get-iterator/-/es-get-iterator-1.1.2.tgz";
         sha512 = "+DTO8GYwbMCwbywjimwZMHp8AuYXOS2JZFWoi2AlPOS3ebnII9w/NLpNZtA7A0YLaVDw+O7KFCeoIV7OPvM7hQ==";
@@ -15766,6 +17392,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "es-to-primitive"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/es-to-primitive/-/es-to-primitive-1.2.1.tgz";
         sha512 = "QCOllgZJtaUo9miYBcLChTUaHNjJF3PYs1VidD7AwiEj1kYxKeQTctLAezAOH5ZKRH0g2IgPn6KwB4IT8iRpvA==";
@@ -15793,6 +17422,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "es5-ext"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/es5-ext/-/es5-ext-0.10.53.tgz";
         sha512 = "Xs2Stw6NiNHWypzRTY1MtaG/uJlwCk8kH81920ma8mvN8Xq1gsfhZvpkImLQArw8AHnv8MT2I45J3c0R8slE+Q==";
@@ -15820,6 +17452,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "es6-error"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/es6-error/-/es6-error-4.1.1.tgz";
         sha512 = "Um/+FxMr9CISWh0bi5Zv0iOD+4cFh5qLeks1qhAopKVAJw3drgKbKySikp7wGhDL0HPeaja0P5ULZrxLkniUVg==";
@@ -15847,6 +17482,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "es6-iterator"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/es6-iterator/-/es6-iterator-2.0.3.tgz";
         sha1 = "a7de889141a05a94b0854403b2d0a0fbfa98f3b7";
@@ -15874,6 +17512,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "es6-map"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/es6-map/-/es6-map-0.1.5.tgz";
         sha1 = "9136e0503dcc06a301690f0bb14ff4e364e949f0";
@@ -15901,6 +17542,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "es6-set"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/es6-set/-/es6-set-0.1.5.tgz";
         sha1 = "d2b3ec5d4d800ced818db538d28974db0a73ccb1";
@@ -15928,6 +17572,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "es6-symbol"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/es6-symbol/-/es6-symbol-3.1.1.tgz";
         sha1 = "bf00ef4fdab6ba1b46ecb7b629b4c7ed5715cc77";
@@ -15955,6 +17602,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "es6-symbol"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/es6-symbol/-/es6-symbol-3.1.3.tgz";
         sha512 = "NJ6Yn3FuDinBaBRWl/q5X/s4koRHBrgKAu+yGI6JCBeiu3qrcbJhwT2GeR/EXVfylRk8dpQVJoLEFhK+Mu31NA==";
@@ -15982,6 +17632,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "es6-weak-map"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/es6-weak-map/-/es6-weak-map-2.0.3.tgz";
         sha512 = "p5um32HOTO1kP+w7PRnB+5lQ43Z6muuMuIMffvDN8ZB4GcnjLBV6zGStpbASIMk4DCAvEaamhe2zhyCb/QXXsA==";
@@ -16009,6 +17662,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "escalade"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/escalade/-/escalade-3.1.1.tgz";
         sha512 = "k0er2gUkLf8O0zKJiAhmkTnJlTvINGv7ygDNPbeIsX/TJjGJZHuh9B2UxbsaEkmlEo9MfhrSzmhIlhRlI2GXnw==";
@@ -16036,6 +17692,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "escape-string-regexp"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/escape-string-regexp/-/escape-string-regexp-1.0.5.tgz";
         sha1 = "1b61c0562190a8dff6ae3bb2cf0200ca130b86d4";
@@ -16063,6 +17722,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "escape-string-regexp"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/escape-string-regexp/-/escape-string-regexp-2.0.0.tgz";
         sha512 = "UpzcLCXolUWcNu5HtVMHYdXJjArjsF9C0aNnquZYY4uW/Vu0miy5YoWvbV345HauVvcAUnpRuhMMcqTcGOY2+w==";
@@ -16090,6 +17752,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "escape-string-regexp"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/escape-string-regexp/-/escape-string-regexp-4.0.0.tgz";
         sha512 = "TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==";
@@ -16117,6 +17782,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "escodegen"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/escodegen/-/escodegen-1.7.1.tgz";
         sha1 = "30ecfcf66ca98dc67cd2fd162abeb6eafa8ce6fc";
@@ -16144,6 +17812,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "escodegen"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/escodegen/-/escodegen-2.0.0.tgz";
         sha512 = "mmHKys/C8BFUGI+MAWNcSYoORYLMdPzjrknd2Vc+bUsjN5bXcr8EhrNB+UTqfL1y3I9c4fw2ihgtMPQLBRiQxw==";
@@ -16171,6 +17842,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "escope"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/escope/-/escope-3.6.0.tgz";
         sha1 = "e01975e812781a163a6dadfdd80398dc64c889c3";
@@ -16198,6 +17872,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint/-/eslint-2.10.2.tgz";
         sha1 = "b2309482fef043d3203365a321285e6cce01c3d7";
@@ -16225,6 +17902,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint/-/eslint-5.16.0.tgz";
         sha512 = "S3Rz11i7c8AA5JPv7xAH+dOyq/Cu/VXHiHXBPOU1k/JAM5dXqQPt3qcrhpHSorXmrpu2g0gkIBVXAqCpzfoZIg==";
@@ -16252,6 +17932,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint/-/eslint-6.8.0.tgz";
         sha512 = "K+Iayyo2LtyYhDSYwz5D5QdWw0hCacNzyq1Y821Xna2xSJj7cijoLLYmLxTQgcgZ9mC61nryMy9S7GRbYpI5Ig==";
@@ -16279,6 +17962,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint/-/eslint-7.13.0.tgz";
         sha512 = "uCORMuOO8tUzJmsdRtrvcGq5qposf7Rw0LwkTJkoDbOycVQtQjmnhZSuLQnozLE4TmAzlMVV45eCHmQ1OpDKUQ==";
@@ -16306,6 +17992,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint/-/eslint-7.30.0.tgz";
         sha512 = "VLqz80i3as3NdloY44BQSJpFw534L9Oh+6zJOUaViV4JPd+DaHwutqP7tcpkW3YiXbK6s05RZl7yl7cQn+lijg==";
@@ -16333,6 +18022,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-config-standard"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-config-standard/-/eslint-config-standard-14.1.1.tgz";
         sha512 = "Z9B+VR+JIXRxz21udPTL9HpFMyoMUEeX1G251EQ6e05WD9aPVtVBn09XUmZ259wCMlCDmYDSZG62Hhm+ZTJcUg==";
@@ -16360,6 +18052,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-config-standard"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-config-standard/-/eslint-config-standard-16.0.2.tgz";
         sha512 = "fx3f1rJDsl9bY7qzyX8SAtP8GBSk6MfXFaTfaGgk12aAYW4gJSyRm7dM790L6cbXv63fvjY4XeSzXnb4WM+SKw==";
@@ -16387,6 +18082,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-config-standard"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-config-standard/-/eslint-config-standard-16.0.3.tgz";
         sha512 = "x4fmJL5hGqNJKGHSjnLdgA6U6h1YW/G2dW9fA+cyVur4SK6lyue8+UgNKWlZtUDTXvgKDD/Oa3GQjmB5kjtVvg==";
@@ -16414,6 +18112,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-config-standard"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-config-standard/-/eslint-config-standard-5.3.1.tgz";
         sha1 = "591c969151744132f561d3b915a812ea413fe490";
@@ -16441,6 +18142,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-config-standard-jsx"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-config-standard-jsx/-/eslint-config-standard-jsx-1.2.1.tgz";
         sha1 = "0d19b1705f0ad48363ef2a8bbfa71df012d989b3";
@@ -16468,6 +18172,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-config-standard-jsx"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-config-standard-jsx/-/eslint-config-standard-jsx-10.0.0.tgz";
         sha512 = "hLeA2f5e06W1xyr/93/QJulN/rLbUVUmqTlexv9PRKHFwEC9ffJcH2LvJhMoEqYQBEYafedgGZXH2W8NUpt5lA==";
@@ -16495,6 +18202,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-config-standard-jsx"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-config-standard-jsx/-/eslint-config-standard-jsx-8.1.0.tgz";
         sha512 = "ULVC8qH8qCqbU792ZOO6DaiaZyHNS/5CZt3hKqHkEhVlhPEPN3nfBqqxJCyp59XrjIBZPu1chMYe9T2DXZ7TMw==";
@@ -16522,6 +18232,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-formatter-pretty"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-formatter-pretty/-/eslint-formatter-pretty-4.1.0.tgz";
         sha512 = "IsUTtGxF1hrH6lMWiSl1WbGaiP01eT6kzywdY1U+zLc0MP+nwEnUiS9UI8IaOTUhTeQJLlCEWIbXINBH4YJbBQ==";
@@ -16549,6 +18262,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-import-resolver-node"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-import-resolver-node/-/eslint-import-resolver-node-0.3.4.tgz";
         sha512 = "ogtf+5AB/O+nM6DIeBUNr2fuT7ot9Qg/1harBfBtaP13ekEWFQEEMP94BCB7zaNW3gyY+8SHYF00rnqYwXKWOA==";
@@ -16576,6 +18292,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-module-utils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-module-utils/-/eslint-module-utils-2.6.1.tgz";
         sha512 = "ZXI9B8cxAJIH4nfkhTwcRTEAnrVfobYqwjWy/QMCZ8rHkZHFjf9yO4BzpiF9kCSfNlMG54eKigISHpX0+AaT4A==";
@@ -16603,6 +18322,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-es"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-plugin-es/-/eslint-plugin-es-1.4.1.tgz";
         sha512 = "5fa/gR2yR3NxQf+UXkeLeP8FBBl6tSgdrAz1+cF84v1FMM4twGwQoqTnn+QxFLcPOrF4pdKEJKDB/q9GoyJrCA==";
@@ -16630,6 +18352,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-es"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-plugin-es/-/eslint-plugin-es-2.0.0.tgz";
         sha512 = "f6fceVtg27BR02EYnBhgWLFQfK6bN4Ll0nQFrBHOlCsAyxeZkn0NHns5O0YZOPrV1B3ramd6cgFwaoFLcSkwEQ==";
@@ -16657,6 +18382,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-es"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-plugin-es/-/eslint-plugin-es-3.0.1.tgz";
         sha512 = "GUmAsJaN4Fc7Gbtl8uOBlayo2DqhwWvEzykMHSCZHU3XdJ+NSzzZcVhXh3VxX5icqQ+oQdIEawXX8xkR3mIFmQ==";
@@ -16684,6 +18412,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-html"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-plugin-html/-/eslint-plugin-html-5.0.5.tgz";
         sha512 = "v/33i3OD0fuXcRXexVyXXBOe4mLBLBQoF1UO1Uy9D+XLq4MC8K45GcQKfqjC/FnHAHp3pYUjpHHktYNCtShGmg==";
@@ -16711,6 +18442,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-import"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-plugin-import/-/eslint-plugin-import-2.18.2.tgz";
         sha512 = "5ohpsHAiUBRNaBWAF08izwUGlbrJoJJ+W9/TBwsGoR1MnlgfwMIKrFeSjWbt6moabiXW9xNvtFz+97KHRfI4HQ==";
@@ -16738,6 +18472,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-import"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-plugin-import/-/eslint-plugin-import-2.22.1.tgz";
         sha512 = "8K7JjINHOpH64ozkAhpT3sd+FswIZTfMZTjdx052pnWrgRCVfp8op9tbjpAk3DdUeI/Ba4C8OjdC0r90erHEOw==";
@@ -16765,6 +18502,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-import"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-plugin-import/-/eslint-plugin-import-2.23.4.tgz";
         sha512 = "6/wP8zZRsnQFiR3iaPFgh5ImVRM1WN5NUWfTIRqwOdeiGJlBcSk82o1FEVq8yXmy4lkIzTo7YhHCIxlU/2HyEQ==";
@@ -16792,6 +18532,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-jest"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-plugin-jest/-/eslint-plugin-jest-24.3.6.tgz";
         sha512 = "WOVH4TIaBLIeCX576rLcOgjNXqP+jNlCiEmRgFTfQtJ52DpwnIQKAVGlGPAN7CZ33bW6eNfHD6s8ZbEUTQubJg==";
@@ -16819,6 +18562,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-no-use-extend-native"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-plugin-no-use-extend-native/-/eslint-plugin-no-use-extend-native-0.4.1.tgz";
         sha512 = "tDkHM0kvxU0M2TpLRKGfFrpWXctFdTDY7VkiDTLYDaX90hMSJKkr/FiWThEXvKV0Dvffut2Z0B9Y7+h/k6suiA==";
@@ -16846,6 +18592,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-node"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-plugin-node/-/eslint-plugin-node-10.0.0.tgz";
         sha512 = "1CSyM/QCjs6PXaT18+zuAXsjXGIGo5Rw630rSKwokSs2jrYURQc4R5JZpoanNCqwNmepg+0eZ9L7YiRUJb8jiQ==";
@@ -16873,6 +18622,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-node"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-plugin-node/-/eslint-plugin-node-11.1.0.tgz";
         sha512 = "oUwtPJ1W0SKD0Tr+wqu92c5xuCeQqB3hSCHasn/ZgjFdA9iDGNkNf2Zi9ztY7X+hNuMib23LNGRm6+uN+KLE3g==";
@@ -16900,6 +18652,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-node"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-plugin-node/-/eslint-plugin-node-9.2.0.tgz";
         sha512 = "2abNmzAH/JpxI4gEOwd6K8wZIodK3BmHbTxz4s79OIYwwIt2gkpEXlAouJXu4H1c9ySTnRso0tsuthSOZbUMlA==";
@@ -16927,6 +18682,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-promise"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-plugin-promise/-/eslint-plugin-promise-1.3.2.tgz";
         sha1 = "fce332d6f5ff523200a537704863ec3c2422ba7c";
@@ -16954,6 +18712,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-promise"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-plugin-promise/-/eslint-plugin-promise-4.2.1.tgz";
         sha512 = "VoM09vT7bfA7D+upt+FjeBO5eHIJQBUWki1aPvB+vbNiHS3+oGIJGIeyBtKQTME6UPXXy3vV07OL1tHd3ANuDw==";
@@ -16981,6 +18742,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-promise"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-plugin-promise/-/eslint-plugin-promise-4.3.1.tgz";
         sha512 = "bY2sGqyptzFBDLh/GMbAxfdJC+b0f23ME63FOE4+Jao0oZ3E1LEwFtWJX/1pGMJLiTtrSSern2CRM/g+dfc0eQ==";
@@ -17008,6 +18772,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-react"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-plugin-react/-/eslint-plugin-react-5.2.2.tgz";
         sha1 = "7db068e1f5487f6871e4deef36a381c303eac161";
@@ -17035,6 +18802,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-react"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-plugin-react/-/eslint-plugin-react-7.14.3.tgz";
         sha512 = "EzdyyBWC4Uz2hPYBiEJrKCUi2Fn+BJ9B/pJQcjw5X+x/H2Nm59S4MJIvL4O5NEE0+WbnQwEBxWY03oUk+Bc3FA==";
@@ -17062,6 +18832,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-react"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-plugin-react/-/eslint-plugin-react-7.21.5.tgz";
         sha512 = "8MaEggC2et0wSF6bUeywF7qQ46ER81irOdWS4QWxnnlAEsnzeBevk1sWh7fhpCghPpXb+8Ks7hvaft6L/xsR6g==";
@@ -17089,6 +18862,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-standard"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-plugin-standard/-/eslint-plugin-standard-1.3.3.tgz";
         sha1 = "a3085451523431e76f409c70cb8f94e32bf0ec7f";
@@ -17116,6 +18892,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-standard"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-plugin-standard/-/eslint-plugin-standard-4.0.2.tgz";
         sha512 = "nKptN8l7jksXkwFk++PhJB3cCDTcXOEyhISIN86Ue2feJ1LFyY3PrY3/xT2keXlJSY5bpmbiTG0f885/YKAvTA==";
@@ -17143,6 +18922,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-plugin-standard"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-plugin-standard/-/eslint-plugin-standard-5.0.0.tgz";
         sha512 = "eSIXPc9wBM4BrniMzJRBm2uoVuXz2EPa+NXPk2+itrVt+r5SbKFERx/IgrK/HmfjddyKVz2f+j+7gBRvu19xLg==";
@@ -17170,6 +18952,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-rule-docs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-rule-docs/-/eslint-rule-docs-1.1.230.tgz";
         sha512 = "dT3rxxc3TmP57RHm9OYTQhT0N4Yu7bjkBW0hvrGRO5sUhB2ron8KPxMDE6pgO44oHvccrsB6TYlCCM5jccdPHw==";
@@ -17197,6 +18982,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-scope"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-scope/-/eslint-scope-4.0.3.tgz";
         sha512 = "p7VutNr1O/QrxysMo3E45FjYDTeXBy0iTltPFNSqKAIfjDSXC+4dj+qfyuD8bfAXrW/y6lW3O76VaYNPKfpKrg==";
@@ -17224,6 +19012,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-scope"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-scope/-/eslint-scope-5.1.1.tgz";
         sha512 = "2NxwbF/hZ0KpepYN0cNbo+FN6XoK7GaHlQhgx/hIZl6Va0bF45RQOOwhLIy8lQDbuCiadSLCBnH2CFYquit5bw==";
@@ -17251,6 +19042,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-utils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-utils/-/eslint-utils-1.4.3.tgz";
         sha512 = "fbBN5W2xdY45KulGXmLHZ3c3FHfVYmKg0IrAKGOkT/464PQsx2UeIzfz1RmEci+KLm1bBaAzZAh8+/E+XAeZ8Q==";
@@ -17278,6 +19072,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-utils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-utils/-/eslint-utils-2.1.0.tgz";
         sha512 = "w94dQYoauyvlDc43XnGB8lU3Zt713vNChgt4EWwhXAP2XkBvndfxF0AgIqKOOasjPIPzj9JqgwkwbCYD0/V3Zg==";
@@ -17305,6 +19102,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-utils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-utils/-/eslint-utils-3.0.0.tgz";
         sha512 = "uuQC43IGctw68pJA1RgbQS8/NP7rch6Cwd4j3ZBtgo4/8Flj4eGE7ZYSZRN3iq5pVUv6GPdW5Z1RFleo84uLDA==";
@@ -17332,6 +19132,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-visitor-keys"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-visitor-keys/-/eslint-visitor-keys-1.3.0.tgz";
         sha512 = "6J72N8UNa462wa/KFODt/PJ3IU60SDpC3QXC1Hjc1BXXpfL2C9R5+AU7jhe0F6GREqVMh4Juu+NY7xn+6dipUQ==";
@@ -17359,6 +19162,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "eslint-visitor-keys"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/eslint-visitor-keys/-/eslint-visitor-keys-2.1.0.tgz";
         sha512 = "0rSmRBzXgDzIsD6mGdJgevzgezI534Cer5L/vyMX0kHzT/jiB43jRhd9YUlMGYLQy2zprNmoT8qasCGtY+QaKw==";
@@ -17386,6 +19192,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "esm"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/esm/-/esm-3.2.25.tgz";
         sha512 = "U1suiZ2oDVWv4zPO56S0NcR5QriEahGtdN2OR6FiOG4WJvcjBVFB0qI4+eKoWFH483PKGuLuu6V8Z4T5g63UVA==";
@@ -17413,6 +19222,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "espree"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/espree/-/espree-3.1.4.tgz";
         sha1 = "0726d7ac83af97a7c8498da9b363a3609d2a68a1";
@@ -17440,6 +19252,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "espree"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/espree/-/espree-5.0.1.tgz";
         sha512 = "qWAZcWh4XE/RwzLJejfcofscgMc9CamR6Tn1+XRXNzrvUSSbiAjGOI/fggztjIi7y9VLPqnICMIPiGyr8JaZ0A==";
@@ -17467,6 +19282,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "espree"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/espree/-/espree-6.2.1.tgz";
         sha512 = "ysCxRQY3WaXJz9tdbWOwuWr5Y/XrPTGX9Kiz3yoUXwW0VZ4w30HTkQLaGx/+ttFjF8i+ACbArnB4ce68a9m5hw==";
@@ -17494,6 +19312,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "espree"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/espree/-/espree-7.3.1.tgz";
         sha512 = "v3JCNCE64umkFpmkFGqzVKsOT0tN1Zr+ueqLZfpV1Ob8e+CEgPWa+OxCoGH3tnhimMKIaBm4m/vaRpJ/krRz2g==";
@@ -17521,6 +19342,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "esprima"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/esprima/-/esprima-1.2.5.tgz";
         sha1 = "0993502feaf668138325756f30f9a51feeec11e9";
@@ -17548,6 +19372,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "esprima"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/esprima/-/esprima-2.5.0.tgz";
         sha1 = "f387a46fd344c1b1a39baf8c20bfb43b6d0058cc";
@@ -17575,6 +19402,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "esprima"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/esprima/-/esprima-2.7.3.tgz";
         sha1 = "96e3b70d5779f6ad49cd032673d1c312767ba581";
@@ -17602,6 +19432,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "esprima"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/esprima/-/esprima-4.0.1.tgz";
         sha512 = "eGuFFw7Upda+g4p+QHvnW0RyTX/SVeJBDM/gCtMARO0cLuT2HcEKnTPvhjV6aGeqrCB/sbNop0Kszm0jsaWU4A==";
@@ -17629,6 +19462,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "esquery"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/esquery/-/esquery-1.4.0.tgz";
         sha512 = "cCDispWt5vHHtwMY2YrAQ4ibFkAL8RbH5YGBnZBc90MolvvfkkQcJro/aZiAQUlQ3qgrYS6D6v8Gc5G5CQsc9w==";
@@ -17656,6 +19492,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "esrecurse"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/esrecurse/-/esrecurse-4.3.0.tgz";
         sha512 = "KmfKL3b6G+RXvP8N1vr3Tq1kL/oCFgn2NYXEtqP8/L3pKapUA4G8cFVaoF3SU323CD4XypR/ffioHmkti6/Tag==";
@@ -17683,6 +19522,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "estraverse"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/estraverse/-/estraverse-1.9.3.tgz";
         sha1 = "af67f2dc922582415950926091a4005d29c9bb44";
@@ -17710,6 +19552,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "estraverse"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/estraverse/-/estraverse-4.3.0.tgz";
         sha512 = "39nnKffWz8xN1BU/2c79n9nB9HDzo0niYUqx6xyqUnyoAnQyyWpOTdZEeiCch8BBu515t4wp9ZmgVfVhn9EBpw==";
@@ -17737,6 +19582,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "estraverse"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/estraverse/-/estraverse-5.2.0.tgz";
         sha512 = "BxbNGGNm0RyRYvUdHpIwv9IWzeM9XClbOxwoATuFdOE7ZE6wHL+HQ5T8hoPM+zHvmKzzsEqhgy0GrQ5X13afiQ==";
@@ -17764,6 +19612,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "estree-walker"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/estree-walker/-/estree-walker-0.6.1.tgz";
         sha512 = "SqmZANLWS0mnatqbSfRP5g8OXZC12Fgg1IwNtLsyHDzJizORW4khDfjPqJZsemPWBB2uqykUah5YpQ6epsqC/w==";
@@ -17791,6 +19642,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "estree-walker"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/estree-walker/-/estree-walker-1.0.1.tgz";
         sha512 = "1fMXF3YP4pZZVozF8j/ZLfvnR8NSIljt56UhbZ5PeeDmmGHpgpdwQt7ITlGvYaQukCvuBRMLEiKiYC+oeIg4cg==";
@@ -17818,6 +19672,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "estree-walker"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/estree-walker/-/estree-walker-2.0.2.tgz";
         sha512 = "Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w==";
@@ -17845,6 +19702,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "esutils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/esutils/-/esutils-2.0.3.tgz";
         sha512 = "kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==";
@@ -17872,6 +19732,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "event-emitter"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/event-emitter/-/event-emitter-0.3.5.tgz";
         sha1 = "df8c69eef1647923c7157b9ce83840610b02cc39";
@@ -17899,6 +19762,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "events"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/events/-/events-2.1.0.tgz";
         sha512 = "3Zmiobend8P9DjmKAty0Era4jV8oJ0yGYe2nJJAxgymF9+N8F2m0hhZiMoWtcfepExzNKZumFU3ksdQbInGWCg==";
@@ -17926,6 +19792,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "events-to-array"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/events-to-array/-/events-to-array-1.1.2.tgz";
         sha1 = "2d41f563e1fe400ed4962fe1a4d5c6a7539df7f6";
@@ -17953,6 +19822,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "evp_bytestokey"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/evp_bytestokey/-/evp_bytestokey-1.0.3.tgz";
         sha512 = "/f2Go4TognH/KvCISP7OUsHn85hT9nUkxxA9BEWxFn+Oj9o8ZNLm/40hdlgSLyuOimsrTKLUMEorQexp/aPQeA==";
@@ -17980,6 +19852,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "exec-sh"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/exec-sh/-/exec-sh-0.3.6.tgz";
         sha512 = "nQn+hI3yp+oD0huYhKwvYI32+JFeq+XkNcD1GAo3Y/MjxsfVGmrrzrnzjWiNY6f+pUCP440fThsFh5gZrRAU/w==";
@@ -18007,6 +19882,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "execa"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/execa/-/execa-1.0.0.tgz";
         sha512 = "adbxcyWV46qiHyvSp50TKt05tB4tK3HcmF7/nxfAdhnox83seTDbwnaqKO4sXRy7roHAIFqJP/Rw/AuEbX61LA==";
@@ -18034,6 +19912,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "execa"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/execa/-/execa-4.1.0.tgz";
         sha512 = "j5W0//W7f8UxAn8hXVnwG8tLwdiUy4FJLcSupCg6maBYZDpyBvTApK7KyuI4bKj8KOh1r2YH+6ucuYtJv1bTZA==";
@@ -18061,6 +19942,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "execa"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/execa/-/execa-5.1.1.tgz";
         sha512 = "8uSpZZocAZRBAPIEINJj3Lo9HyGitllczc27Eh5YYojjMFMn8yHMDMaUHE2Jqfq05D/wucwI4JGURyXt1vchyg==";
@@ -18088,6 +19972,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "executing-npm-path"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/executing-npm-path/-/executing-npm-path-0.1.0.tgz";
         sha512 = "NG/Pw0xD4KBcb5ilpZa57n7U17obIvZX1TCBLdv9M7Jd3wSsfU8BtMSy+EFkx9hhJsnIBBEmaPQd12dXWaxlHA==";
@@ -18115,6 +20002,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "exit"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/exit/-/exit-0.1.2.tgz";
         sha1 = "0632638f8d877cc82107d30a0fff1a17cba1cd0c";
@@ -18142,6 +20032,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "exit-hook"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/exit-hook/-/exit-hook-1.1.1.tgz";
         sha1 = "f05ca233b48c05d54fff07765df8507e95c02ff8";
@@ -18169,6 +20062,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "expand-brackets"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/expand-brackets/-/expand-brackets-2.1.4.tgz";
         sha1 = "b77735e315ce30f6b6eff0f83b04151a22449622";
@@ -18196,6 +20092,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "expect"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/expect/-/expect-1.20.2.tgz";
         sha1 = "d458fe4c56004036bae3232416a3f6361f04f965";
@@ -18223,6 +20122,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "expect"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/expect/-/expect-24.9.0.tgz";
         sha512 = "wvVAx8XIol3Z5m9zvZXiyZOQ+sRJqNTIm6sGjdWlaZIeupQGO3WbYI+15D/AmEwZywL6wtJkbAbJtzkOfBuR0Q==";
@@ -18250,6 +20152,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "expect"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/expect/-/expect-26.6.2.tgz";
         sha512 = "9/hlOBkQl2l/PLHJx6JjoDF6xPKcJEsUlWKb23rKE7KzeDqUZKXKNMW27KIue5JMdBV9HgmoJPcc8HtO85t9IA==";
@@ -18277,6 +20182,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "expect"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/expect/-/expect-27.0.6.tgz";
         sha512 = "psNLt8j2kwg42jGBDSfAlU49CEZxejN1f1PlANWDZqIhBOVU/c2Pm888FcjWJzFewhIsNWfZJeLjUjtKGiPuSw==";
@@ -18304,6 +20212,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ext"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ext/-/ext-1.4.0.tgz";
         sha512 = "Key5NIsUxdqKg3vIsdw9dSuXpPCQ297y6wBjL30edxwPgt2E44WcWBZey/ZvUc6sERLTxKdyCu4gZFmUbk1Q7A==";
@@ -18331,6 +20242,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "extend"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/extend/-/extend-3.0.2.tgz";
         sha512 = "fjquC59cD7CyW6urNXK0FBufkZcoiGG80wTuPujX590cB5Ttln20E2UB4S/WARVqhXffZl2LNgS+gQdPIIim/g==";
@@ -18358,6 +20272,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "extend-shallow"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/extend-shallow/-/extend-shallow-2.0.1.tgz";
         sha1 = "51af7d614ad9a9f610ea1bafbb989d6b1c56890f";
@@ -18385,6 +20302,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "extend-shallow"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/extend-shallow/-/extend-shallow-3.0.2.tgz";
         sha1 = "26a71aaf073b39fb2127172746131c2704028db8";
@@ -18412,6 +20332,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "external-editor"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/external-editor/-/external-editor-3.1.0.tgz";
         sha512 = "hMQ4CX1p1izmuLYyZqLMO/qGNw10wSv9QDCPfzXfyFrOaCSSoRfqE1Kf1s5an66J5JZC62NewG+mK49jOCtQew==";
@@ -18439,6 +20362,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "extglob"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/extglob/-/extglob-2.0.4.tgz";
         sha512 = "Nmb6QXkELsuBr24CJSkilo6UHHgbekK5UiZgfE6UHD3Eb27YC6oD+bhcT+tJ6cl8dmsgdQxnWlcry8ksBIBLpw==";
@@ -18466,6 +20392,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "extsprintf"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/extsprintf/-/extsprintf-1.3.0.tgz";
         sha1 = "96918440e3041a7a414f8c52e3c574eb3c3e1e05";
@@ -18493,6 +20422,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fast-deep-equal"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz";
         sha512 = "f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==";
@@ -18520,6 +20452,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fast-glob"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fast-glob/-/fast-glob-3.2.7.tgz";
         sha512 = "rYGMRwip6lUMvYD3BTScMwT1HtAs2d71SMv66Vrxs0IekGZEjhM0pcMfjQPnknBt2zeCwQMEupiN02ZP4DiT1Q==";
@@ -18547,6 +20482,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fast-json-stable-stringify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fast-json-stable-stringify/-/fast-json-stable-stringify-2.1.0.tgz";
         sha512 = "lhd/wF+Lk98HZoTCtlVraHtfh5XYijIjalXck7saUtuanSDyLMxnHhSXEDJqHxD7msR8D0uCmqlkwjCV8xvwHw==";
@@ -18574,6 +20512,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fast-levenshtein"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fast-levenshtein/-/fast-levenshtein-1.0.7.tgz";
         sha1 = "0178dcdee023b92905193af0959e8a7639cfdcb9";
@@ -18601,6 +20542,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fast-levenshtein"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fast-levenshtein/-/fast-levenshtein-2.0.6.tgz";
         sha1 = "3d8a5c66883a16a30ca8643e851f19baa7797917";
@@ -18628,6 +20572,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fast-safe-stringify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fast-safe-stringify/-/fast-safe-stringify-2.0.8.tgz";
         sha512 = "lXatBjf3WPjmWD6DpIZxkeSsCOwqI0maYMpgDlx8g4U2qi4lbjA9oH/HD2a87G+KfsUmo5WbJFmqBZlPxtptag==";
@@ -18655,6 +20602,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fastq"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fastq/-/fastq-1.11.1.tgz";
         sha512 = "HOnr8Mc60eNYl1gzwp6r5RoUyAn5/glBolUzP/Ez6IFVPMPirxn/9phgL6zhOtaTy7ISwPvQ+wT+hfcRZh/bzw==";
@@ -18682,6 +20632,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fb-watchman"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fb-watchman/-/fb-watchman-2.0.1.tgz";
         sha512 = "DkPJKQeY6kKwmuMretBhr7G6Vodr7bFwDYTXIkfG1gjvNpaxBTQV3PbXg6bR1c1UP4jPOX0jHUbbHANL9vRjVg==";
@@ -18709,6 +20662,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fdir"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fdir/-/fdir-5.0.0.tgz";
         sha512 = "cteqwWMA43lEmgwOg5HSdvhVFD39vHjQDhZkRMlKmeoNPtSSgUw1nUypydiY2upMdGiBFBZvNBDbnoBh0yCzaQ==";
@@ -18736,6 +20692,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fettuccine-class"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fettuccine-class/-/fettuccine-class-1.0.5.tgz";
         sha512 = "z/+JFd3gySy2idYvF9M5MoBnrKu/5y2tahLjZvy74Dez+v2IwVAxAy+4yt0+EKnglXUityzmHxlU9fS6oYJeMQ==";
@@ -18763,6 +20722,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "figures"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/figures/-/figures-1.7.0.tgz";
         sha1 = "cbe1e3affcf1cd44b80cadfed28dc793a9701d2e";
@@ -18790,6 +20752,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "figures"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/figures/-/figures-2.0.0.tgz";
         sha1 = "3ab1a2d2a62c8bfb431a0c94cb797a2fce27c962";
@@ -18817,6 +20782,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "figures"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/figures/-/figures-3.2.0.tgz";
         sha512 = "yaduQFRKLXYOGgEn6AZau90j3ggSOyiqXU0F9JZfeXYhNa+Jk4X+s45A2zg5jns87GAFa34BBm2kXw4XpNcbdg==";
@@ -18844,6 +20812,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "file-entry-cache"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/file-entry-cache/-/file-entry-cache-1.3.1.tgz";
         sha1 = "44c61ea607ae4be9c1402f41f44270cbfe334ff8";
@@ -18871,6 +20842,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "file-entry-cache"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/file-entry-cache/-/file-entry-cache-5.0.1.tgz";
         sha512 = "bCg29ictuBaKUwwArK4ouCaqDgLZcysCFLmM/Yn/FDoqndh/9vNuQfXRDvTuXKLxfD/JtZQGKFT8MGcJBK644g==";
@@ -18898,6 +20872,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "file-entry-cache"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/file-entry-cache/-/file-entry-cache-6.0.1.tgz";
         sha512 = "7Gps/XWymbLk2QLYK4NzpMOrYjMhdIxXuIvy2QBsLE6ljuodKvdkWs/cpyJJ3CVIVpH0Oi1Hvg1ovbMzLdFBBg==";
@@ -18925,6 +20902,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fileset"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fileset/-/fileset-0.2.1.tgz";
         sha1 = "588ef8973c6623b2a76df465105696b96aac8067";
@@ -18952,6 +20932,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fill-keys"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fill-keys/-/fill-keys-1.0.2.tgz";
         sha1 = "9a8fa36f4e8ad634e3bf6b4f3c8882551452eb20";
@@ -18979,6 +20962,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fill-range"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fill-range/-/fill-range-4.0.0.tgz";
         sha1 = "d544811d428f98eb06a63dc402d2403c328c38f7";
@@ -19006,6 +20992,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fill-range"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fill-range/-/fill-range-7.0.1.tgz";
         sha512 = "qOo9F+dMUmC2Lcb4BbVvnKJxTPjCm+RRpe4gDuGrzkL7mEVl/djYSu2OdQ2Pa302N4oqkSg9ir6jaLWJ2USVpQ==";
@@ -19033,6 +21022,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "filter-obj"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/filter-obj/-/filter-obj-1.1.0.tgz";
         sha1 = "9b311112bc6c6127a16e016c6c5d7f19e0805c5b";
@@ -19060,6 +21052,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "find-cache-dir"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/find-cache-dir/-/find-cache-dir-2.1.0.tgz";
         sha512 = "Tq6PixE0w/VMFfCgbONnkiQIVol/JJL7nRMi20fqzA4NRs9AfeqMGeRdPi3wIhYkxjeBaWh2rxwapn5Tu3IqOQ==";
@@ -19087,6 +21082,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "find-cache-dir"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/find-cache-dir/-/find-cache-dir-3.3.1.tgz";
         sha512 = "t2GDMt3oGC/v+BMwzmllWDuJF/xcDtE5j/fCGbqDD7OLuJkj0cfh1YSA5VKPvwMeLFLNDBkwOKZ2X85jGLVftQ==";
@@ -19114,6 +21112,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "find-root"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/find-root/-/find-root-1.1.0.tgz";
         sha512 = "NKfW6bec6GfKc0SGx1e07QZY9PE99u0Bft/0rzSD5k3sO/vwkVUpDUKVm5Gpp5Ue3YfShPFTX2070tDs5kB9Ng==";
@@ -19141,6 +21142,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "find-up"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/find-up/-/find-up-2.1.0.tgz";
         sha1 = "45d1b7e506c717ddd482775a2b77920a3c0c57a7";
@@ -19168,6 +21172,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "find-up"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/find-up/-/find-up-3.0.0.tgz";
         sha512 = "1yD6RmLI1XBfxugvORwlck6f75tYL+iR0jqwsOrOxMZyGYqUuDhJ0l4AXdO1iX/FTs9cBAMEk1gWSEx1kSbylg==";
@@ -19195,6 +21202,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "find-up"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/find-up/-/find-up-4.1.0.tgz";
         sha512 = "PpOwAdQ/YlXQ2vj8a3h8IipDuYRi3wceVQQGYWxNINccq40Anw7BlsEXCMbt1Zt+OLA6Fq9suIpIWD0OsnISlw==";
@@ -19222,6 +21232,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "find-up"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/find-up/-/find-up-5.0.0.tgz";
         sha512 = "78/PXT1wlLLDgTzDs7sjq9hzz0vXD+zn+7wypEe4fXQxCmdmqfGsEPQxmiCSQI3ajFV91bVSsvNtrJRiW6nGng==";
@@ -19249,6 +21262,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "findit"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/findit/-/findit-2.0.0.tgz";
         sha1 = "6509f0126af4c178551cfa99394e032e13a4d56e";
@@ -19276,6 +21292,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "flat"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/flat/-/flat-4.1.1.tgz";
         sha512 = "FmTtBsHskrU6FJ2VxCnsDb84wu9zhmO3cUX2kGFb5tuwhfXxGciiT0oRY+cck35QmG+NmGh5eLz6lLCpWTqwpA==";
@@ -19303,6 +21322,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "flat"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/flat/-/flat-5.0.2.tgz";
         sha512 = "b6suED+5/3rTpUBdG1gupIl8MPFCAMA0QXwmljLhvCUKcUvdE4gWky9zpuGCcXHOsz4J9wPGNWq6OKpmIzz3hQ==";
@@ -19330,6 +21352,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "flat-cache"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/flat-cache/-/flat-cache-1.3.4.tgz";
         sha512 = "VwyB3Lkgacfik2vhqR4uv2rvebqmDvFu4jlN/C1RzWoJEo8I7z4Q404oiqYCkq41mni8EzQnm95emU9seckwtg==";
@@ -19357,6 +21382,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "flat-cache"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/flat-cache/-/flat-cache-2.0.1.tgz";
         sha512 = "LoQe6yDuUMDzQAEH8sgmh4Md6oZnc/7PjtwjNFSzveXqSHt6ka9fPBuso7IGf9Rz4uqnSnWiFH2B/zj24a5ReA==";
@@ -19384,6 +21412,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "flat-cache"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/flat-cache/-/flat-cache-3.0.4.tgz";
         sha512 = "dm9s5Pw7Jc0GvMYbshN6zchCA9RgQlzzEZX3vylR9IqFfS8XciblUXOKfW6SiuJ0e13eDYZoZV5wdrev7P3Nwg==";
@@ -19411,6 +21442,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "flat-colors"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/flat-colors/-/flat-colors-3.3.12.tgz";
         sha512 = "SYIhhJ+ElZbyyz6+e+xpyN3EboppIg1h6nZaMyEeDwXSY6a3jjp/gANDBmj8xwu+mMflj4UWCPkxRIH+rExDMQ==";
@@ -19438,6 +21472,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "flatted"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/flatted/-/flatted-2.0.2.tgz";
         sha512 = "r5wGx7YeOwNWNlCA0wQ86zKyDLMQr+/RB8xy74M4hTphfmjlijTSSXGuH8rnvKZnfT9i+75zmd8jcKdMR4O6jA==";
@@ -19465,6 +21502,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "flatted"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/flatted/-/flatted-3.2.1.tgz";
         sha512 = "OMQjaErSFHmHqZe+PSidH5n8j3O0F2DdnVh8JB4j4eUQ2k6KvB0qGfrKIhapvez5JerBbmWkaLYUYWISaESoXg==";
@@ -19492,6 +21532,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "flow-parser"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/flow-parser/-/flow-parser-0.155.0.tgz";
         sha512 = "DegBwxIjw8ZmgLO9Qae/uSDWlioenV7mbfMoPem97y1OZVxlTAXNVHt5JthwrGLwk4kpmHQ3VRcp1Jxj84NcWw==";
@@ -19519,6 +21562,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "flow-remove-types"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/flow-remove-types/-/flow-remove-types-2.155.0.tgz";
         sha512 = "7tyM6PsuGe9/EUMay8wPK/pUiYoQvCm2cJc4Ng2l1cOjiE/sRrJz/KZgED47r4tynCe2Fe7OCIygYJPXGbtDBg==";
@@ -19546,6 +21592,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "for-each"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/for-each/-/for-each-0.3.3.tgz";
         sha512 = "jqYfLp7mo9vIyQf8ykW2v7A+2N4QjeCeI5+Dz9XraiO1ign81wjiH7Fb9vSOWvQfNtmSa4H2RoQTrrXivdUZmw==";
@@ -19573,6 +21622,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "for-in"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/for-in/-/for-in-1.0.2.tgz";
         sha1 = "81068d295a8142ec0ac726c6e2200c30fb6d5e80";
@@ -19600,6 +21652,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "foreach"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/foreach/-/foreach-2.0.5.tgz";
         sha1 = "0bee005018aeb260d0a3af3ae658dd0136ec1b99";
@@ -19627,6 +21682,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "foreground-child"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/foreground-child/-/foreground-child-1.5.6.tgz";
         sha1 = "4fd71ad2dfde96789b980a5c0a295937cb2f5ce9";
@@ -19654,6 +21712,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "foreground-child"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/foreground-child/-/foreground-child-2.0.0.tgz";
         sha512 = "dCIq9FpEcyQyXKCkyzmlPTFNgrCzPudOe+mhvJU5zAtlBnGVy2yKxtfsxK2tQBThwq225jcvBjpw1Gr40uzZCA==";
@@ -19681,6 +21742,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "forever-agent"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/forever-agent/-/forever-agent-0.5.2.tgz";
         sha1 = "6d0e09c4921f94a27f63d3b49c5feff1ea4c5130";
@@ -19708,6 +21772,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "forever-agent"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/forever-agent/-/forever-agent-0.6.1.tgz";
         sha1 = "fbc71f0c41adeb37f96c577ad1ed42d8fdacca91";
@@ -19735,6 +21802,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "form-data"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/form-data/-/form-data-2.1.4.tgz";
         sha1 = "33c183acf193276ecaa98143a69e94bfee1750d1";
@@ -19762,6 +21832,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "form-data"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/form-data/-/form-data-2.3.3.tgz";
         sha512 = "1lLKB2Mu3aGP1Q/2eCOx0fNbRMe7XdwktwOruhfqqd0rIJWwN4Dh+E3hrPSlDCXnSR7UtZ1N38rVXm+6+MEhJQ==";
@@ -19789,6 +21862,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "form-data"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/form-data/-/form-data-3.0.1.tgz";
         sha512 = "RHkBKtLWUVwd7SqRIvCZMEvAMoGUp0XU+seQiZejj0COz3RI3hWP4sCv3gZWWLjJTd7rGwcsF5eKZGii0r/hbg==";
@@ -19816,6 +21892,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fragment-cache"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fragment-cache/-/fragment-cache-0.2.1.tgz";
         sha1 = "4290fad27f13e89be7f33799c6bc5a0abfff0d19";
@@ -19843,6 +21922,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fromentries"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fromentries/-/fromentries-1.3.2.tgz";
         sha512 = "cHEpEQHUg0f8XdtZCc2ZAhrHzKzT0MrFUTcvx+hfxYu7rGMDc5SKoXFh+n4YigxsHXRzc6OrCshdR1bWH6HHyg==";
@@ -19870,6 +21952,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fs-constants"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fs-constants/-/fs-constants-1.0.0.tgz";
         sha512 = "y6OAwoSIf7FyjMIv94u+b5rdheZEjzR63GTyZJm5qh4Bi+2YgwLCcI/fPFZkL5PSixOt6ZNKm+w+Hfp/Bciwow==";
@@ -19897,6 +21982,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fs-exists-cached"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fs-exists-cached/-/fs-exists-cached-1.0.0.tgz";
         sha1 = "cf25554ca050dc49ae6656b41de42258989dcbce";
@@ -19924,6 +22012,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fs-extra"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fs-extra/-/fs-extra-6.0.1.tgz";
         sha512 = "GnyIkKhhzXZUWFCaJzvyDLEEgDkPfb4/TPvJCJVuS8MWZgoSsErf++QpiAlDnKFcqhRlm+tIOcencCjyJE6ZCA==";
@@ -19951,6 +22042,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fs-extra"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fs-extra/-/fs-extra-8.1.0.tgz";
         sha512 = "yhlQgA6mnOJUKOsRUFsgJdQCvkKhcz8tlZG5HBQfReYZy46OwLcY+Zia0mtdHsOo9y/hP+CxMN0TU9QxoOtG4g==";
@@ -19978,6 +22072,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fs-extra"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fs-extra/-/fs-extra-9.1.0.tgz";
         sha512 = "hcg3ZmepS30/7BSFqRvoo3DOMQu7IjqxO5nCDt+zM9XWjb33Wg7ziNT+Qvqbuc3+gWpzO02JubVyk2G4Zvo1OQ==";
@@ -20005,6 +22102,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fs-minipass"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fs-minipass/-/fs-minipass-2.1.0.tgz";
         sha512 = "V/JgOLFCS+R6Vcq0slCuaeWEdNC3ouDlJMNIsacH2VtALiu9mV4LPrHc5cDl8k5aw6J8jwgWWpiTo5RYhmIzvg==";
@@ -20032,6 +22132,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fs-readdir-recursive"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fs-readdir-recursive/-/fs-readdir-recursive-1.1.0.tgz";
         sha512 = "GNanXlVr2pf02+sPN40XN8HG+ePaNcvM0q5mZBd668Obwb0yD5GiUbZOFgwn8kGMY6I3mdyDJzieUy3PTYyTRA==";
@@ -20059,6 +22162,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fs.realpath"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fs.realpath/-/fs.realpath-1.0.0.tgz";
         sha1 = "1504ad2523158caa40db4a2787cb01411994ea4f";
@@ -20086,6 +22192,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "fstream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/fstream/-/fstream-1.0.12.tgz";
         sha512 = "WvJ193OHa0GHPEL+AycEJgxvBEwyfRkN1vhjca23OaPVMCaLCXTd5qAu82AjTcgP1UJmytkOKb63Ypde7raDIg==";
@@ -20113,6 +22222,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "function-bind"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/function-bind/-/function-bind-1.1.1.tgz";
         sha512 = "yIovAzMX49sF8Yl58fSCWJ5svSLuaibPxXQJFLmBObTuCr0Mf1KiPopGM9NiFjiYBCbfaa2Fh6breQ6ANVTI0A==";
@@ -20140,6 +22252,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "function-loop"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/function-loop/-/function-loop-1.0.2.tgz";
         sha512 = "Iw4MzMfS3udk/rqxTiDDCllhGwlOrsr50zViTOO/W6lS/9y6B1J0BD2VZzrnWUYBJsl3aeqjgR5v7bWWhZSYbA==";
@@ -20167,6 +22282,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "function-loop"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/function-loop/-/function-loop-2.0.1.tgz";
         sha512 = "ktIR+O6i/4h+j/ZhZJNdzeI4i9lEPeEK6UPR2EVyTVBqOwcU3Za9xYKLH64ZR9HmcROyRrOkizNyjjtWJzDDkQ==";
@@ -20194,6 +22312,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "function.name"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/function.name/-/function.name-1.0.13.tgz";
         sha512 = "mVrqdoy5npWZyoXl4DxCeuVF6delDcQjVS9aPdvLYlBxtMTZDR2B5GVEQEoM1jJyspCqg3C0v4ABkLE7tp9xFA==";
@@ -20221,6 +22342,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "function.prototype.name"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/function.prototype.name/-/function.prototype.name-1.1.4.tgz";
         sha512 = "iqy1pIotY/RmhdFZygSSlW0wko2yxkSCKqsuv4pr8QESohpYyG/Z7B/XXvPRKTJS//960rgguE5mSRUsDdaJrQ==";
@@ -20248,6 +22372,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "functional-red-black-tree"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/functional-red-black-tree/-/functional-red-black-tree-1.0.1.tgz";
         sha1 = "1b0ab3bd553b2a0d6399d29c0e3ea0b252078327";
@@ -20275,6 +22402,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "functions-have-names"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/functions-have-names/-/functions-have-names-1.2.2.tgz";
         sha512 = "bLgc3asbWdwPbx2mNk2S49kmJCuQeu0nfmaOgbs8WIyzzkw3r4htszdIi9Q9EMezDPTYuJx2wvjZ/EwgAthpnA==";
@@ -20302,6 +22432,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "gauge"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/gauge/-/gauge-2.7.4.tgz";
         sha1 = "2c03405c7538c39d7eb37b317022e325fb018bf7";
@@ -20329,6 +22462,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "generate-function"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/generate-function/-/generate-function-2.3.1.tgz";
         sha512 = "eeB5GfMNeevm/GRYq20ShmsaGcmI81kIX2K9XQx5miC8KdHaC6Jm0qQ8ZNeGOi7wYB8OsdxKs+Y2oVuTFuVwKQ==";
@@ -20356,6 +22492,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "generate-object-property"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/generate-object-property/-/generate-object-property-1.2.0.tgz";
         sha1 = "9c0e1c40308ce804f4783618b937fa88f99d50d0";
@@ -20383,6 +22522,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "gensync"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/gensync/-/gensync-1.0.0-beta.2.tgz";
         sha512 = "3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==";
@@ -20410,6 +22552,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-assigned-identifiers"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/get-assigned-identifiers/-/get-assigned-identifiers-1.2.0.tgz";
         sha512 = "mBBwmeGTrxEMO4pMaaf/uUEFHnYtwr8FTe8Y/mer4rcV/bye0qGm6pw1bGZFGStxC5O76c5ZAVBGnqHmOaJpdQ==";
@@ -20437,6 +22582,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-caller-file"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/get-caller-file/-/get-caller-file-2.0.5.tgz";
         sha512 = "DyFP3BM/3YHTQOCUL/w0OZHR0lpKeGrxotcHWcqNEdnltqFwXVfhEBQ94eIo34AfQpo0rGki4cyIiftY06h2Fg==";
@@ -20464,6 +22612,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-func-name"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/get-func-name/-/get-func-name-2.0.0.tgz";
         sha1 = "ead774abee72e20409433a066366023dd6887a41";
@@ -20491,6 +22642,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-intrinsic"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/get-intrinsic/-/get-intrinsic-1.1.1.tgz";
         sha512 = "kWZrnVM42QCiEA2Ig1bG8zjoIMOgxWwYCEeNdwY6Tv/cOSeGpcoX4pXHfKUxNKVoArnrEr2e9srnAxxGIraS9Q==";
@@ -20518,6 +22672,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-own-enumerable-property-symbols"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/get-own-enumerable-property-symbols/-/get-own-enumerable-property-symbols-3.0.2.tgz";
         sha512 = "I0UBV/XOz1XkIJHEUDMZAbzCThU/H8DxmSfmdGcKPnVhu2VfFqr34jr9777IyaTYvxjedWhqVIilEDsCdP5G6g==";
@@ -20545,6 +22702,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-package-type"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/get-package-type/-/get-package-type-0.1.0.tgz";
         sha512 = "pjzuKtY64GYfWizNAJ0fr9VqttZkNiK2iS430LtIHzjBEr6bX8Am2zm4sW4Ro5wjWW5cAlRL1qAMTcXbjNAO2Q==";
@@ -20572,6 +22732,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-set-props"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/get-set-props/-/get-set-props-0.1.0.tgz";
         sha1 = "998475c178445686d0b32246da5df8dbcfbe8ea3";
@@ -20599,6 +22762,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-spdx-license-ids"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/get-spdx-license-ids/-/get-spdx-license-ids-2.1.0.tgz";
         sha512 = "6SxK6qVbZttxx+zrGfnBo76E+DNPyXPl5f95LigQoUUS8NNdgW/sr3VgQCH88l0g4iX2ZmT7RVBeAFJxMx129A==";
@@ -20626,6 +22792,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-stdin"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/get-stdin/-/get-stdin-4.0.1.tgz";
         sha1 = "b968c6b0a04384324902e8bf1a5df32579a450fe";
@@ -20653,6 +22822,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-stdin"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/get-stdin/-/get-stdin-5.0.1.tgz";
         sha1 = "122e161591e21ff4c52530305693f20e6393a398";
@@ -20680,6 +22852,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-stdin"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/get-stdin/-/get-stdin-7.0.0.tgz";
         sha512 = "zRKcywvrXlXsA0v0i9Io4KDRaAw7+a1ZpjRwl9Wox8PFlVCCHra7E9c4kqXCoCM9nR5tBkaTTZRBoCm60bFqTQ==";
@@ -20707,6 +22882,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-stdin"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/get-stdin/-/get-stdin-8.0.0.tgz";
         sha512 = "sY22aA6xchAzprjyqmSEQv4UbAAzRN0L2dQB0NlN5acTTK9Don6nhoc3eAbUnpZiCANAMfd/+40kVdKfFygohg==";
@@ -20734,6 +22912,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-stream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/get-stream/-/get-stream-4.1.0.tgz";
         sha512 = "GMat4EJ5161kIy2HevLlr4luNjBgvmj413KaQA7jt4V8B4RDsfpHk7WQ9GVqfYyyx8OS/L66Kox+rJRNklLK7w==";
@@ -20761,6 +22942,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-stream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/get-stream/-/get-stream-5.2.0.tgz";
         sha512 = "nBF+F1rAZVCu/p7rjzgA+Yb4lfYXrpl7a6VmJrU8wF9I1CKvP/QwPNZHnOlwbTkY6dvtFIzFMSyQXbLoTQPRpA==";
@@ -20788,6 +22972,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-stream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/get-stream/-/get-stream-6.0.1.tgz";
         sha512 = "ts6Wi+2j3jQjqi70w5AlN8DFnkSwC+MqmxEzdEALB2qXZYV3X/b1CTfgPLGJNMeAWxdPfU8FO1ms3NUfaHCPYg==";
@@ -20815,6 +23002,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "get-value"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/get-value/-/get-value-2.0.6.tgz";
         sha1 = "dc15ca1c672387ca76bd37ac0a395ba2042a2c28";
@@ -20842,6 +23032,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "getpass"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/getpass/-/getpass-0.1.7.tgz";
         sha1 = "5eff8e3e684d569ae4cb2b1282604e8ba62149fa";
@@ -20869,6 +23062,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "git-up"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/git-up/-/git-up-4.0.5.tgz";
         sha512 = "YUvVDg/vX3d0syBsk/CKUTib0srcQME0JyHkL5BaYdwLsiCslPWmDSi8PUMo9pXYjrryMcmsCoCgsTpSCJEQaA==";
@@ -20896,6 +23092,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "glob"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/glob/-/glob-3.2.11.tgz";
         sha1 = "4a973f635b9190f715d10987d5c00fd2815ebe3d";
@@ -20923,6 +23122,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "glob"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/glob/-/glob-5.0.15.tgz";
         sha1 = "1bc936b9e02f4a603fcc222ecf7633d30b8b93b1";
@@ -20950,6 +23152,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "glob"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/glob/-/glob-7.1.2.tgz";
         sha512 = "MJTUg1kjuLeQCJ+ccE4Vpa6kKVXkPYJ2mOCQyUuKLcLQsdrMCpBPUi8qVE6+YuaJkozeA9NusTAw3hLr8Xe5EQ==";
@@ -20977,6 +23182,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "glob"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/glob/-/glob-7.1.3.tgz";
         sha512 = "vcfuiIxogLV4DlGBHIUOwI0IbrJ8HWPc4MU7HzviGeNho/UJDfi6B5p3sHeWIQ0KGIU0Jpxi5ZHxemQfLkkAwQ==";
@@ -21004,6 +23212,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "glob"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/glob/-/glob-7.1.6.tgz";
         sha512 = "LwaxwyZ72Lk7vZINtNNrywX0ZuLyStrdDtabefZKAY5ZGJhVtgdznluResxNmPitE0SAO+O26sWTHeKSI2wMBA==";
@@ -21031,6 +23242,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "glob"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/glob/-/glob-7.1.7.tgz";
         sha512 = "OvD9ENzPLbegENnYP5UUfJIirTg4+XwMWGaQfQTY0JenxNvvIKP3U3/tAQSPIu/lHxXYSZmpXlUHeqAIdKzBLQ==";
@@ -21058,6 +23272,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "glob-option-error"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/glob-option-error/-/glob-option-error-1.0.0.tgz";
         sha1 = "57cc65def9c7d5c1461baf13129bb5403cff6176";
@@ -21085,6 +23302,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "glob-parent"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/glob-parent/-/glob-parent-5.1.2.tgz";
         sha512 = "AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow==";
@@ -21112,6 +23332,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "globals"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/globals/-/globals-11.12.0.tgz";
         sha512 = "WOBp/EEGUiIsJSp7wcv/y6MO+lV9UoncWqxuFfm8eBwzWNgyfBd6Gz+IeKQ9jCmyhoH99g15M3T+QaVHFjizVA==";
@@ -21139,6 +23362,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "globals"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/globals/-/globals-12.4.0.tgz";
         sha512 = "BWICuzzDvDoH54NHKCseDanAhE3CeDorgDL5MT6LMXXj2WCnd9UC2szdk4AWLfjdgNBCXLUanXYcpBBKOSWGwg==";
@@ -21166,6 +23392,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "globals"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/globals/-/globals-13.10.0.tgz";
         sha512 = "piHC3blgLGFjvOuMmWZX60f+na1lXFDhQXBf1UYp2fXPXqvEUbOhNwi6BsQ0bQishwedgnjkwv1d9zKf+MWw3g==";
@@ -21193,6 +23422,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "globals"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/globals/-/globals-9.18.0.tgz";
         sha512 = "S0nG3CLEQiY/ILxqtztTWH/3iRRdyBLw6KMDxnKMchrtbj2OFmehVh0WUCfW3DUrIgx/qFrJPICrq4Z4sTR9UQ==";
@@ -21220,6 +23452,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "globby"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/globby/-/globby-11.0.4.tgz";
         sha512 = "9O4MVG9ioZJ08ffbcyVYyLOJLk5JQ688pJ4eMGLpdWLHq/Wr1D9BlriLQyL0E+jbkuePVZXYFj47QM/v093wHg==";
@@ -21247,6 +23482,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "graceful-fs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/graceful-fs/-/graceful-fs-4.2.6.tgz";
         sha512 = "nTnJ528pbqxYanhpDYsi4Rd8MAeaBA67+RZ10CM1m3bTAVFEDcd5AuA4a6W5YkGZ1iNXHzZz8T6TBKLeBuNriQ==";
@@ -21274,6 +23512,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "gradient-string"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/gradient-string/-/gradient-string-1.2.0.tgz";
         sha512 = "Lxog7IDMMWNjwo4O0KbdBvSewk4vW6kQe5XaLuuPCyCE65AGQ1P8YqKJa5dq8TYf/Ge31F+KjWzPR5mAJvjlAg==";
@@ -21301,6 +23542,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "growl"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/growl/-/growl-1.10.5.tgz";
         sha512 = "qBr4OuELkhPenW6goKVXiv47US3clb3/IbuWF9KNKEijAy9oeHxU9IgzjvJhHkUzhaj7rOUD7+YGWqUjLp5oSA==";
@@ -21328,6 +23572,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "handlebars"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/handlebars/-/handlebars-4.7.7.tgz";
         sha512 = "aAcXm5OAfE/8IXkcZvCepKU3VzW1/39Fb5ZuqMtgI/hT8X2YgoMvBY5dLhq/cpOvw7Lk1nK/UF71aLG/ZnVYRA==";
@@ -21355,6 +23602,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "har-schema"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/har-schema/-/har-schema-2.0.0.tgz";
         sha1 = "a94c2224ebcac04782a0d9035521f24735b7ec92";
@@ -21382,6 +23632,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "har-validator"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/har-validator/-/har-validator-2.0.6.tgz";
         sha1 = "cdcbc08188265ad119b6a5a7c8ab70eecfb5d27d";
@@ -21409,6 +23662,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "har-validator"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/har-validator/-/har-validator-5.1.5.tgz";
         sha512 = "nmT2T0lljbxdQZfspsno9hgrG3Uir6Ks5afism62poxqBM6sDnMEuPmzTq8XN0OEwqKLLdh1jQI3qyE66Nzb3w==";
@@ -21436,6 +23692,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "hard-rejection"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/hard-rejection/-/hard-rejection-2.1.0.tgz";
         sha512 = "VIZB+ibDhx7ObhAe7OVtoEbuP4h/MuOTHJ+J8h/eBXotJYl0fBgR72xDFCKgIh22OJZIOVNxBMWuhAr10r8HdA==";
@@ -21463,6 +23722,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/has/-/has-1.0.3.tgz";
         sha512 = "f2dvO0VU6Oej7RkWJGrehjbzMAjFp5/VKPp5tTpWIV4JHHZK1/BxbFRtf/siA2SWTe09caDmVtYYzWEIbBS4zw==";
@@ -21490,6 +23752,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has-ansi"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/has-ansi/-/has-ansi-2.0.0.tgz";
         sha1 = "34f5049ce1ecdf2b0649af3ef24e45ed35416d91";
@@ -21517,6 +23782,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has-bigints"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/has-bigints/-/has-bigints-1.0.1.tgz";
         sha512 = "LSBS2LjbNBTf6287JEbEzvJgftkF5qFkmCo9hDRpAzKhUOlJ+hx8dd4USs00SgsUNwc4617J9ki5YtEClM2ffA==";
@@ -21544,6 +23812,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has-flag"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/has-flag/-/has-flag-1.0.0.tgz";
         sha1 = "9d9e793165ce017a00f00418c43f942a7b1d11fa";
@@ -21571,6 +23842,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has-flag"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/has-flag/-/has-flag-3.0.0.tgz";
         sha1 = "b5d454dc2199ae225699f3467e5a07f3b955bafd";
@@ -21598,6 +23872,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has-flag"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/has-flag/-/has-flag-4.0.0.tgz";
         sha512 = "EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==";
@@ -21625,6 +23902,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has-symbols"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/has-symbols/-/has-symbols-1.0.2.tgz";
         sha512 = "chXa79rL/UC2KlX17jo3vRGz0azaWEx5tGqZg5pO3NUyEJVB17dMruQlzCCOfUvElghKcm5194+BCRvi2Rv/Gw==";
@@ -21652,6 +23932,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has-unicode"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/has-unicode/-/has-unicode-2.0.1.tgz";
         sha1 = "e0e6fe6a28cf51138855e086d1691e771de2a8b9";
@@ -21679,6 +23962,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has-value"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/has-value/-/has-value-0.3.1.tgz";
         sha1 = "7b1f58bada62ca827ec0a2078025654845995e1f";
@@ -21706,6 +23992,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has-value"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/has-value/-/has-value-1.0.0.tgz";
         sha1 = "18b281da585b1c5c51def24c930ed29a0be6b177";
@@ -21733,6 +24022,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has-values"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/has-values/-/has-values-0.1.4.tgz";
         sha1 = "6d61de95d91dfca9b9a02089ad384bff8f62b771";
@@ -21760,6 +24052,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "has-values"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/has-values/-/has-values-1.0.0.tgz";
         sha1 = "95b0b63fec2146619a6fe57fe75628d5a39efe4f";
@@ -21787,6 +24082,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "hash-base"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/hash-base/-/hash-base-3.1.0.tgz";
         sha512 = "1nmYp/rhMDiE7AYkDw+lLwlAzz0AntGIe51F3RfFfEqyQ3feY2eI/NcwC6umIQVOASPMsWJLJScWKSSvzL9IVA==";
@@ -21814,6 +24112,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "hash.js"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/hash.js/-/hash.js-1.1.7.tgz";
         sha512 = "taOaskGt4z4SOANNseOviYDvjEJinIkRgmp7LbKP2YTTmVxWBl87s/uzK9r+44BclBSp2X7K1hqeNfz9JbBeXA==";
@@ -21841,6 +24142,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "hasha"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/hasha/-/hasha-3.0.0.tgz";
         sha1 = "52a32fab8569d41ca69a61ff1a214f8eb7c8bd39";
@@ -21868,6 +24172,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "hasha"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/hasha/-/hasha-5.2.2.tgz";
         sha512 = "Hrp5vIK/xr5SkeN2onO32H0MgNZ0f17HRNH39WfL0SYUNOTZ5Lz1TJ8Pajo/87dYGEFlLMm7mIc/k/s6Bvz9HQ==";
@@ -21895,6 +24202,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "hawk"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/hawk/-/hawk-3.1.3.tgz";
         sha1 = "078444bd7c1640b0fe540d2c9b73d59678e8e1c4";
@@ -21922,6 +24232,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "he"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/he/-/he-1.1.1.tgz";
         sha1 = "93410fd21b009735151f8868c2f271f3427e23fd";
@@ -21949,6 +24262,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "he"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/he/-/he-1.2.0.tgz";
         sha512 = "F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==";
@@ -21976,6 +24292,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "helpers-fn"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/helpers-fn/-/helpers-fn-1.6.0.tgz";
         sha512 = "MqtsCOlG6X0m6tOYJGqciR16NanSjuhKkF2JP2hBPi0Dxc+z9xvnOaw5TckQ4Xv+WiNBBNUpD/7eekR26EC/DA==";
@@ -22003,6 +24322,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "hmac-drbg"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/hmac-drbg/-/hmac-drbg-1.0.1.tgz";
         sha1 = "d2745701025a6c775a6c545793ed502fc0c649a1";
@@ -22030,6 +24352,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "hoek"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/hoek/-/hoek-2.16.3.tgz";
         sha1 = "20bb7403d3cea398e91dc4710a8ff1b8274a25ed";
@@ -22057,6 +24382,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "hosted-git-info"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/hosted-git-info/-/hosted-git-info-2.8.9.tgz";
         sha512 = "mxIDAb9Lsm6DoOJ7xH+5+X4y1LU/4Hi50L9C5sIswK3JzULS4bwk1FvjdBgvYR4bzT4tuUQiC15FE2f5HbLvYw==";
@@ -22084,6 +24412,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "hosted-git-info"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/hosted-git-info/-/hosted-git-info-4.0.2.tgz";
         sha512 = "c9OGXbZ3guC/xOlCg1Ci/VgWlwsqDv1yMQL1CWqXDL0hDjXuNcq0zuR4xqPSuasI3kqFDhqSyTjREz5gzq0fXg==";
@@ -22111,6 +24442,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "html-encoding-sniffer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/html-encoding-sniffer/-/html-encoding-sniffer-2.0.1.tgz";
         sha512 = "D5JbOMBIR/TVZkubHT+OyT2705QvogUW4IBn6nHd756OwieSF9aDYFj4dv6HHEVGYbHaLETa3WggZYWWMyy3ZQ==";
@@ -22138,6 +24472,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "html-escaper"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/html-escaper/-/html-escaper-2.0.2.tgz";
         sha512 = "H2iMtd0I4Mt5eYiapRdIDjp+XzelXQ0tFE4JS7YFwFevXXMmOp9myNrUvCg0D6ws8iqkRPBfKHgbwig1SmlLfg==";
@@ -22165,6 +24502,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "htmlescape"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/htmlescape/-/htmlescape-1.1.1.tgz";
         sha1 = "3a03edc2214bca3b66424a3e7959349509cb0351";
@@ -22192,6 +24532,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "htmlparser2"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/htmlparser2/-/htmlparser2-3.10.1.tgz";
         sha512 = "IgieNijUMbkDovyoKObU1DUhm1iwNYE/fuifEoEHfd1oZKZDaONBSkal7Y01shxsM49R4XaMdGez3WnF9UfiCQ==";
@@ -22219,6 +24562,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "http-cache-semantics"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/http-cache-semantics/-/http-cache-semantics-4.1.0.tgz";
         sha512 = "carPklcUh7ROWRK7Cv27RPtdhYhUsela/ue5/jKzjegVvXDqM2ILE9Q2BGn9JZJh1g87cp56su/FgQSzcWS8cQ==";
@@ -22246,6 +24592,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "http-proxy-agent"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/http-proxy-agent/-/http-proxy-agent-4.0.1.tgz";
         sha512 = "k0zdNgqWTGA6aeIRVpvfVob4fL52dTfaehylg0Y4UvSySvOq/Y+BOyPrgpUrA7HylqvU8vIZGsRuXmspskV0Tg==";
@@ -22273,6 +24622,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "http-signature"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/http-signature/-/http-signature-1.1.1.tgz";
         sha1 = "df72e267066cd0ac67fb76adf8e134a8fbcf91bf";
@@ -22300,6 +24652,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "http-signature"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/http-signature/-/http-signature-1.2.0.tgz";
         sha1 = "9aecd925114772f3d95b65a60abb8f7c18fbace1";
@@ -22327,6 +24682,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "https-browserify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/https-browserify/-/https-browserify-1.0.0.tgz";
         sha1 = "ec06c10e0a34c0f2faf199f7fd7fc78fffd03c73";
@@ -22354,6 +24712,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "https-proxy-agent"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/https-proxy-agent/-/https-proxy-agent-5.0.0.tgz";
         sha512 = "EkYm5BcKUGiduxzSt3Eppko+PiNWNEpa4ySk9vTC6wDsQJW9rHSa+UhGNJoRYp7bz6Ht1eaRIa6QaJqO5rCFbA==";
@@ -22381,6 +24742,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "human-signals"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/human-signals/-/human-signals-1.1.1.tgz";
         sha512 = "SEQu7vl8KjNL2eoGBLF3+wAjpsNfA9XMlXAYj/3EdaNfAlxKthD1xjEQfGOUhllCGGJVNY34bRr6lPINhNjyZw==";
@@ -22408,6 +24772,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "human-signals"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/human-signals/-/human-signals-2.1.0.tgz";
         sha512 = "B4FFZ6q/T2jhhksgkbEW3HBvWIfDW85snkQgawt07S7J5QXTk6BkNV+0yAeZrM5QpMAdYlocGoljn0sJ/WQkFw==";
@@ -22435,6 +24802,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "humanize-ms"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/humanize-ms/-/humanize-ms-1.2.1.tgz";
         sha1 = "c46e3159a293f6b896da29316d8b6fe8bb79bbed";
@@ -22462,6 +24832,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "iconv-lite"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/iconv-lite/-/iconv-lite-0.4.24.tgz";
         sha512 = "v3MXnZAcvnywkTUEZomIActle7RXXeedOR31wwl7VlyoXO4Qi9arvSenNQWne1TcRwhCL1HwLI21bEqdpj8/rA==";
@@ -22489,6 +24862,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ieee754"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ieee754/-/ieee754-1.2.1.tgz";
         sha512 = "dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA==";
@@ -22516,6 +24892,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ignore"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ignore/-/ignore-3.3.10.tgz";
         sha512 = "Pgs951kaMm5GXP7MOvxERINe3gsaVjUWFm+UZPSq9xYriQAksyhg0csnS0KXSNRD5NmNdapXEpjxG49+AKh/ug==";
@@ -22543,6 +24922,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ignore"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ignore/-/ignore-4.0.6.tgz";
         sha512 = "cyFDKrqc/YdcWFniJhzI42+AzS+gNwmUzOSFcRCQYwySuBBBy/KjuxWLZ/FHEH6Moq1NizMOBWyTcv8O4OZIMg==";
@@ -22570,6 +24952,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ignore"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ignore/-/ignore-5.1.8.tgz";
         sha512 = "BMpfD7PpiETpBl/A6S498BaIJ6Y/ABT93ETbby2fP00v4EbvPBXWEoaR1UBPKs3iR53pJY7EtZk5KACI57i1Uw==";
@@ -22597,6 +24982,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "import-fresh"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/import-fresh/-/import-fresh-3.3.0.tgz";
         sha512 = "veYYhQa+D1QBKznvhUHxb8faxlrwUnxseDAbAp457E0wLNio2bOSKnjYDhMj+YiAq61xrMGhQk9iXVk5FzgQMw==";
@@ -22624,6 +25012,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "import-jsx"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/import-jsx/-/import-jsx-4.0.0.tgz";
         sha512 = "CnjJ2BZFJzbFDmYG5S47xPQjMlSbZLyLJuG4znzL4TdPtJBxHtFP1xVmR+EYX4synFSldiY3B6m00XkPM3zVnA==";
@@ -22651,6 +25042,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "import-local"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/import-local/-/import-local-3.0.2.tgz";
         sha512 = "vjL3+w0oulAVZ0hBHnxa/Nm5TAurf9YLQJDhqRZyqb+VKGOB6LU8t9H1Nr5CIo16vh9XfJTOoHwU0B71S557gA==";
@@ -22678,6 +25072,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "imurmurhash"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/imurmurhash/-/imurmurhash-0.1.4.tgz";
         sha1 = "9218b9b2b928a238b13dc4fb6b6d576f231453ea";
@@ -22705,6 +25102,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "indent-string"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/indent-string/-/indent-string-4.0.0.tgz";
         sha512 = "EdDDZu4A2OyIK7Lr/2zG+w5jmbuk1DVBnEwREQvBzspBJkCEbRa8GxU1lghYcaGJCnRWibjDXlq779X1/y5xwg==";
@@ -22732,6 +25132,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "indento"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/indento/-/indento-1.1.13.tgz";
         sha512 = "YZWk3mreBEM7sBPddsiQnW9Z8SGg/gNpFfscJq00HCDS7pxcQWWWMSVKJU7YkTRyDu1Zv2s8zaK8gQWKmCXHlg==";
@@ -22759,6 +25162,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "indexed-filter"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/indexed-filter/-/indexed-filter-1.0.3.tgz";
         sha512 = "oBIzs6EARNMzrLgVg20fK52H19WcRHBiukiiEkw9rnnI//8rinEBMLrYdwEfJ9d4K7bjV1L6nSGft6H/qzHNgQ==";
@@ -22786,6 +25192,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "infer-owner"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/infer-owner/-/infer-owner-1.0.4.tgz";
         sha512 = "IClj+Xz94+d7irH5qRyfJonOdfTzuDaifE6ZPWfx0N0+/ATZCbuTPq2prFl526urkQd90WyUKIh1DfBQ2hMz9A==";
@@ -22813,6 +25222,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "inflight"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/inflight/-/inflight-1.0.6.tgz";
         sha1 = "49bd6331d7d02d0c09bc910a1075ba8165b56df9";
@@ -22840,6 +25252,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "inherits"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/inherits/-/inherits-2.0.1.tgz";
         sha1 = "b17d08d326b4423e568eff719f91b0b1cbdf69f1";
@@ -22867,6 +25282,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "inherits"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/inherits/-/inherits-2.0.3.tgz";
         sha1 = "633c2c83e3da42a502f52466022480f4208261de";
@@ -22894,6 +25312,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "inherits"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/inherits/-/inherits-2.0.4.tgz";
         sha512 = "k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==";
@@ -22921,6 +25342,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ini"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ini/-/ini-1.3.8.tgz";
         sha512 = "JV/yugV2uzW5iMRSiZAyDtQd+nxtUnjeLt0acNdw98kKLrvuRVyB80tsREOE7yvGVgalhZ6RNXCmEHkUKBKxew==";
@@ -22948,6 +25372,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "inline-source-map"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/inline-source-map/-/inline-source-map-0.6.2.tgz";
         sha1 = "f9393471c18a79d1724f863fa38b586370ade2a5";
@@ -22975,6 +25402,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "inquirer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/inquirer/-/inquirer-0.12.0.tgz";
         sha1 = "1ef2bfd63504df0bc75785fff8c2c41df12f077e";
@@ -23002,6 +25432,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "inquirer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/inquirer/-/inquirer-6.5.2.tgz";
         sha512 = "cntlB5ghuB0iuO65Ovoi8ogLHiWGs/5yNrtUcKjFhSSiVeAIVpD7koaSU9RM8mpXw5YDi9RdYXGQMaOURB7ycQ==";
@@ -23029,6 +25462,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "inquirer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/inquirer/-/inquirer-7.3.3.tgz";
         sha512 = "JG3eIAj5V9CwcGvuOmoo6LB9kbAYT8HXffUl6memuszlwDC/qvFAJw49XJ5NROSFNPxp3iQg1GqkFhaY/CR0IA==";
@@ -23056,6 +25492,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "insert-module-globals"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/insert-module-globals/-/insert-module-globals-7.2.1.tgz";
         sha512 = "ufS5Qq9RZN+Bu899eA9QCAYThY+gGW7oRkmb0vC93Vlyu/CFGcH0OYPEjVkDXA5FEbTt1+VWzdoOD3Ny9N+8tg==";
@@ -23083,6 +25522,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "inspect-with-kind"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/inspect-with-kind/-/inspect-with-kind-1.0.5.tgz";
         sha512 = "MAQUJuIo7Xqk8EVNP+6d3CKq9c80hi4tjIbIAT6lmGW9W6WzlHiu9PS8uSuUYU+Do+j1baiFp3H25XEVxDIG2g==";
@@ -23110,6 +25552,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "internal-slot"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/internal-slot/-/internal-slot-1.0.3.tgz";
         sha512 = "O0DB1JC/sPyZl7cIo78n5dR7eUSwwpYPiXRhTzNxZVAMUuB8vlnRFyLxdrVToks6XPLVnFfbzaVd5WLjhgg+vA==";
@@ -23137,6 +25582,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "invert-kv"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/invert-kv/-/invert-kv-1.0.0.tgz";
         sha1 = "104a8e4aaca6d3d8cd157a8ef8bfab2d7a3ffdb6";
@@ -23164,6 +25612,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ip"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ip/-/ip-1.1.5.tgz";
         sha1 = "bdded70114290828c0a039e72ef25f5aaec4354a";
@@ -23191,6 +25642,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "irregular-plurals"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/irregular-plurals/-/irregular-plurals-3.3.0.tgz";
         sha512 = "MVBLKUTangM3EfRPFROhmWQQKRDsrgI83J8GS3jXy+OwYqiR2/aoWndYQ5416jLE3uaGgLH7ncme3X9y09gZ3g==";
@@ -23218,6 +25672,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-accessor-descriptor"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-accessor-descriptor/-/is-accessor-descriptor-0.1.6.tgz";
         sha1 = "a9e12cb3ae8d876727eeef3843f8a0897b5c98d6";
@@ -23245,6 +25702,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-accessor-descriptor"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-accessor-descriptor/-/is-accessor-descriptor-1.0.0.tgz";
         sha512 = "m5hnHTkcVsPfqx3AKlyttIPb7J+XykHvJP2B9bZDjlhLIoEq4XoK64Vg7boZlVWYK6LUY94dYPEE7Lh0ZkZKcQ==";
@@ -23272,6 +25732,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-arguments"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-arguments/-/is-arguments-1.1.0.tgz";
         sha512 = "1Ij4lOMPl/xB5kBDn7I+b2ttPMKa8szhEIrXDuXQD/oe3HJLTLhqhgGspwgyGd6MOywBUqVvYicF72lkgDnIHg==";
@@ -23299,6 +25762,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-arrayish"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-arrayish/-/is-arrayish-0.2.1.tgz";
         sha1 = "77c99840527aa8ecb1a8ba697b80645a7a926a9d";
@@ -23326,6 +25792,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-arrow-function"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-arrow-function/-/is-arrow-function-2.0.3.tgz";
         sha1 = "29be2c2d8d9450852b8bbafb635ba7b8d8e87ec2";
@@ -23353,6 +25822,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-async-fn"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-async-fn/-/is-async-fn-1.1.0.tgz";
         sha1 = "a1a15b11d4a1155cc23b11e91b301b45a3caad16";
@@ -23380,6 +25852,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-bigint"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-bigint/-/is-bigint-1.0.2.tgz";
         sha512 = "0JV5+SOCQkIdzjBK9buARcV804Ddu7A0Qet6sHi3FimE9ne6m4BGQZfRn+NZiXbBk4F4XmHfDZIipLj9pX8dSA==";
@@ -23407,6 +25882,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-binary-path"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-binary-path/-/is-binary-path-2.1.0.tgz";
         sha512 = "ZMERYes6pDydyuGidse7OsHxtbI7WVeUEozgR/g7rd0xUimYNlvZRE/K2MgZTjWy725IfelLeVcEM97mmtRGXw==";
@@ -23434,6 +25912,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-boolean-object"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-boolean-object/-/is-boolean-object-1.1.1.tgz";
         sha512 = "bXdQWkECBUIAcCkeH1unwJLIpZYaa5VvuygSyS/c2lf719mTKZDU5UdDRlpd01UjADgmW8RfqaP+mRaVPdr/Ng==";
@@ -23461,6 +25942,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-buffer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-buffer/-/is-buffer-1.1.6.tgz";
         sha512 = "NcdALwpXkTm5Zvvbk7owOUSvVvBKDgKP5/ewfXEznmQFfs4ZRmanOeKBTjRVjka3QFoN6XJ+9F3USqfHqTaU5w==";
@@ -23488,6 +25972,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-buffer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-buffer/-/is-buffer-2.0.5.tgz";
         sha512 = "i2R6zNFDwgEHJyQUtJEk0XFi1i0dPFn/oqjK3/vPCcDeJvW5NQ83V8QbicfF1SupOaB0h8ntgBC2YiE7dfyctQ==";
@@ -23515,6 +26002,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-callable"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-callable/-/is-callable-1.2.3.tgz";
         sha512 = "J1DcMe8UYTBSrKezuIUTUwjXsho29693unXM2YhJUTR2txK/eG47bvNa/wipPFmZFgr/N6f1GA66dv0mEyTIyQ==";
@@ -23542,6 +26032,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-ci"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-ci/-/is-ci-2.0.0.tgz";
         sha512 = "YfJT7rkpQB0updsdHLGWrvhBJfcfzNNawYDNIyQXJz0IViGf75O8EBPKSdvw2rF+LGCsX4FZ8tcr3b19LcZq4w==";
@@ -23569,6 +26062,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-ci"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-ci/-/is-ci-3.0.0.tgz";
         sha512 = "kDXyttuLeslKAHYL/K28F2YkM3x5jvFPEw3yXbRptXydjD9rpLEz+C5K5iutY9ZiUu6AP41JdvRQwF4Iqs4ZCQ==";
@@ -23596,6 +26092,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-core-module"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-core-module/-/is-core-module-2.4.0.tgz";
         sha512 = "6A2fkfq1rfeQZjxrZJGerpLCTHRNEBiSgnu0+obeJpEPZRUooHgsizvzv0ZjJwOz3iWIHdJtVWJ/tmPr3D21/A==";
@@ -23623,6 +26122,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-data-descriptor"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-data-descriptor/-/is-data-descriptor-0.1.4.tgz";
         sha1 = "0b5ee648388e2c860282e793f1856fec3f301b56";
@@ -23650,6 +26152,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-data-descriptor"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-data-descriptor/-/is-data-descriptor-1.0.0.tgz";
         sha512 = "jbRXy1FmtAoCjQkVmIVYwuuqDFUbaOeDjmed1tOGPrsMhtJA4rD9tkgA0F1qJ3gRFRXcHYVkdeaP50Q5rE/jLQ==";
@@ -23677,6 +26182,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-date-object"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-date-object/-/is-date-object-1.0.4.tgz";
         sha512 = "/b4ZVsG7Z5XVtIxs/h9W8nvfLgSAyKYdtGWQLbqy6jA1icmgjf8WCoTKgeS4wy5tYaPePouzFMANbnj94c2Z+A==";
@@ -23704,6 +26212,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-descriptor"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-descriptor/-/is-descriptor-0.1.6.tgz";
         sha512 = "avDYr0SB3DwO9zsMov0gKCESFYqCnE4hq/4z3TdUlukEy5t9C0YRq7HLrsN52NAcqXKaepeCD0n+B0arnVG3Hg==";
@@ -23731,6 +26242,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-descriptor"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-descriptor/-/is-descriptor-1.0.2.tgz";
         sha512 = "2eis5WqQGV7peooDyLmNEPUrps9+SXX5c9pL3xEB+4e9HnGuDa7mB7kHxHw4CbqS9k1T2hOH3miL8n8WtiYVtg==";
@@ -23758,6 +26272,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-equal"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-equal/-/is-equal-1.6.2.tgz";
         sha512 = "paNlhukQqphbdiILWvU4Sl3Q1wvJNDqpZUQdnFKbL6XEvSIUemV8BVCOVuElqnYeWN+fG3nLDlv3Mgh3/ehTMA==";
@@ -23785,6 +26302,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-extendable"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-extendable/-/is-extendable-0.1.1.tgz";
         sha1 = "62b110e289a471418e3ec36a617d472e301dfc89";
@@ -23812,6 +26332,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-extendable"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-extendable/-/is-extendable-1.0.1.tgz";
         sha512 = "arnXMxT1hhoKo9k1LZdmlNyJdDDfy2v0fXjFlmok4+i8ul/6WlbVge9bhM74OpNPQPMGUToDtz+KXa1PneJxOA==";
@@ -23839,6 +26362,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-extglob"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-extglob/-/is-extglob-2.1.1.tgz";
         sha1 = "a88c02535791f02ed37c76a1b9ea9773c833f8c2";
@@ -23866,6 +26392,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-finalizationregistry"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-finalizationregistry/-/is-finalizationregistry-1.0.1.tgz";
         sha512 = "7ljq3NfRoVd2mwe9CvvU6Io1ZtdLf8x9MUMYC6vATTKTciKVS6c0ZOAHf2YAD9woY7afIhv+rchAYXxkCn0ubg==";
@@ -23893,6 +26422,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-fullwidth-code-point"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-fullwidth-code-point/-/is-fullwidth-code-point-1.0.0.tgz";
         sha1 = "ef9e31386f031a7f0d643af82fde50c457ef00cb";
@@ -23920,6 +26452,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-fullwidth-code-point"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-fullwidth-code-point/-/is-fullwidth-code-point-2.0.0.tgz";
         sha1 = "a3b30a5c4f199183167aaab93beefae3ddfb654f";
@@ -23947,6 +26482,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-fullwidth-code-point"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-fullwidth-code-point/-/is-fullwidth-code-point-3.0.0.tgz";
         sha512 = "zymm5+u+sCsSWyD9qNaejV3DFvhCKclKdizYaJUuHA83RLjb7nSuGnddCHGv0hk+KY7BMAlsWeK4Ueg6EV6XQg==";
@@ -23974,6 +26512,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-generator-fn"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-generator-fn/-/is-generator-fn-2.1.0.tgz";
         sha512 = "cTIB4yPYL/Grw0EaSzASzg6bBy9gqCofvWN8okThAYIxKJZC+udlRAmGbM0XLeniEJSs8uEgHPGuHSe1XsOLSQ==";
@@ -24001,6 +26542,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-generator-function"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-generator-function/-/is-generator-function-1.0.9.tgz";
         sha512 = "ZJ34p1uvIfptHCN7sFTjGibB9/oBg17sHqzDLfuwhvmN/qLVvIQXRQ8licZQ35WJ8KuEQt/etnnzQFI9C9Ue/A==";
@@ -24028,6 +26572,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-get-set-prop"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-get-set-prop/-/is-get-set-prop-1.0.0.tgz";
         sha1 = "2731877e4d78a6a69edcce6bb9d68b0779e76312";
@@ -24055,6 +26602,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-glob"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-glob/-/is-glob-4.0.1.tgz";
         sha512 = "5G0tKtBTFImOqDnLB2hG6Bp2qcKEFduo4tZu9MT/H6NQv/ghhy30o55ufafxJ/LdH79LLs2Kfrn85TLKyA7BUg==";
@@ -24082,6 +26632,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-js-type"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-js-type/-/is-js-type-2.0.0.tgz";
         sha1 = "73617006d659b4eb4729bba747d28782df0f7e22";
@@ -24109,6 +26662,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-lambda"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-lambda/-/is-lambda-1.0.1.tgz";
         sha1 = "3d9877899e6a53efc0160504cde15f82e6f061d5";
@@ -24136,6 +26692,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-map"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-map/-/is-map-2.0.2.tgz";
         sha512 = "cOZFQQozTha1f4MxLFzlgKYPTyj26picdZTx82hbc/Xf4K/tZOOXSCkMvU4pKioRXGDLJRn0GM7Upe7kR721yg==";
@@ -24163,6 +26722,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-module"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-module/-/is-module-1.0.0.tgz";
         sha1 = "3258fb69f78c14d5b815d664336b4cffb6441591";
@@ -24190,6 +26752,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-my-ip-valid"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-my-ip-valid/-/is-my-ip-valid-1.0.0.tgz";
         sha512 = "gmh/eWXROncUzRnIa1Ubrt5b8ep/MGSnfAUI3aRp+sqTCs1tv1Isl8d8F6JmkN3dXKc3ehZMrtiPN9eL03NuaQ==";
@@ -24217,6 +26782,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-my-json-valid"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-my-json-valid/-/is-my-json-valid-2.20.5.tgz";
         sha512 = "VTPuvvGQtxvCeghwspQu1rBgjYUT6FGxPlvFKbYuFtgc4ADsX3U5ihZOYN0qyU6u+d4X9xXb0IT5O6QpXKt87A==";
@@ -24244,6 +26812,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-negative-zero"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-negative-zero/-/is-negative-zero-2.0.1.tgz";
         sha512 = "2z6JzQvZRa9A2Y7xC6dQQm4FSTSTNWjKIYYTt4246eMTJmIo0Q+ZyOsU66X8lxK1AbB92dFeglPLrhwpeRKO6w==";
@@ -24271,6 +26842,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-number"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-number/-/is-number-3.0.0.tgz";
         sha1 = "24fd6201a4782cf50561c810276afc7d12d71195";
@@ -24298,6 +26872,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-number"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-number/-/is-number-7.0.0.tgz";
         sha512 = "41Cifkg6e8TylSpdtTpeLVMqvSBEVzTttHvERD741+pnZ8ANv0004MRL43QKPDlK9cGvNp6NZWZUBlbGXYxxng==";
@@ -24325,6 +26902,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-number-object"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-number-object/-/is-number-object-1.0.5.tgz";
         sha512 = "RU0lI/n95pMoUKu9v1BZP5MBcZuNSVJkMkAG2dJqC4z2GlkGUNeH68SuHuBKBD/XFe+LHZ+f9BKkLET60Niedw==";
@@ -24352,6 +26932,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-obj"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-obj/-/is-obj-1.0.1.tgz";
         sha1 = "3e4729ac1f5fde025cd7d83a896dab9f4f67db0f";
@@ -24379,6 +26962,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-obj-prop"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-obj-prop/-/is-obj-prop-1.0.0.tgz";
         sha1 = "b34de79c450b8d7c73ab2cdf67dc875adb85f80e";
@@ -24406,6 +26992,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-object"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-object/-/is-object-1.0.2.tgz";
         sha512 = "2rRIahhZr2UWb45fIOuvZGpFtz0TyOZLf32KxBbSoUCeZR495zCKlWUKKUByk3geS2eAs7ZAABt0Y/Rx0GiQGA==";
@@ -24433,6 +27022,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-plain-obj"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-plain-obj/-/is-plain-obj-1.1.0.tgz";
         sha1 = "71a50c8429dfca773c92a390a4a03b39fcd51d3e";
@@ -24460,6 +27052,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-plain-obj"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-plain-obj/-/is-plain-obj-2.1.0.tgz";
         sha512 = "YWnfyRwxL/+SsrWYfOpUtz5b3YD+nyfkHvjbcanzk8zgyO4ASD67uVMRt8k5bM4lLMDnXfriRhOpemw+NfT1eA==";
@@ -24487,6 +27082,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-plain-object"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-plain-object/-/is-plain-object-2.0.4.tgz";
         sha512 = "h5PpgXkWitc38BBMYawTYMWJHFZJVnBquFE57xFpjB8pJFiF6gZ+bU+WyI/yqXiFR5mdLsgYNaPe8uao6Uv9Og==";
@@ -24514,6 +27112,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-potential-custom-element-name"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-potential-custom-element-name/-/is-potential-custom-element-name-1.0.1.tgz";
         sha512 = "bCYeRA2rVibKZd+s2625gGnGF/t7DSqDs4dP7CrLA1m7jKWz6pps0LpYLJN8Q64HtmPKJ1hrN3nzPNKFEKOUiQ==";
@@ -24541,6 +27142,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-property"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-property/-/is-property-1.0.2.tgz";
         sha1 = "57fe1c4e48474edd65b09911f26b1cd4095dda84";
@@ -24568,6 +27172,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-proto-prop"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-proto-prop/-/is-proto-prop-2.0.0.tgz";
         sha512 = "jl3NbQ/fGLv5Jhan4uX+Ge9ohnemqyblWVVCpAvtTQzNFvV2xhJq+esnkIbYQ9F1nITXoLfDDQLp7LBw/zzncg==";
@@ -24595,6 +27202,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-reference"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-reference/-/is-reference-1.2.1.tgz";
         sha512 = "U82MsXXiFIrjCK4otLT+o2NA2Cd2g5MLoOVXUZjIOhLurrRxpEXzI8O0KZHr3IjLvlAH1kTPYSuqer5T9ZVBKQ==";
@@ -24622,6 +27232,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-regex"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-regex/-/is-regex-1.0.5.tgz";
         sha512 = "vlKW17SNq44owv5AQR3Cq0bQPEb8+kF3UKZ2fiZNOWtztYE5i0CzCZxFDwO58qAOWtxdBRVO/V5Qin1wjCqFYQ==";
@@ -24649,6 +27262,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-regex"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-regex/-/is-regex-1.1.3.tgz";
         sha512 = "qSVXFz28HM7y+IWX6vLCsexdlvzT1PJNFSBuaQLQ5o0IEw8UDYW6/2+eCMVyIsbM8CNLX2a/QWmSpyxYEHY7CQ==";
@@ -24676,6 +27292,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-regexp"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-regexp/-/is-regexp-1.0.0.tgz";
         sha1 = "fd2d883545c46bac5a633e7b9a09e87fa2cb5069";
@@ -24703,6 +27322,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-resolvable"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-resolvable/-/is-resolvable-1.1.0.tgz";
         sha512 = "qgDYXFSR5WvEfuS5dMj6oTMEbrrSaM0CrFk2Yiq/gXnBvD9pMa2jGXxyhGLfvhZpuMZe18CJpFxAt3CRs42NMg==";
@@ -24730,6 +27352,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-set"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-set/-/is-set-2.0.2.tgz";
         sha512 = "+2cnTEZeY5z/iXGbLhPrOAaK/Mau5k5eXq9j14CpRTftq0pAJu2MwVRSZhyZWBzx3o6X795Lz6Bpb6R0GKf37g==";
@@ -24757,6 +27382,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-ssh"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-ssh/-/is-ssh-1.3.3.tgz";
         sha512 = "NKzJmQzJfEEma3w5cJNcUMxoXfDjz0Zj0eyCalHn2E6VOwlzjZo0yuO2fcBSf8zhFuVCL/82/r5gRcoi6aEPVQ==";
@@ -24784,6 +27412,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-stream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-stream/-/is-stream-1.1.0.tgz";
         sha1 = "12d4a3dd4e68e0b79ceb8dbc84173ae80d91ca44";
@@ -24811,6 +27442,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-stream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-stream/-/is-stream-2.0.0.tgz";
         sha512 = "XCoy+WlUr7d1+Z8GgSuXmpuUFC9fOhRXglJMx+dwLKTkL44Cjd4W1Z5P+BQZpr+cR93aGP4S/s7Ftw6Nd/kiEw==";
@@ -24838,6 +27472,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-string"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-string/-/is-string-1.0.6.tgz";
         sha512 = "2gdzbKUuqtQ3lYNrUTQYoClPhm7oQu4UdpSZMp1/DGgkHBT8E2Z1l0yMdb6D4zNAxwDiMv8MdulKROJGNl0Q0w==";
@@ -24865,6 +27502,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-symbol"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-symbol/-/is-symbol-1.0.4.tgz";
         sha512 = "C/CPBqKWnvdcxqIARxyOh4v1UUEOCHpgDa0WYgpKDFMszcrPcffg5uhwSgPCLD2WWxmq6isisz87tzT01tuGhg==";
@@ -24892,6 +27532,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-typed-array"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-typed-array/-/is-typed-array-1.1.5.tgz";
         sha512 = "S+GRDgJlR3PyEbsX/Fobd9cqpZBuvUS+8asRqYDMLCb2qMzt1oz5m5oxQCxOgUDxiWsOVNi4yaF+/uvdlHlYug==";
@@ -24919,6 +27562,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-typedarray"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-typedarray/-/is-typedarray-1.0.0.tgz";
         sha1 = "e479c80858df0c1b11ddda6940f96011fcda4a9a";
@@ -24946,6 +27592,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-unicode-supported"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-unicode-supported/-/is-unicode-supported-0.1.0.tgz";
         sha512 = "knxG2q4UC3u8stRGyAVJCOdxFmv5DZiRcdlIaAQXAbSfJya+OhopNotLQrstBhququ4ZpuKbDc/8S6mgXgPFPw==";
@@ -24973,6 +27622,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-utf8"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-utf8/-/is-utf8-0.2.1.tgz";
         sha1 = "4b0da1442104d1b336340e80797e865cf39f7d72";
@@ -25000,6 +27652,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-weakmap"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-weakmap/-/is-weakmap-2.0.1.tgz";
         sha512 = "NSBR4kH5oVj1Uwvv970ruUkCV7O1mzgVFO4/rev2cLRda9Tm9HrL70ZPut4rOHgY0FNrUu9BCbXA2sdQ+x0chA==";
@@ -25027,6 +27682,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-weakref"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-weakref/-/is-weakref-1.0.1.tgz";
         sha512 = "b2jKc2pQZjaeFYWEf7ScFj+Be1I+PXmlu572Q8coTXZ+LD/QQZ7ShPMst8h16riVgyXTQwUsFEl74mDvc/3MHQ==";
@@ -25054,6 +27712,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-weakset"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-weakset/-/is-weakset-2.0.1.tgz";
         sha512 = "pi4vhbhVHGLxohUw7PhGsueT4vRGFoXhP7+RGN0jKIv9+8PWYCQTqtADngrxOm2g46hoH0+g8uZZBzMrvVGDmw==";
@@ -25081,6 +27742,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-win"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-win/-/is-win-1.0.10.tgz";
         sha512 = "tJ9PPj5RW2RUaZ2lAIVRqQjMSynA44Ln89h+Ue+pOecoWIv6dLHvN6dtLxeCi/h5epPJPSVyuaNObLAMq62OEA==";
@@ -25108,6 +27772,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "is-windows"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/is-windows/-/is-windows-1.0.2.tgz";
         sha512 = "eXK1UInq2bPmjyX6e3VHIzMLobc4J94i4AWn+Hpq3OU5KkrRC96OAcR3PRJ/pGu6m8TRnBHP9dkXQVsT/COVIA==";
@@ -25135,6 +27802,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "isarray"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/isarray/-/isarray-0.0.1.tgz";
         sha1 = "8a18acfca9a8f4177e09abfc6038939b05d1eedf";
@@ -25162,6 +27832,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "isarray"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/isarray/-/isarray-1.0.0.tgz";
         sha1 = "bb935d48582cba168c06834957a54a3e07124f11";
@@ -25189,6 +27862,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "isarray"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/isarray/-/isarray-2.0.5.tgz";
         sha512 = "xHjhDr3cNBK0BzdUJSPXZntQUx/mwMS5Rw4A7lPJ90XGAO6ISP/ePDNuo0vhqOZU+UD5JoodwCAAoZQd3FeAKw==";
@@ -25216,6 +27892,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "isexe"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/isexe/-/isexe-1.1.2.tgz";
         sha1 = "36f3e22e60750920f5e7241a476a8c6a42275ad0";
@@ -25243,6 +27922,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "isexe"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/isexe/-/isexe-2.0.0.tgz";
         sha1 = "e8fbf374dc556ff8947a10dcb0572d633f2cfa10";
@@ -25270,6 +27952,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "isobject"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/isobject/-/isobject-2.1.0.tgz";
         sha1 = "f065561096a3f1da2ef46272f815c840d87e0c89";
@@ -25297,6 +27982,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "isobject"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/isobject/-/isobject-3.0.1.tgz";
         sha1 = "4e431e92b11a9731636aa1f9c8d1ccbcfdab78df";
@@ -25324,6 +28012,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "isstream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/isstream/-/isstream-0.1.2.tgz";
         sha1 = "47e63f7af55afa6f92e1500e690eb8b8529c099a";
@@ -25351,6 +28042,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/istanbul/-/istanbul-0.3.22.tgz";
         sha1 = "3e164d85021fe19c985d1f0e7ef0c3e22d012eb6";
@@ -25378,6 +28072,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-coverage"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/istanbul-lib-coverage/-/istanbul-lib-coverage-2.0.5.tgz";
         sha512 = "8aXznuEPCJvGnMSRft4udDRDtb1V3pkQkMMI5LI+6HuQz5oQ4J2UFn1H82raA3qJtyOLkkwVqICBQkjnGtn5mA==";
@@ -25405,6 +28102,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-coverage"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/istanbul-lib-coverage/-/istanbul-lib-coverage-3.0.0.tgz";
         sha512 = "UiUIqxMgRDET6eR+o5HbfRYP1l0hqkWOs7vNxC/mggutCMUIhWMm8gAHb8tHlyfD3/l6rlgNA5cKdDzEAf6hEg==";
@@ -25432,6 +28132,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-hook"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/istanbul-lib-hook/-/istanbul-lib-hook-2.0.7.tgz";
         sha512 = "vrRztU9VRRFDyC+aklfLoeXyNdTfga2EI3udDGn4cZ6fpSXpHLV9X6CHvfoMCPtggg8zvDDmC4b9xfu0z6/llA==";
@@ -25459,6 +28162,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-hook"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/istanbul-lib-hook/-/istanbul-lib-hook-3.0.0.tgz";
         sha512 = "Pt/uge1Q9s+5VAZ+pCo16TYMWPBIl+oaNIjgLQxcX0itS6ueeaA+pEfThZpH8WxhFgCiEb8sAJY6MdUKgiIWaQ==";
@@ -25486,6 +28192,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-instrument"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/istanbul-lib-instrument/-/istanbul-lib-instrument-3.3.0.tgz";
         sha512 = "5nnIN4vo5xQZHdXno/YDXJ0G+I3dAm4XgzfSVTPLQpj/zAV2dV6Juy0yaf10/zrJOJeHoN3fraFe+XRq2bFVZA==";
@@ -25513,6 +28222,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-instrument"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/istanbul-lib-instrument/-/istanbul-lib-instrument-4.0.3.tgz";
         sha512 = "BXgQl9kf4WTCPCCpmFGoJkz/+uhvm7h7PFKUYxh7qarQd3ER33vHG//qaE8eN25l07YqZPpHXU9I09l/RD5aGQ==";
@@ -25540,6 +28252,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-processinfo"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/istanbul-lib-processinfo/-/istanbul-lib-processinfo-1.0.0.tgz";
         sha512 = "FY0cPmWa4WoQNlvB8VOcafiRoB5nB+l2Pz2xGuXHRSy1KM8QFOYfz/rN+bGMCAeejrY3mrpF5oJHcN0s/garCg==";
@@ -25567,6 +28282,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-processinfo"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/istanbul-lib-processinfo/-/istanbul-lib-processinfo-2.0.2.tgz";
         sha512 = "kOwpa7z9hme+IBPZMzQ5vdQj8srYgAtaRqeI48NGmAQ+/5yKiHLV0QbYqQpxsdEF0+w14SoB8YbnHKcXE2KnYw==";
@@ -25594,6 +28312,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-report"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/istanbul-lib-report/-/istanbul-lib-report-2.0.8.tgz";
         sha512 = "fHBeG573EIihhAblwgxrSenp0Dby6tJMFR/HvlerBsrCTD5bkUuoNtn3gVh29ZCS824cGGBPn7Sg7cNk+2xUsQ==";
@@ -25621,6 +28342,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-report"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/istanbul-lib-report/-/istanbul-lib-report-3.0.0.tgz";
         sha512 = "wcdi+uAKzfiGT2abPpKZ0hSU1rGQjUQnLvtY5MpQ7QCTahD3VODhcu4wcfY1YtkGaDD5yuydOLINXsfbus9ROw==";
@@ -25648,6 +28372,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-source-maps"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/istanbul-lib-source-maps/-/istanbul-lib-source-maps-3.0.6.tgz";
         sha512 = "R47KzMtDJH6X4/YW9XTx+jrLnZnscW4VpNN+1PViSYTejLVPWv7oov+Duf8YQSPyVRUvueQqz1TcsC6mooZTXw==";
@@ -25675,6 +28402,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-lib-source-maps"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/istanbul-lib-source-maps/-/istanbul-lib-source-maps-4.0.0.tgz";
         sha512 = "c16LpFRkR8vQXyHZ5nLpY35JZtzj1PQY1iZmesUbf1FZHbIupcWfjgOXBY9YHkLEQ6puz1u4Dgj6qmU/DisrZg==";
@@ -25702,6 +28432,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-reports"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/istanbul-reports/-/istanbul-reports-2.2.7.tgz";
         sha512 = "uu1F/L1o5Y6LzPVSVZXNOoD/KXpJue9aeLRd0sM9uMXfZvzomB0WxVamWb5ue8kA2vVWEmW7EG+A5n3f1kqHKg==";
@@ -25729,6 +28462,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "istanbul-reports"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/istanbul-reports/-/istanbul-reports-3.0.2.tgz";
         sha512 = "9tZvz7AiR3PEDNGiV9vIouQ/EAcqMXFmkcA1CDFTwOB98OZVDL0PH9glHotf5Ugp6GCOTypfzGWI/OqjWNCRUw==";
@@ -25756,6 +28492,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "iterate-object"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/iterate-object/-/iterate-object-1.3.4.tgz";
         sha512 = "4dG1D1x/7g8PwHS9aK6QV5V94+ZvyP4+d19qDv43EzImmrndysIl4prmJ1hWWIGCqrZHyaHBm6BSEWHOLnpoNw==";
@@ -25783,6 +28522,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jackspeak"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jackspeak/-/jackspeak-1.4.0.tgz";
         sha512 = "VDcSunT+wcccoG46FtzuBAyQKlzhHjli4q31e1fIHGOsRspqNUFjVzGb+7eIFDlTvqLygxapDHPHS0ouT2o/tw==";
@@ -25810,6 +28552,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest/-/jest-26.6.3.tgz";
         sha512 = "lGS5PXGAzR4RF7V5+XObhqz2KZIDUA1yD0DG6pBVmy10eh0ZIXQImRuzocsI/N2XZ1GrLFwTS27In2i2jlpq1Q==";
@@ -25837,6 +28582,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest/-/jest-27.0.6.tgz";
         sha512 = "EjV8aETrsD0wHl7CKMibKwQNQc3gIRBXlTikBmmHUeVMKaPFxdcUIBfoDqTSXDoGJIivAYGqCWVlzCSaVjPQsA==";
@@ -25864,6 +28612,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-changed-files"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-changed-files/-/jest-changed-files-26.6.2.tgz";
         sha512 = "fDS7szLcY9sCtIip8Fjry9oGf3I2ht/QT21bAHm5Dmf0mD4X3ReNUf17y+bO6fR8WgbIZTlbyG1ak/53cbRzKQ==";
@@ -25891,6 +28642,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-changed-files"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-changed-files/-/jest-changed-files-27.0.6.tgz";
         sha512 = "BuL/ZDauaq5dumYh5y20sn4IISnf1P9A0TDswTxUi84ORGtVa86ApuBHqICL0vepqAnZiY6a7xeSPWv2/yy4eA==";
@@ -25918,6 +28672,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-circus"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-circus/-/jest-circus-27.0.6.tgz";
         sha512 = "OJlsz6BBeX9qR+7O9lXefWoc2m9ZqcZ5Ohlzz0pTEAG4xMiZUJoacY8f4YDHxgk0oKYxj277AfOk9w6hZYvi1Q==";
@@ -25945,6 +28702,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-cli"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-cli/-/jest-cli-26.6.3.tgz";
         sha512 = "GF9noBSa9t08pSyl3CY4frMrqp+aQXFGFkf5hEPbh/pIUFYWMK6ZLTfbmadxJVcJrdRoChlWQsA2VkJcDFK8hg==";
@@ -25972,6 +28732,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-cli"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-cli/-/jest-cli-27.0.6.tgz";
         sha512 = "qUUVlGb9fdKir3RDE+B10ULI+LQrz+MCflEH2UJyoUjoHHCbxDrMxSzjQAPUMsic4SncI62ofYCcAvW6+6rhhg==";
@@ -25999,6 +28762,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-config"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-config/-/jest-config-26.6.3.tgz";
         sha512 = "t5qdIj/bCj2j7NFVHb2nFB4aUdfucDn3JRKgrZnplb8nieAirAzRSHP8uDEd+qV6ygzg9Pz4YG7UTJf94LPSyg==";
@@ -26026,6 +28792,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-config"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-config/-/jest-config-27.0.6.tgz";
         sha512 = "JZRR3I1Plr2YxPBhgqRspDE2S5zprbga3swYNrvY3HfQGu7p/GjyLOqwrYad97tX3U3mzT53TPHVmozacfP/3w==";
@@ -26053,6 +28822,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-diff"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-diff/-/jest-diff-24.9.0.tgz";
         sha512 = "qMfrTs8AdJE2iqrTp0hzh7kTd2PQWrsFyj9tORoKmu32xjPjeE4NyjVRDz8ybYwqS2ik8N4hsIpiVTyFeo2lBQ==";
@@ -26080,6 +28852,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-diff"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-diff/-/jest-diff-26.6.2.tgz";
         sha512 = "6m+9Z3Gv9wN0WFVasqjCL/06+EFCMTqDEUl/b87HYK2rAPTyfz4ZIuSlPhY51PIQRWx5TaxeF1qmXKe9gfN3sA==";
@@ -26107,6 +28882,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-diff"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-diff/-/jest-diff-27.0.6.tgz";
         sha512 = "Z1mqgkTCSYaFgwTlP/NUiRzdqgxmmhzHY1Tq17zL94morOHfHu3K4bgSgl+CR4GLhpV8VxkuOYuIWnQ9LnFqmg==";
@@ -26134,6 +28912,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-docblock"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-docblock/-/jest-docblock-26.0.0.tgz";
         sha512 = "RDZ4Iz3QbtRWycd8bUEPxQsTlYazfYn/h5R65Fc6gOfwozFhoImx+affzky/FFBuqISPTqjXomoIGJVKBWoo0w==";
@@ -26161,6 +28942,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-docblock"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-docblock/-/jest-docblock-27.0.6.tgz";
         sha512 = "Fid6dPcjwepTFraz0YxIMCi7dejjJ/KL9FBjPYhBp4Sv1Y9PdhImlKZqYU555BlN4TQKaTc+F2Av1z+anVyGkA==";
@@ -26188,6 +28972,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-each"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-each/-/jest-each-26.6.2.tgz";
         sha512 = "Mer/f0KaATbjl8MCJ+0GEpNdqmnVmDYqCTJYTvoo7rqmRiDllmp2AYN+06F93nXcY3ur9ShIjS+CO/uD+BbH4A==";
@@ -26215,6 +29002,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-each"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-each/-/jest-each-27.0.6.tgz";
         sha512 = "m6yKcV3bkSWrUIjxkE9OC0mhBZZdhovIW5ergBYirqnkLXkyEn3oUUF/QZgyecA1cF1QFyTE8bRRl8Tfg1pfLA==";
@@ -26242,6 +29032,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-environment-jsdom"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-environment-jsdom/-/jest-environment-jsdom-26.6.2.tgz";
         sha512 = "jgPqCruTlt3Kwqg5/WVFyHIOJHsiAvhcp2qiR2QQstuG9yWox5+iHpU3ZrcBxW14T4fe5Z68jAfLRh7joCSP2Q==";
@@ -26269,6 +29062,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-environment-jsdom"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-environment-jsdom/-/jest-environment-jsdom-27.0.6.tgz";
         sha512 = "FvetXg7lnXL9+78H+xUAsra3IeZRTiegA3An01cWeXBspKXUhAwMM9ycIJ4yBaR0L7HkoMPaZsozCLHh4T8fuw==";
@@ -26296,6 +29092,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-environment-node"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-environment-node/-/jest-environment-node-26.6.2.tgz";
         sha512 = "zhtMio3Exty18dy8ee8eJ9kjnRyZC1N4C1Nt/VShN1apyXc8rWGtJ9lI7vqiWcyyXS4BVSEn9lxAM2D+07/Tag==";
@@ -26323,6 +29122,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-environment-node"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-environment-node/-/jest-environment-node-27.0.6.tgz";
         sha512 = "+Vi6yLrPg/qC81jfXx3IBlVnDTI6kmRr08iVa2hFCWmJt4zha0XW7ucQltCAPhSR0FEKEoJ3i+W4E6T0s9is0w==";
@@ -26350,6 +29152,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-extended"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-extended/-/jest-extended-0.11.5.tgz";
         sha512 = "3RsdFpLWKScpsLD6hJuyr/tV5iFOrw7v6YjA3tPdda9sJwoHwcMROws5gwiIZfcwhHlJRwFJB2OUvGmF3evV/Q==";
@@ -26377,6 +29182,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-get-type"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-get-type/-/jest-get-type-22.4.3.tgz";
         sha512 = "/jsz0Y+V29w1chdXVygEKSz2nBoHoYqNShPe+QgxSNjAuP1i8+k4LbQNrfoliKej0P45sivkSCh7yiD6ubHS3w==";
@@ -26404,6 +29212,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-get-type"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-get-type/-/jest-get-type-24.9.0.tgz";
         sha512 = "lUseMzAley4LhIcpSP9Jf+fTrQ4a1yHQwLNeeVa2cEmbCGeoZAtYPOIv8JaxLD/sUpKxetKGP+gsHl8f8TSj8Q==";
@@ -26431,6 +29242,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-get-type"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-get-type/-/jest-get-type-26.3.0.tgz";
         sha512 = "TpfaviN1R2pQWkIihlfEanwOXK0zcxrKEE4MlU6Tn7keoXdN6/3gK/xl0yEh8DOunn5pOVGKf8hB4R9gVh04ig==";
@@ -26458,6 +29272,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-get-type"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-get-type/-/jest-get-type-27.0.6.tgz";
         sha512 = "XTkK5exIeUbbveehcSR8w0bhH+c0yloW/Wpl+9vZrjzztCPWrxhHwkIFpZzCt71oRBsgxmuUfxEqOYoZI2macg==";
@@ -26485,6 +29302,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-haste-map"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-haste-map/-/jest-haste-map-26.6.2.tgz";
         sha512 = "easWIJXIw71B2RdR8kgqpjQrbMRWQBgiBwXYEhtGUTaX+doCjBheluShdDMeR8IMfJiTqH4+zfhtg29apJf/8w==";
@@ -26512,6 +29332,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-haste-map"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-haste-map/-/jest-haste-map-27.0.6.tgz";
         sha512 = "4ldjPXX9h8doB2JlRzg9oAZ2p6/GpQUNAeiYXqcpmrKbP0Qev0wdZlxSMOmz8mPOEnt4h6qIzXFLDi8RScX/1w==";
@@ -26539,6 +29362,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-jasmine2"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-jasmine2/-/jest-jasmine2-26.6.3.tgz";
         sha512 = "kPKUrQtc8aYwBV7CqBg5pu+tmYXlvFlSFYn18ev4gPFtrRzB15N2gW/Roew3187q2w2eHuu0MU9TJz6w0/nPEg==";
@@ -26566,6 +29392,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-jasmine2"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-jasmine2/-/jest-jasmine2-27.0.6.tgz";
         sha512 = "cjpH2sBy+t6dvCeKBsHpW41mjHzXgsavaFMp+VWRf0eR4EW8xASk1acqmljFtK2DgyIECMv2yCdY41r2l1+4iA==";
@@ -26593,6 +29422,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-leak-detector"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-leak-detector/-/jest-leak-detector-26.6.2.tgz";
         sha512 = "i4xlXpsVSMeKvg2cEKdfhh0H39qlJlP5Ex1yQxwF9ubahboQYMgTtz5oML35AVA3B4Eu+YsmwaiKVev9KCvLxg==";
@@ -26620,6 +29452,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-leak-detector"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-leak-detector/-/jest-leak-detector-27.0.6.tgz";
         sha512 = "2/d6n2wlH5zEcdctX4zdbgX8oM61tb67PQt4Xh8JFAIy6LRKUnX528HulkaG6nD5qDl5vRV1NXejCe1XRCH5gQ==";
@@ -26647,6 +29482,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-matcher-utils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-matcher-utils/-/jest-matcher-utils-22.4.3.tgz";
         sha512 = "lsEHVaTnKzdAPR5t4B6OcxXo9Vy4K+kRRbG5gtddY8lBEC+Mlpvm1CJcsMESRjzUhzkz568exMV1hTB76nAKbA==";
@@ -26674,6 +29512,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-matcher-utils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-matcher-utils/-/jest-matcher-utils-24.9.0.tgz";
         sha512 = "OZz2IXsu6eaiMAwe67c1T+5tUAtQyQx27/EMEkbFAGiw52tB9em+uGbzpcgYVpA8wl0hlxKPZxrly4CXU/GjHA==";
@@ -26701,6 +29542,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-matcher-utils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-matcher-utils/-/jest-matcher-utils-26.6.2.tgz";
         sha512 = "llnc8vQgYcNqDrqRDXWwMr9i7rS5XFiCwvh6DTP7Jqa2mqpcCBBlpCbn+trkG0KNhPu/h8rzyBkriOtBstvWhw==";
@@ -26728,6 +29572,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-matcher-utils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-matcher-utils/-/jest-matcher-utils-27.0.6.tgz";
         sha512 = "OFgF2VCQx9vdPSYTHWJ9MzFCehs20TsyFi6bIHbk5V1u52zJOnvF0Y/65z3GLZHKRuTgVPY4Z6LVePNahaQ+tA==";
@@ -26755,6 +29602,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-message-util"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-message-util/-/jest-message-util-24.9.0.tgz";
         sha512 = "oCj8FiZ3U0hTP4aSui87P4L4jC37BtQwUMqk+zk/b11FR19BJDeZsZAvIHutWnmtw7r85UmR3CEWZ0HWU2mAlw==";
@@ -26782,6 +29632,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-message-util"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-message-util/-/jest-message-util-26.6.2.tgz";
         sha512 = "rGiLePzQ3AzwUshu2+Rn+UMFk0pHN58sOG+IaJbk5Jxuqo3NYO1U2/MIR4S1sKgsoYSXSzdtSa0TgrmtUwEbmA==";
@@ -26809,6 +29662,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-message-util"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-message-util/-/jest-message-util-27.0.6.tgz";
         sha512 = "rBxIs2XK7rGy+zGxgi+UJKP6WqQ+KrBbD1YMj517HYN3v2BG66t3Xan3FWqYHKZwjdB700KiAJ+iES9a0M+ixw==";
@@ -26836,6 +29692,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-mock"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-mock/-/jest-mock-26.6.2.tgz";
         sha512 = "YyFjePHHp1LzpzYcmgqkJ0nm0gg/lJx2aZFzFy1S6eUqNjXsOqTK10zNRff2dNfssgokjkG65OlWNcIlgd3zew==";
@@ -26863,6 +29722,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-mock"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-mock/-/jest-mock-27.0.6.tgz";
         sha512 = "lzBETUoK8cSxts2NYXSBWT+EJNzmUVtVVwS1sU9GwE1DLCfGsngg+ZVSIe0yd0ZSm+y791esiuo+WSwpXJQ5Bw==";
@@ -26890,6 +29752,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-pnp-resolver"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-pnp-resolver/-/jest-pnp-resolver-1.2.2.tgz";
         sha512 = "olV41bKSMm8BdnuMsewT4jqlZ8+3TCARAXjZGT9jcoSnrfUnRCqnMoF9XEeoWjbzObpqF9dRhHQj0Xb9QdF6/w==";
@@ -26917,6 +29782,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-regex-util"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-regex-util/-/jest-regex-util-24.9.0.tgz";
         sha512 = "05Cmb6CuxaA+Ys6fjr3PhvV3bGQmO+2p2La4hFbU+W5uOc479f7FdLXUWXw4pYMAhhSZIuKHwSXSu6CsSBAXQA==";
@@ -26944,6 +29812,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-regex-util"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-regex-util/-/jest-regex-util-26.0.0.tgz";
         sha512 = "Gv3ZIs/nA48/Zvjrl34bf+oD76JHiGDUxNOVgUjh3j890sblXryjY4rss71fPtD/njchl6PSE2hIhvyWa1eT0A==";
@@ -26971,6 +29842,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-regex-util"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-regex-util/-/jest-regex-util-27.0.6.tgz";
         sha512 = "SUhPzBsGa1IKm8hx2F4NfTGGp+r7BXJ4CulsZ1k2kI+mGLG+lxGrs76veN2LF/aUdGosJBzKgXmNCw+BzFqBDQ==";
@@ -26998,6 +29872,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-resolve"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-resolve/-/jest-resolve-26.6.2.tgz";
         sha512 = "sOxsZOq25mT1wRsfHcbtkInS+Ek7Q8jCHUB0ZUTP0tc/c41QHriU/NunqMfCUWsL4H3MHpvQD4QR9kSYhS7UvQ==";
@@ -27025,6 +29902,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-resolve"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-resolve/-/jest-resolve-27.0.6.tgz";
         sha512 = "yKmIgw2LgTh7uAJtzv8UFHGF7Dm7XfvOe/LQ3Txv101fLM8cx2h1QVwtSJ51Q/SCxpIiKfVn6G2jYYMDNHZteA==";
@@ -27052,6 +29932,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-resolve-dependencies"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-resolve-dependencies/-/jest-resolve-dependencies-26.6.3.tgz";
         sha512 = "pVwUjJkxbhe4RY8QEWzN3vns2kqyuldKpxlxJlzEYfKSvY6/bMvxoFrYYzUO1Gx28yKWN37qyV7rIoIp2h8fTg==";
@@ -27079,6 +29962,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-resolve-dependencies"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-resolve-dependencies/-/jest-resolve-dependencies-27.0.6.tgz";
         sha512 = "mg9x9DS3BPAREWKCAoyg3QucCr0n6S8HEEsqRCKSPjPcu9HzRILzhdzY3imsLoZWeosEbJZz6TKasveczzpJZA==";
@@ -27106,6 +29992,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-runner"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-runner/-/jest-runner-26.6.3.tgz";
         sha512 = "atgKpRHnaA2OvByG/HpGA4g6CSPS/1LK0jK3gATJAoptC1ojltpmVlYC3TYgdmGp+GLuhzpH30Gvs36szSL2JQ==";
@@ -27133,6 +30022,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-runner"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-runner/-/jest-runner-27.0.6.tgz";
         sha512 = "W3Bz5qAgaSChuivLn+nKOgjqNxM7O/9JOJoKDCqThPIg2sH/d4A/lzyiaFgnb9V1/w29Le11NpzTJSzga1vyYQ==";
@@ -27160,6 +30052,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-runtime"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-runtime/-/jest-runtime-26.6.3.tgz";
         sha512 = "lrzyR3N8sacTAMeonbqpnSka1dHNux2uk0qqDXVkMv2c/A3wYnvQ4EXuI013Y6+gSKSCxdaczvf4HF0mVXHRdw==";
@@ -27187,6 +30082,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-runtime"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-runtime/-/jest-runtime-27.0.6.tgz";
         sha512 = "BhvHLRVfKibYyqqEFkybsznKwhrsu7AWx2F3y9G9L95VSIN3/ZZ9vBpm/XCS2bS+BWz3sSeNGLzI3TVQ0uL85Q==";
@@ -27214,6 +30112,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-serializer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-serializer/-/jest-serializer-26.6.2.tgz";
         sha512 = "S5wqyz0DXnNJPd/xfIzZ5Xnp1HrJWBczg8mMfMpN78OJ5eDxXyf+Ygld9wX1DnUWbIbhM1YDY95NjR4CBXkb2g==";
@@ -27241,6 +30142,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-serializer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-serializer/-/jest-serializer-27.0.6.tgz";
         sha512 = "PtGdVK9EGC7dsaziskfqaAPib6wTViY3G8E5wz9tLVPhHyiDNTZn/xjZ4khAw+09QkoOVpn7vF5nPSN6dtBexA==";
@@ -27268,6 +30172,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-snapshot"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-snapshot/-/jest-snapshot-26.6.2.tgz";
         sha512 = "OLhxz05EzUtsAmOMzuupt1lHYXCNib0ECyuZ/PZOx9TrZcC8vL0x+DUG3TL+GLX3yHG45e6YGjIm0XwDc3q3og==";
@@ -27295,6 +30202,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-snapshot"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-snapshot/-/jest-snapshot-27.0.6.tgz";
         sha512 = "NTHaz8He+ATUagUgE7C/UtFcRoHqR2Gc+KDfhQIyx+VFgwbeEMjeP+ILpUTLosZn/ZtbNdCF5LkVnN/l+V751A==";
@@ -27322,6 +30232,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-util"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-util/-/jest-util-26.6.2.tgz";
         sha512 = "MDW0fKfsn0OI7MS7Euz6h8HNDXVQ0gaM9uW6RjfDmd1DAFcaxX9OqIakHIqhbnmF08Cf2DLDG+ulq8YQQ0Lp0Q==";
@@ -27349,6 +30262,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-util"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-util/-/jest-util-27.0.6.tgz";
         sha512 = "1JjlaIh+C65H/F7D11GNkGDDZtDfMEM8EBXsvd+l/cxtgQ6QhxuloOaiayt89DxUvDarbVhqI98HhgrM1yliFQ==";
@@ -27376,6 +30292,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-validate"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-validate/-/jest-validate-26.6.2.tgz";
         sha512 = "NEYZ9Aeyj0i5rQqbq+tpIOom0YS1u2MVu6+euBsvpgIme+FOfRmoC4R5p0JiAUpaFvFy24xgrpMknarR/93XjQ==";
@@ -27403,6 +30322,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-validate"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-validate/-/jest-validate-27.0.6.tgz";
         sha512 = "yhZZOaMH3Zg6DC83n60pLmdU1DQE46DW+KLozPiPbSbPhlXXaiUTDlhHQhHFpaqIFRrInko1FHXjTRpjWRuWfA==";
@@ -27430,6 +30352,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-watcher"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-watcher/-/jest-watcher-26.6.2.tgz";
         sha512 = "WKJob0P/Em2csiVthsI68p6aGKTIcsfjH9Gsx1f0A3Italz43e3ho0geSAVsmj09RWOELP1AZ/DXyJgOgDKxXQ==";
@@ -27457,6 +30382,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-watcher"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-watcher/-/jest-watcher-27.0.6.tgz";
         sha512 = "/jIoKBhAP00/iMGnTwUBLgvxkn7vsOweDrOTSPzc7X9uOyUtJIDthQBTI1EXz90bdkrxorUZVhJwiB69gcHtYQ==";
@@ -27484,6 +30412,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-worker"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-worker/-/jest-worker-24.9.0.tgz";
         sha512 = "51PE4haMSXcHohnSMdM42anbvZANYTqMrr52tVKPqqsPJMzoP6FYYDVqahX/HrAoKEKz3uUPzSvKs9A3qR4iVw==";
@@ -27511,6 +30442,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-worker"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-worker/-/jest-worker-26.6.2.tgz";
         sha512 = "KWYVV1c4i+jbMpaBC+U++4Va0cp8OisU185o73T1vo99hqi7w8tSJfUXYswwqqrjzwxa6KpRK54WhPvwf5w6PQ==";
@@ -27538,6 +30472,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jest-worker"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jest-worker/-/jest-worker-27.0.6.tgz";
         sha512 = "qupxcj/dRuA3xHPMUd40gr2EaAurFbkwzOh7wfPaeE9id7hyjURRQoqNfHifHK3XjJU6YJJUQKILGUnwGPEOCA==";
@@ -27565,6 +30502,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "js-cleanup"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/js-cleanup/-/js-cleanup-1.2.0.tgz";
         sha512 = "JeDD0yiiSt80fXzAVa/crrS0JDPQljyBG/RpOtaSbyDq03VHa9szJWMaWOYU/bcTn412uMN2MxApXq8v79cUiQ==";
@@ -27592,6 +30532,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "js-tokens"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/js-tokens/-/js-tokens-3.0.2.tgz";
         sha1 = "9866df395102130e38f7f996bceb65443209c25b";
@@ -27619,6 +30562,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "js-tokens"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/js-tokens/-/js-tokens-4.0.0.tgz";
         sha512 = "RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==";
@@ -27646,6 +30592,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "js-types"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/js-types/-/js-types-1.0.0.tgz";
         sha1 = "d242e6494ed572ad3c92809fc8bed7f7687cbf03";
@@ -27673,6 +30622,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "js-yaml"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/js-yaml/-/js-yaml-3.13.1.tgz";
         sha512 = "YfbcO7jXDdyj0DGxYVSlSeQNHbD7XPWvrVWeVUujrQEoZzWJIRrCPoyk6kL6IAjAG2IolMK4T0hNUe0HOUs5Jw==";
@@ -27700,6 +30652,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "js-yaml"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/js-yaml/-/js-yaml-3.14.1.tgz";
         sha512 = "okMH7OXXJ7YrN9Ok3/SXrnu4iX9yOk+25nqX4imS2npuvTYDmo/QEZoqwZkYaIDk3jVvBOTOIEgEhaLOynBS9g==";
@@ -27727,6 +30682,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "js-yaml"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/js-yaml/-/js-yaml-3.6.1.tgz";
         sha1 = "6e5fe67d8b205ce4d22fad05b7781e8dadcc4b30";
@@ -27754,6 +30712,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "js-yaml"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/js-yaml/-/js-yaml-4.0.0.tgz";
         sha512 = "pqon0s+4ScYUvX30wxQi3PogGFAlUyH0awepWvwkj4jD4v+ova3RiYw8bmA6x2rDrEaj8i/oWKoRxpVNW+Re8Q==";
@@ -27781,6 +30742,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "js2xmlparser"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/js2xmlparser/-/js2xmlparser-4.0.1.tgz";
         sha512 = "KrPTolcw6RocpYjdC7pL7v62e55q7qOMHvLX1UCLc5AAS8qeJ6nukarEJAF2KL2PZxlbGueEbINqZR2bDe/gUw==";
@@ -27808,6 +30772,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsbn"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jsbn/-/jsbn-0.1.1.tgz";
         sha1 = "a5e654c2e5a2deb5f201d96cefbca80c0ef2f513";
@@ -27835,6 +30802,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsdoc"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jsdoc/-/jsdoc-3.6.7.tgz";
         sha512 = "sxKt7h0vzCd+3Y81Ey2qinupL6DpRSZJclS04ugHDNmRUXGzqicMJ6iwayhSA0S0DwwX30c5ozyUthr1QKF6uw==";
@@ -27862,6 +30832,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsdom"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jsdom/-/jsdom-16.6.0.tgz";
         sha512 = "Ty1vmF4NHJkolaEmdjtxTfSfkdb8Ywarwf63f+F8/mDD1uLSSWDxDuMiZxiPhwunLrn9LOSVItWj4bLYsLN3Dg==";
@@ -27889,6 +30862,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsesc"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jsesc/-/jsesc-0.5.0.tgz";
         sha1 = "e7dee66e35d6fc16f710fe91d5cf69f70f08911d";
@@ -27916,6 +30892,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsesc"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jsesc/-/jsesc-2.5.2.tgz";
         sha512 = "OYu7XEzjkCQ3C5Ps3QIZsQfNpqoJyZZA99wd9aWd05NCtC5pWOkShK2mkL6HXQR6/Cy2lbNdPlZBpuQHXE63gA==";
@@ -27943,6 +30922,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "json-parse-better-errors"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/json-parse-better-errors/-/json-parse-better-errors-1.0.2.tgz";
         sha512 = "mrqyZKfX5EhL7hvqcV6WG1yYjnjeuYDzDhhcAAUrq8Po85NBQBJP+ZDUT75qZQ98IkUoBqdkExkukOU7Ts2wrw==";
@@ -27970,6 +30952,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "json-parse-even-better-errors"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/json-parse-even-better-errors/-/json-parse-even-better-errors-2.3.1.tgz";
         sha512 = "xyFwyhro/JEof6Ghe2iz2NcXoj2sloNsWr/XsERDK/oiPCfaNhl5ONfp+jQdAZRQQ0IJWNzH9zIZF7li91kh2w==";
@@ -27997,6 +30982,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "json-schema"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/json-schema/-/json-schema-0.2.3.tgz";
         sha1 = "b480c892e59a2f05954ce727bd3f2a4e882f9e13";
@@ -28024,6 +31012,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "json-schema-traverse"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/json-schema-traverse/-/json-schema-traverse-0.4.1.tgz";
         sha512 = "xbbCH5dCYU5T8LcEhhuh7HJ88HXuW3qsI3Y0zOZFKfZEHcpWiHU/Jxzk629Brsab/mMiHQti9wMP+845RPe3Vg==";
@@ -28051,6 +31042,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "json-schema-traverse"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/json-schema-traverse/-/json-schema-traverse-1.0.0.tgz";
         sha512 = "NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==";
@@ -28078,6 +31072,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "json-stable-stringify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/json-stable-stringify/-/json-stable-stringify-0.0.1.tgz";
         sha1 = "611c23e814db375527df851193db59dd2af27f45";
@@ -28105,6 +31102,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "json-stable-stringify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/json-stable-stringify/-/json-stable-stringify-1.0.1.tgz";
         sha1 = "9a759d39c5f2ff503fd5300646ed445f88c4f9af";
@@ -28132,6 +31132,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "json-stable-stringify-without-jsonify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/json-stable-stringify-without-jsonify/-/json-stable-stringify-without-jsonify-1.0.1.tgz";
         sha1 = "9db7b59496ad3f3cfef30a75142d2d930ad72651";
@@ -28159,6 +31162,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "json-stringify-safe"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/json-stringify-safe/-/json-stringify-safe-5.0.1.tgz";
         sha1 = "1296a2d58fd45f19a0f6ce01d65701e2c735b6eb";
@@ -28186,6 +31192,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "json2csv"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/json2csv/-/json2csv-5.0.6.tgz";
         sha512 = "0/4Lv6IenJV0qj2oBdgPIAmFiKKnh8qh7bmLFJ+/ZZHLjSeiL3fKKGX3UryvKPbxFbhV+JcYo9KUC19GJ/Z/4A==";
@@ -28213,6 +31222,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "json5"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/json5/-/json5-2.2.0.tgz";
         sha512 = "f+8cldu7X/y7RAJurMEJmdoKXGB/X550w2Nr3tTbezL6RwEE/iMcm+tZnXeoZtKuOq6ft8+CqzEkrIgx1fPoQA==";
@@ -28240,6 +31252,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsonfile"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jsonfile/-/jsonfile-4.0.0.tgz";
         sha1 = "8771aae0799b64076b76640fca058f9c10e33ecb";
@@ -28267,6 +31282,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsonfile"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jsonfile/-/jsonfile-6.1.0.tgz";
         sha512 = "5dgndWOriYSm5cnYaJNhalLNDKOqFwyDB/rr1E9ZsGciGvKPs8R2xYGCacuf3z6K1YKDz182fd+fY3cn3pMqXQ==";
@@ -28294,6 +31312,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsonify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jsonify/-/jsonify-0.0.0.tgz";
         sha1 = "2c74b6ee41d93ca51b7b5aaee8f503631d252a73";
@@ -28321,6 +31342,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsonparse"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jsonparse/-/jsonparse-1.3.1.tgz";
         sha1 = "3f4dae4a91fac315f71062f8521cc239f1366280";
@@ -28348,6 +31372,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsonpointer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jsonpointer/-/jsonpointer-4.1.0.tgz";
         sha512 = "CXcRvMyTlnR53xMcKnuMzfCA5i/nfblTnnr74CZb6C4vG39eu6w51t7nKmU5MfLfbTgGItliNyjO/ciNPDqClg==";
@@ -28375,6 +31402,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsprim"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jsprim/-/jsprim-1.4.1.tgz";
         sha1 = "313e66bc1e5cc06e438bc1b7499c2e5c56acb6a2";
@@ -28402,6 +31432,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsx-ast-utils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jsx-ast-utils/-/jsx-ast-utils-1.4.1.tgz";
         sha1 = "3867213e8dd79bf1e8f2300c0cfc1efb182c0df1";
@@ -28429,6 +31462,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsx-ast-utils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jsx-ast-utils/-/jsx-ast-utils-2.4.1.tgz";
         sha512 = "z1xSldJ6imESSzOjd3NNkieVJKRlKYSOtMG8SFyCj2FIrvSaSuli/WjpBkEzCBoR9bYYYFgqJw61Xhu7Lcgk+w==";
@@ -28456,6 +31492,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "jsx-ast-utils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/jsx-ast-utils/-/jsx-ast-utils-3.2.0.tgz";
         sha512 = "EIsmt3O3ljsU6sot/J4E1zDRxfBNrhjyf/OKjlydwgEimQuznlM4Wv7U+ueONJMyEn1WRE0K8dhi3dVAXYT24Q==";
@@ -28483,6 +31522,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "kind-of"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/kind-of/-/kind-of-3.2.2.tgz";
         sha1 = "31ea21a734bab9bbb0f32466d893aea51e4a3c64";
@@ -28510,6 +31552,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "kind-of"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/kind-of/-/kind-of-4.0.0.tgz";
         sha1 = "20813df3d712928b207378691a45066fae72dd57";
@@ -28537,6 +31582,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "kind-of"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/kind-of/-/kind-of-5.1.0.tgz";
         sha512 = "NGEErnH6F2vUuXDh+OlbcKW7/wOcfdRHaZ7VWtqCztfHri/++YKmP51OdWeGPuqCOba6kk2OTe5d02VmTB80Pw==";
@@ -28564,6 +31612,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "kind-of"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/kind-of/-/kind-of-6.0.3.tgz";
         sha512 = "dcS1ul+9tmeD95T+x28/ehLgd9mENa3LsvDTtzm3vyBEO7RPptvAD+t44WVXaUjTBRcrpFeFlC8WCruUR456hw==";
@@ -28591,6 +31642,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "klaw"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/klaw/-/klaw-2.1.1.tgz";
         sha1 = "42b76894701169cc910fd0d19ce677b5fb378af1";
@@ -28618,6 +31672,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "klaw"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/klaw/-/klaw-3.0.0.tgz";
         sha512 = "0Fo5oir+O9jnXu5EefYbVK+mHMBeEVEy2cmctR1O1NECcCkPRreJKrS6Qt/j3KC2C148Dfo9i3pCmCMsdqGr0g==";
@@ -28645,6 +31702,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "klaw-sync"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/klaw-sync/-/klaw-sync-3.0.2.tgz";
         sha512 = "32bw9y2nKrnpX2LsJnDTBO2TSdOKPbXfQAWl7Lupcc3D0iKkzI/sQDEw1GjkOuTqZEhe+bVxKSlhSRLxyeytcw==";
@@ -28672,6 +31732,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "kleur"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/kleur/-/kleur-3.0.3.tgz";
         sha512 = "eTIzlVOSUR+JxdDFepEYcBMtZ9Qqdef+rnzWdRZuMbOywu5tO2w2N7rqjoANZ5k9vywhL6Br1VRjUIgTQx4E8w==";
@@ -28699,6 +31762,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "kleur"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/kleur/-/kleur-4.1.4.tgz";
         sha512 = "8QADVssbrFjivHWQU7KkMgptGTl6WAcSdlbBPY4uNF+mWr6DGcKrvY2w4FQJoXch7+fKMjj0dRrL75vk3k23OA==";
@@ -28726,6 +31792,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "labeled-stream-splicer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/labeled-stream-splicer/-/labeled-stream-splicer-2.0.2.tgz";
         sha512 = "Ca4LSXFFZUjPScRaqOcFxneA0VpKZr4MMYCljyQr4LIewTLb3Y0IUTIsnBBsVubIeEfxeSZpSjSsRM8APEQaAw==";
@@ -28753,6 +31822,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lcid"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/lcid/-/lcid-1.0.0.tgz";
         sha1 = "308accafa0bc483a3867b4b6f2b9506251d1b835";
@@ -28780,6 +31852,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lcov-parse"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/lcov-parse/-/lcov-parse-0.0.10.tgz";
         sha1 = "1b0b8ff9ac9c7889250582b70b71315d9da6d9a3";
@@ -28807,6 +31882,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lcov-parse"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/lcov-parse/-/lcov-parse-1.0.0.tgz";
         sha1 = "eb0d46b54111ebc561acb4c408ef9363bdc8f7e0";
@@ -28834,6 +31912,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "leven"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/leven/-/leven-3.1.0.tgz";
         sha512 = "qsda+H8jTaUaN/x5vzW2rzc+8Rw4TAQ/4KjB46IwK5VH+IlVeeeje/EoZRpiXvIqjFgK84QffqPztGI3VBLG1A==";
@@ -28861,6 +31942,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "levn"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/levn/-/levn-0.2.5.tgz";
         sha1 = "ba8d339d0ca4a610e3a3f145b9caf48807155054";
@@ -28888,6 +31972,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "levn"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/levn/-/levn-0.3.0.tgz";
         sha1 = "3b09924edf9f083c0490fdd4c0bc4421e04764ee";
@@ -28915,6 +32002,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "levn"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/levn/-/levn-0.4.1.tgz";
         sha512 = "+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==";
@@ -28942,6 +32032,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "libtap"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/libtap/-/libtap-1.1.1.tgz";
         sha512 = "Fye8fh1+G7E8qqmjQaY+pXGxy7HM0S6bqCCJFLa16+g2jODBByxbJFDpjbDNF69wfRVyvJ+foLZc1WTIv7dx+g==";
@@ -28969,6 +32062,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lines-and-columns"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/lines-and-columns/-/lines-and-columns-1.1.6.tgz";
         sha1 = "1c00c743b433cd0a4e80758f7b64a57440d9ff00";
@@ -28996,6 +32092,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "linkify-it"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/linkify-it/-/linkify-it-2.2.0.tgz";
         sha512 = "GnAl/knGn+i1U/wjBz3akz2stz+HrHLsxMwHQGofCDfPvlf+gDKN58UtfmUquTY4/MXeE2x7k19KQmeoZi94Iw==";
@@ -29023,6 +32122,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "load-from-cwd-or-npm"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/load-from-cwd-or-npm/-/load-from-cwd-or-npm-2.2.2.tgz";
         sha512 = "Ox0Cl1RfKMKrwqhBqYADWeFspY28bhlaJVe08GJqYtVYoE0kyAnWBOnw3V/+HDoeWb7o33X/ZUcvamIlJ4O4Gg==";
@@ -29050,6 +32152,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "load-json-file"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/load-json-file/-/load-json-file-2.0.0.tgz";
         sha1 = "7947e42149af80d696cbf797bcaabcfe1fe29ca8";
@@ -29077,6 +32182,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "load-json-file"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/load-json-file/-/load-json-file-4.0.0.tgz";
         sha1 = "2f5f45ab91e33216234fd53adab668eb4ec0993b";
@@ -29104,6 +32212,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "load-json-file"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/load-json-file/-/load-json-file-5.3.0.tgz";
         sha512 = "cJGP40Jc/VXUsp8/OrnyKyTZ1y6v/dphm3bioS+RrKXjK2BB6wHUd6JptZEFDGgGahMT+InnZO5i1Ei9mpC8Bw==";
@@ -29131,6 +32242,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "load-request-from-cwd-or-npm"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/load-request-from-cwd-or-npm/-/load-request-from-cwd-or-npm-2.0.1.tgz";
         sha512 = "RMDblVBrhyatt2KBScYzbPZrg2KGOryEdcAXIF3Jh3nqcE1awqUtJABwkPv1UrC802QFFxn/mn10m9dHN+fXrQ==";
@@ -29158,6 +32272,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "locate-path"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/locate-path/-/locate-path-2.0.0.tgz";
         sha1 = "2b568b265eec944c6d9c0de9c3dbbbca0354cd8e";
@@ -29185,6 +32302,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "locate-path"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/locate-path/-/locate-path-3.0.0.tgz";
         sha512 = "7AO748wWnIhNqAuaty2ZWHkQHRSNfPVIsPIfwEOWO22AmaoVrWavlOcMR5nzTLNYvp36X220/maaRsrec1G65A==";
@@ -29212,6 +32332,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "locate-path"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/locate-path/-/locate-path-5.0.0.tgz";
         sha512 = "t7hw9pI+WvuwNJXwk5zVHpyhIqzg2qTlklJOf0mVxGSbe3Fp2VieZcduNYjaLDoy6p9uGpQEGWG87WpMKlNq8g==";
@@ -29239,6 +32362,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "locate-path"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/locate-path/-/locate-path-6.0.0.tgz";
         sha512 = "iPZK6eYjbxRu3uB4/WZ3EsEIMJFMqAoopl3R+zuq0UjcAm/MO6KCweDgPfP3elTztoKP3KtnVHxTn2NHBSDVUw==";
@@ -29266,6 +32392,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lodash"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/lodash/-/lodash-3.10.1.tgz";
         sha1 = "5bf45e8e49ba4189e17d482789dfd15bd140b7b6";
@@ -29293,6 +32422,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lodash"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/lodash/-/lodash-4.17.20.tgz";
         sha512 = "PlhdFcillOINfeV7Ni6oF1TAEayyZBoZ8bcshTHqOYJYlrqzRK5hagpagky5o4HfCzzd1TRkXPMFq6cKk9rGmA==";
@@ -29320,6 +32452,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lodash"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz";
         sha512 = "v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==";
@@ -29347,6 +32482,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lodash.clonedeep"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/lodash.clonedeep/-/lodash.clonedeep-4.5.0.tgz";
         sha1 = "e23f3f9c4f8fbdde872529c1071857a086e5ccef";
@@ -29374,6 +32512,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lodash.flattendeep"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/lodash.flattendeep/-/lodash.flattendeep-4.4.0.tgz";
         sha1 = "fb030917f86a3134e5bc9bec0d69e0013ddfedb2";
@@ -29401,6 +32542,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lodash.get"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/lodash.get/-/lodash.get-4.4.2.tgz";
         sha1 = "2d177f652fa31e939b4438d5341499dfa3825e99";
@@ -29428,6 +32572,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lodash.memoize"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/lodash.memoize/-/lodash.memoize-3.0.4.tgz";
         sha1 = "2dcbd2c287cbc0a55cc42328bd0c736150d53e3f";
@@ -29455,6 +32602,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lodash.merge"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/lodash.merge/-/lodash.merge-4.6.2.tgz";
         sha512 = "0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==";
@@ -29482,6 +32632,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lodash.set"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/lodash.set/-/lodash.set-4.3.2.tgz";
         sha1 = "d8757b1da807dde24816b0d6a84bea1a76230b23";
@@ -29509,6 +32662,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lodash.truncate"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/lodash.truncate/-/lodash.truncate-4.4.2.tgz";
         sha1 = "5a350da0b1113b837ecfffd5812cbe58d6eae193";
@@ -29536,6 +32692,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "log-driver"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/log-driver/-/log-driver-1.2.5.tgz";
         sha1 = "7ae4ec257302fd790d557cb10c97100d857b0056";
@@ -29563,6 +32722,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "log-driver"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/log-driver/-/log-driver-1.2.7.tgz";
         sha512 = "U7KCmLdqsGHBLeWqYlFA0V0Sl6P08EE1ZrmA9cxjUE0WVqT9qnyVDPz1kzpFEP0jdJuFnasWIfSd7fsaNXkpbg==";
@@ -29590,6 +32752,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "log-symbols"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/log-symbols/-/log-symbols-2.2.0.tgz";
         sha512 = "VeIAFslyIerEJLXHziedo2basKbMKtTw3vfn5IzG0XTjhAVEJyNHnL2p7vc+wBDSdQuUpNw3M2u6xb9QsAY5Eg==";
@@ -29617,6 +32782,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "log-symbols"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/log-symbols/-/log-symbols-4.0.0.tgz";
         sha512 = "FN8JBzLx6CzeMrB0tg6pqlGU1wCrXW+ZXGH481kfsBqer0hToTIiHdjH4Mq8xJUbvATujKCvaREGWpGUionraA==";
@@ -29644,6 +32812,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "log-symbols"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/log-symbols/-/log-symbols-4.1.0.tgz";
         sha512 = "8XPvpAA8uyhfteu8pIvQxpJZ7SYYdpUivZpGy6sFsBuKRY/7rQGavedeB8aK+Zkyq6upMFVL/9AW6vOYzfRyLg==";
@@ -29671,6 +32842,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "log-update"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/log-update/-/log-update-4.0.0.tgz";
         sha512 = "9fkkDevMefjg0mmzWFBW8YkFP91OrizzkW3diF7CpG+S2EYdy4+TVfGwz1zeF8x7hCx1ovSPTOE9Ngib74qqUg==";
@@ -29698,6 +32872,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "loose-envify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/loose-envify/-/loose-envify-1.4.0.tgz";
         sha512 = "lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==";
@@ -29725,6 +32902,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lowercase-keys"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/lowercase-keys/-/lowercase-keys-1.0.1.tgz";
         sha512 = "G2Lj61tXDnVFFOi8VZds+SoQjtQC3dgokKdDG2mTm1tx4m50NUHBOZSBwQQHyy0V12A0JTG4icfZQH+xPyh8VA==";
@@ -29752,6 +32932,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lru-cache"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/lru-cache/-/lru-cache-2.7.3.tgz";
         sha1 = "6d4524e8b955f95d4f5b58851ce21dd72fb4e952";
@@ -29779,6 +32962,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lru-cache"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/lru-cache/-/lru-cache-4.1.5.tgz";
         sha512 = "sWZlbEP2OsHNkXrMl5GYk/jKk70MBng6UU4YI/qGDYbgf6YbP4EvmqISbXCoJiRKs+1bSpFHVgQxvJ17F2li5g==";
@@ -29806,6 +32992,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "lru-cache"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/lru-cache/-/lru-cache-6.0.0.tgz";
         sha512 = "Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==";
@@ -29833,6 +33022,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "magic-string"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/magic-string/-/magic-string-0.25.7.tgz";
         sha512 = "4CrMT5DOHTDk4HYDlzmwu4FVCcIYI8gauveasrdCu2IKIFOJ3f0v/8MDGJCDL9oD2ppz/Av1b0Nj345H9M+XIA==";
@@ -29860,6 +33052,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "make-dir"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/make-dir/-/make-dir-2.1.0.tgz";
         sha512 = "LS9X+dc8KLxXCb8dni79fLIIUA5VyZoyjSMCwTluaXA0o27cCK0bhXkpgw+sTXVpPy/lSO57ilRixqk0vDmtRA==";
@@ -29887,6 +33082,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "make-dir"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/make-dir/-/make-dir-3.1.0.tgz";
         sha512 = "g3FeP20LNwhALb/6Cz6Dd4F2ngze0jz7tbzrD2wAV+o9FeNHe4rL+yK2md0J/fiSf1sa1ADhXqi5+oVwOM/eGw==";
@@ -29914,6 +33112,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "make-error"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/make-error/-/make-error-1.3.6.tgz";
         sha512 = "s8UhlNe7vPKomQhC1qFelMokr/Sc3AgNbso3n74mVPA5LTZwkB9NlXf4XPamLxJE8h0gh73rM94xvwRT2CVInw==";
@@ -29941,6 +33142,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "make-fetch-happen"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/make-fetch-happen/-/make-fetch-happen-9.0.3.tgz";
         sha512 = "uZ/9Cf2vKqsSWZyXhZ9wHHyckBrkntgbnqV68Bfe8zZenlf7D6yuGMXvHZQ+jSnzPkjosuNP1HGasj1J4h8OlQ==";
@@ -29968,6 +33172,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "makeerror"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/makeerror/-/makeerror-1.0.11.tgz";
         sha1 = "e01a5c9109f2af79660e4e8b9587790184f5a96c";
@@ -29995,6 +33202,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "map-cache"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/map-cache/-/map-cache-0.2.2.tgz";
         sha1 = "c32abd0bd6525d9b051645bb4f26ac5dc98a0dbf";
@@ -30022,6 +33232,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "map-obj"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/map-obj/-/map-obj-1.0.1.tgz";
         sha1 = "d933ceb9205d82bdcf4886f6742bdc2b4dea146d";
@@ -30049,6 +33262,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "map-obj"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/map-obj/-/map-obj-4.2.1.tgz";
         sha512 = "+WA2/1sPmDj1dlvvJmB5G6JKfY9dpn7EVBUL06+y6PoljPkh+6V1QihwxNkbcGxCRjt2b0F9K0taiCuo7MbdFQ==";
@@ -30076,6 +33292,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "map-visit"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/map-visit/-/map-visit-1.0.0.tgz";
         sha1 = "ecdca8f13144e660f1b5bd41f12f3479d98dfb8f";
@@ -30103,6 +33322,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "markdown-it"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/markdown-it/-/markdown-it-10.0.0.tgz";
         sha512 = "YWOP1j7UbDNz+TumYP1kpwnP0aEa711cJjrAQrzd0UXlbJfc5aAq0F/PZHjiioqDC1NKgvIMX+o+9Bk7yuM2dg==";
@@ -30130,6 +33352,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "markdown-it-anchor"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/markdown-it-anchor/-/markdown-it-anchor-5.3.0.tgz";
         sha512 = "/V1MnLL/rgJ3jkMWo84UR+K+jF1cxNG1a+KwqeXqTIJ+jtA8aWSHuigx8lTzauiIjBDbwF3NcWQMotd0Dm39jA==";
@@ -30157,6 +33382,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "marked"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/marked/-/marked-2.1.3.tgz";
         sha512 = "/Q+7MGzaETqifOMWYEA7HVMaZb4XbcRfaOzcSsHZEith83KGlvaSG33u0SKu89Mj5h+T8V2hM+8O45Qc5XTgwA==";
@@ -30184,6 +33412,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "md5.js"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/md5.js/-/md5.js-1.3.5.tgz";
         sha512 = "xitP+WxNPcTTOgnTJcrhM0xvdPepipPSf3I8EIpGKeFLjt3PlJLIDG3u8EX53ZIubkb+5U2+3rELYpEhHhzdkg==";
@@ -30211,6 +33442,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mdurl"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/mdurl/-/mdurl-1.0.1.tgz";
         sha1 = "fe85b2ec75a59037f2adfec100fd6c601761152e";
@@ -30238,6 +33472,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "meow"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/meow/-/meow-9.0.0.tgz";
         sha512 = "+obSblOQmRhcyBt62furQqRAQpNyWXo8BuQ5bN7dG8wmwQ+vwHKp/rCFD4CrTP8CsDQD1sjoZ94K417XEUk8IQ==";
@@ -30265,6 +33502,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "merge-descriptors"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/merge-descriptors/-/merge-descriptors-1.0.1.tgz";
         sha1 = "b00aaa556dd8b44568150ec9d1b953f3f90cbb61";
@@ -30292,6 +33532,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "merge-source-map"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/merge-source-map/-/merge-source-map-1.1.0.tgz";
         sha512 = "Qkcp7P2ygktpMPh2mCQZaf3jhN6D3Z/qVZHSdWvQ+2Ef5HgRAPBO57A77+ENm0CPx2+1Ce/MYKi3ymqdfuqibw==";
@@ -30319,6 +33562,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "merge-stream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/merge-stream/-/merge-stream-2.0.0.tgz";
         sha512 = "abv/qOcuPfk3URPfDzmZU1LKmuw8kT+0nIHvKrKgFrwifol/doWcdA4ZqsWQ8ENrFKkd67Mfpo/LovbIUsbt3w==";
@@ -30346,6 +33592,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "merge2"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/merge2/-/merge2-1.4.1.tgz";
         sha512 = "8q7VEgMJW4J8tcfVPy8g09NcQwZdbwFEqhe/WZkoIzjn/3TGDwtOCYtXGxA3O8tPzpczCCDgv+P2P5y00ZJOOg==";
@@ -30373,6 +33622,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "micromatch"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/micromatch/-/micromatch-3.1.10.tgz";
         sha512 = "MWikgl9n9M3w+bpsY3He8L+w9eF9338xRl8IAO5viDizwSzziFEyUzo2xrrloB64ADbTf8uA8vRqqttDTOmccg==";
@@ -30400,6 +33652,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "micromatch"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/micromatch/-/micromatch-4.0.4.tgz";
         sha512 = "pRmzw/XUcwXGpD9aI9q/0XOwLNygjETJ8y0ao0wdqprrzDa4YnxLcz7fQRZr8voh8V10kGhABbNcHVk5wHgWwg==";
@@ -30427,6 +33682,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "miller-rabin"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/miller-rabin/-/miller-rabin-4.0.1.tgz";
         sha512 = "115fLhvZVqWwHPbClyntxEVfVDfl9DLLTuJvq3g2O/Oxi8AiNouAHvDSzHS0viUJc+V5vm3eq91Xwqn9dp4jRA==";
@@ -30454,6 +33712,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mime-db"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/mime-db/-/mime-db-1.48.0.tgz";
         sha512 = "FM3QwxV+TnZYQ2aRqhlKBMHxk10lTbMt3bBkMAp54ddrNeVSfcQYOOKuGuy3Ddrm38I04If834fOUSq1yzslJQ==";
@@ -30481,6 +33742,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mime-types"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/mime-types/-/mime-types-1.0.2.tgz";
         sha1 = "995ae1392ab8affcbfcb2641dd054e943c0d5dce";
@@ -30508,6 +33772,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mime-types"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/mime-types/-/mime-types-2.1.31.tgz";
         sha512 = "XGZnNzm3QvgKxa8dpzyhFTHmpP3l5YNusmne07VUOXxou9CqUqYa/HBy124RqtVh/O2pECas/MOcsDgpilPOPg==";
@@ -30535,6 +33802,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mimic-fn"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/mimic-fn/-/mimic-fn-1.2.0.tgz";
         sha512 = "jf84uxzwiuiIVKiOLpfYk7N46TSy8ubTonmneY9vrpHNAnp0QBt2BxWV9dO3/j+BoVAb+a5G6YDPW3M5HOdMWQ==";
@@ -30562,6 +33832,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mimic-fn"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/mimic-fn/-/mimic-fn-2.1.0.tgz";
         sha512 = "OqbOk5oEQeAZ8WXWydlu9HJjz9WVdEIvamMCcXmuqUYjTknH/sqsWvhQ3vgwKFRR1HpjvNBKQ37nbJgYzGqGcg==";
@@ -30589,6 +33862,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "min-indent"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/min-indent/-/min-indent-1.0.1.tgz";
         sha512 = "I9jwMn07Sy/IwOj3zVkVik2JTvgpaykDZEigL6Rx6N9LbMywwUSMtxET+7lVoDLLd3O3IXwJwvuuns8UB/HeAg==";
@@ -30616,6 +33892,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minimalistic-assert"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/minimalistic-assert/-/minimalistic-assert-1.0.1.tgz";
         sha512 = "UtJcAD4yEaGtjPezWuO9wC4nwUnVH/8/Im3yEHQP4b67cXlD/Qr9hdITCU1xDbSEXg2XKNaP8jsReV7vQd00/A==";
@@ -30643,6 +33922,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minimalistic-crypto-utils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/minimalistic-crypto-utils/-/minimalistic-crypto-utils-1.0.1.tgz";
         sha1 = "f6c00c1c0b082246e5c4d99dfb8c7c083b2b582a";
@@ -30670,6 +33952,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minimatch"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/minimatch/-/minimatch-0.3.0.tgz";
         sha1 = "275d8edaac4f1bb3326472089e7949c8394699dd";
@@ -30697,6 +33982,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minimatch"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/minimatch/-/minimatch-2.0.10.tgz";
         sha1 = "8d087c39c6b38c001b97fca7ce6d0e1e80afbac7";
@@ -30724,6 +34012,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minimatch"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/minimatch/-/minimatch-3.0.4.tgz";
         sha512 = "yJHVQEhyqPLUTgt9B83PXu6W3rx4MvvHvSUvToogpwoGDOUQ+yDrR0HRot+yOCdCO7u4hX3pWft6kWBBcqh0UA==";
@@ -30751,6 +34042,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minimist"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/minimist/-/minimist-0.0.8.tgz";
         sha1 = "857fcabfc3397d2625b8228262e86aa7a011b05d";
@@ -30778,6 +34072,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minimist"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/minimist/-/minimist-1.2.0.tgz";
         sha1 = "a35008b20f41383eec1fb914f4cd5df79a264284";
@@ -30805,6 +34102,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minimist"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/minimist/-/minimist-1.2.5.tgz";
         sha512 = "FM9nNUYrRBAELZQT3xeZQ7fmMOBg6nWNmJKTcgsJeaLstP/UODVpGsr5OhXhhXg6f+qtJ8uiZ+PUxkDWcgIXLw==";
@@ -30832,6 +34132,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minimist-options"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/minimist-options/-/minimist-options-4.1.0.tgz";
         sha512 = "Q4r8ghd80yhO/0j1O3B2BjweX3fiHg9cdOwjJd2J76Q135c+NDxGCqdYKQ1SKBuFfgWbAUzBfvYjPUEeNgqN1A==";
@@ -30859,6 +34162,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minipass"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/minipass/-/minipass-3.1.3.tgz";
         sha512 = "Mgd2GdMVzY+x3IJ+oHnVM+KG3lA5c8tnabyJKmHSaG2kAGpudxuOf8ToDkhumF7UzME7DecbQE9uOZhNm7PuJg==";
@@ -30886,6 +34192,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minipass-collect"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/minipass-collect/-/minipass-collect-1.0.2.tgz";
         sha512 = "6T6lH0H8OG9kITm/Jm6tdooIbogG9e0tLgpY6mphXSm/A9u8Nq1ryBG+Qspiub9LjWlBPsPS3tWQ/Botq4FdxA==";
@@ -30913,6 +34222,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minipass-fetch"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/minipass-fetch/-/minipass-fetch-1.3.3.tgz";
         sha512 = "akCrLDWfbdAWkMLBxJEeWTdNsjML+dt5YgOI4gJ53vuO0vrmYQkUPxa6j6V65s9CcePIr2SSWqjT2EcrNseryQ==";
@@ -30940,6 +34252,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minipass-flush"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/minipass-flush/-/minipass-flush-1.0.5.tgz";
         sha512 = "JmQSYYpPUqX5Jyn1mXaRwOda1uQ8HP5KAT/oDSLCzt1BYRhQU0/hDtsB1ufZfEEzMZ9aAVmsBw8+FWsIXlClWw==";
@@ -30967,6 +34282,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minipass-json-stream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/minipass-json-stream/-/minipass-json-stream-1.0.1.tgz";
         sha512 = "ODqY18UZt/I8k+b7rl2AENgbWE8IDYam+undIJONvigAz8KR5GWblsFTEfQs0WODsjbSXWlm+JHEv8Gr6Tfdbg==";
@@ -30994,6 +34312,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minipass-pipeline"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/minipass-pipeline/-/minipass-pipeline-1.2.4.tgz";
         sha512 = "xuIq7cIOt09RPRJ19gdi4b+RiNvDFYe5JH+ggNvBqGqpQXcru3PcRmOZuHBKWK1Txf9+cQ+HMVN4d6z46LZP7A==";
@@ -31021,6 +34342,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minipass-sized"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/minipass-sized/-/minipass-sized-1.0.3.tgz";
         sha512 = "MbkQQ2CTiBMlA2Dm/5cY+9SWFEN8pzzOXi6rlM5Xxq0Yqbda5ZQy9sU75a673FE9ZK0Zsbr6Y5iP6u9nktfg2g==";
@@ -31048,6 +34372,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minizlib"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/minizlib/-/minizlib-2.1.2.tgz";
         sha512 = "bAxsR8BVfj60DWXHE3u30oHzfl4G7khkSuPW+qvpd7jFRHm7dLxOjUk1EHACJ/hxLY8phGJ0YhYHZo7jil7Qdg==";
@@ -31075,6 +34402,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mixin-deep"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/mixin-deep/-/mixin-deep-1.3.2.tgz";
         sha512 = "WRoDn//mXBiJ1H40rqa3vH0toePwSsGb45iInWlTySa+Uu4k3tYUSxa2v1KqAiLtvlrSzaExqS1gtk96A9zvEA==";
@@ -31102,6 +34432,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mkdirp"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/mkdirp/-/mkdirp-0.3.5.tgz";
         sha1 = "de3e5f8961c88c787ee1368df849ac4413eca8d7";
@@ -31129,6 +34462,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mkdirp"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/mkdirp/-/mkdirp-0.5.1.tgz";
         sha1 = "30057438eac6cf7f8c4767f38648d6697d75c903";
@@ -31156,6 +34492,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mkdirp"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/mkdirp/-/mkdirp-0.5.4.tgz";
         sha512 = "iG9AK/dJLtJ0XNgTuDbSyNS3zECqDlAhnQW4CsNxBG3LQJBbHmRX1egw39DmtOdCAqY+dKXV+sgPgilNWUKMVw==";
@@ -31183,6 +34522,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mkdirp"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/mkdirp/-/mkdirp-0.5.5.tgz";
         sha512 = "NKmAlESf6jMGym1++R0Ra7wvhV+wFW63FaSOFPwRahvea0gMUcGUhVeAg/0BC0wiv9ih5NYPB1Wn1UEI1/L+xQ==";
@@ -31210,6 +34552,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mkdirp"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/mkdirp/-/mkdirp-1.0.4.tgz";
         sha512 = "vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==";
@@ -31237,6 +34582,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mkdirp-classic"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/mkdirp-classic/-/mkdirp-classic-0.5.3.tgz";
         sha512 = "gKLcREMhtuZRwRAfqP3RFW+TK4JqApVBtOIftVgjuABpAtpxhPGaDcfvbhNvD0B8iD1oUr/txX35NjcaY6Ns/A==";
@@ -31264,6 +34612,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mocha"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/mocha/-/mocha-5.2.0.tgz";
         sha512 = "2IUgKDhc3J7Uug+FxMXuqIyYzH7gJjXECKe/w43IGgQHTSj3InJi+yAA7T24L9bQMRKiUEHxEX37G5JpVUGLcQ==";
@@ -31291,6 +34642,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mocha"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/mocha/-/mocha-6.2.3.tgz";
         sha512 = "0R/3FvjIGH3eEuG17ccFPk117XL2rWxatr81a57D+r/x2uTYZRbdZ4oVidEUMh2W2TJDa7MdAb12Lm2/qrKajg==";
@@ -31318,6 +34672,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mocha"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/mocha/-/mocha-8.4.0.tgz";
         sha512 = "hJaO0mwDXmZS4ghXsvPVriOhsxQ7ofcpQdm8dE+jISUOKopitvnXFQmpRR7jd2K6VBG6E26gU3IAbXXGIbu4sQ==";
@@ -31345,6 +34702,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "module-deps"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/module-deps/-/module-deps-6.2.3.tgz";
         sha512 = "fg7OZaQBcL4/L+AK5f4iVqf9OMbCclXfy/znXRxTVhJSeW5AIlS9AwheYwDaXM3lVW7OBeaeUEY3gbaC6cLlSA==";
@@ -31372,6 +34732,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "module-not-found-error"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/module-not-found-error/-/module-not-found-error-1.0.1.tgz";
         sha1 = "cf8b4ff4f29640674d6cdd02b0e3bc523c2bbdc0";
@@ -31399,6 +34762,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ms"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ms/-/ms-2.0.0.tgz";
         sha1 = "5608aeadfc00be6c2901df5f9861788de0d597c8";
@@ -31426,6 +34792,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ms"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ms/-/ms-2.1.1.tgz";
         sha512 = "tgp+dl5cGk28utYktBsrFqA7HKgrhgPsg6Z/EfhWI4gl1Hwq8B/GmY/0oXZ6nF8hDVesS/FpnYaD/kOWhYQvyg==";
@@ -31453,6 +34822,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ms"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ms/-/ms-2.1.2.tgz";
         sha512 = "sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==";
@@ -31480,6 +34852,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ms"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ms/-/ms-2.1.3.tgz";
         sha512 = "6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==";
@@ -31507,6 +34882,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "multiline"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/multiline/-/multiline-1.0.2.tgz";
         sha1 = "69b1f25ff074d2828904f244ddd06b7d96ef6c93";
@@ -31534,6 +34912,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mutate-fs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/mutate-fs/-/mutate-fs-2.1.1.tgz";
         sha512 = "WI5pPPUNiWqaK2XdK94AVpxIc8GmZEXYlLfFbWuc4gUtBGHTK92jdPqFdx/lilxgb5Ep7tQ15NqCcJEOeq6wdA==";
@@ -31561,6 +34942,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mute-stream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/mute-stream/-/mute-stream-0.0.5.tgz";
         sha1 = "8fbfabb0a98a253d3184331f9e8deb7372fac6c0";
@@ -31588,6 +34972,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mute-stream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/mute-stream/-/mute-stream-0.0.7.tgz";
         sha1 = "3075ce93bc21b8fab43e1bc4da7e8115ed1e7bab";
@@ -31615,6 +35002,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mute-stream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/mute-stream/-/mute-stream-0.0.8.tgz";
         sha512 = "nnbWWOkoWyUsTjKrhgD0dcz22mdkSnpYqbEjIm2nhwhuxlSkpywJmBo8h0ZqJdkp73mb90SssHkN4rsRaBAfAA==";
@@ -31642,6 +35032,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nanoid"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/nanoid/-/nanoid-3.1.20.tgz";
         sha512 = "a1cQNyczgKbLX9jwbS/+d7W8fX/RfgYR7lVWwWOGIPNgK2m0MWvrGF6/m4kk6U3QcFMnZf3RIhL0v2Jgh/0Uxw==";
@@ -31669,6 +35062,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nanomatch"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/nanomatch/-/nanomatch-1.2.13.tgz";
         sha512 = "fpoe2T0RbHwBTBUOftAfBPaDEi06ufaUai0mE6Yn1kacc3SnTErfb/h+X94VXzI64rKFHYImXSvdwGGCmwOqCA==";
@@ -31696,6 +35092,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "natural-compare"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/natural-compare/-/natural-compare-1.4.0.tgz";
         sha1 = "4abebfeed7541f2c27acfb29bdbbd15c8d5ba4f7";
@@ -31723,6 +35122,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "negotiator"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/negotiator/-/negotiator-0.6.2.tgz";
         sha512 = "hZXc7K2e+PgeI1eDBe/10Ard4ekbfrrqG8Ep+8Jmf4JID2bNg7NvCPOZN+kfF574pFQI7mum2AUqDidoKqcTOw==";
@@ -31750,6 +35152,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "neo-async"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/neo-async/-/neo-async-2.6.2.tgz";
         sha512 = "Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw==";
@@ -31777,6 +35182,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nested-error-stacks"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/nested-error-stacks/-/nested-error-stacks-2.1.0.tgz";
         sha512 = "AO81vsIO1k1sM4Zrd6Hu7regmJN1NSiAja10gc4bX3F0wd+9rQmcuHQaHVQCYIEC8iFXnE+mavh23GOt7wBgug==";
@@ -31804,6 +35212,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "next-tick"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/next-tick/-/next-tick-1.0.0.tgz";
         sha1 = "ca86d1fe8828169b0120208e3dc8424b9db8342c";
@@ -31831,6 +35242,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nice-try"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/nice-try/-/nice-try-1.0.5.tgz";
         sha512 = "1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==";
@@ -31858,6 +35272,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nock"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/nock/-/nock-13.1.1.tgz";
         sha512 = "YKTR9MjfK3kS9/l4nuTxyYm30cgOExRHzkLNhL8nhEUyU4f8Za/dRxOqjhVT1vGs0svWo3dDnJTUX1qxYeWy5w==";
@@ -31885,6 +35302,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "node-environment-flags"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/node-environment-flags/-/node-environment-flags-1.0.5.tgz";
         sha512 = "VNYPRfGfmZLx0Ye20jWzHUjyTW/c+6Wq+iLhDzUI4XmhrDd9l/FozXV3F2xOaXjvp0co0+v1YSR3CMP6g+VvLQ==";
@@ -31912,6 +35332,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "node-int64"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/node-int64/-/node-int64-0.4.0.tgz";
         sha1 = "87a9065cdb355d3182d8f94ce11188b825c68a3b";
@@ -31939,6 +35362,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "node-modules-regexp"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/node-modules-regexp/-/node-modules-regexp-1.0.0.tgz";
         sha1 = "8d9dbe28964a4ac5712e9131642107c71e90ec40";
@@ -31966,6 +35392,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "node-os-utils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/node-os-utils/-/node-os-utils-1.3.2.tgz";
         sha512 = "wUo/q6u77y9+DBaXkn57IDyJlQuN7xP6VU9h6yeIGhKocc9rDQPyc3WmLgX+x5jf4WmbLcEaA3raM05+v5jW3g==";
@@ -31993,6 +35422,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "node-preload"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/node-preload/-/node-preload-0.2.1.tgz";
         sha512 = "RM5oyBy45cLEoHqCeh+MNuFAxO0vTFBLskvQbOKnEE7YTTSN4tbN8QWDIPQ6L+WvKsB/qLEGpYe2ZZ9d4W9OIQ==";
@@ -32020,6 +35452,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "node-releases"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/node-releases/-/node-releases-1.1.73.tgz";
         sha512 = "uW7fodD6pyW2FZNZnp/Z3hvWKeEW1Y8R1+1CnErE8cXFXzl5blBOoVB41CvMer6P6Q0S5FXDwcHgFd1Wj0U9zg==";
@@ -32047,6 +35482,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "node-uuid"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/node-uuid/-/node-uuid-1.4.8.tgz";
         sha1 = "b040eb0923968afabf8d32fb1f17f1167fdab907";
@@ -32074,6 +35512,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "noop6"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/noop6/-/noop6-1.0.9.tgz";
         sha512 = "DB3Hwyd89dPr5HqEPg3YHjzvwh/mCqizC1zZ8vyofqc+TQRyPDnT4wgXXbLGF4z9YAzwwTLi8pNLhGqcbSjgkA==";
@@ -32101,6 +35542,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nopt"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/nopt/-/nopt-2.2.1.tgz";
         sha1 = "2aa09b7d1768487b3b89a9c5aa52335bff0baea7";
@@ -32128,6 +35572,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nopt"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/nopt/-/nopt-3.0.6.tgz";
         sha1 = "c6465dbf08abcd4db359317f79ac68a646b28ff9";
@@ -32155,6 +35602,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "normalize-package-data"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/normalize-package-data/-/normalize-package-data-2.5.0.tgz";
         sha512 = "/5CMN3T0R4XTj4DcGaexo+roZSdSFW/0AOOTROrjxzCG1wrWXEsGbRKevjlIL+ZDE4sZlJr5ED4YW0yqmkK+eA==";
@@ -32182,6 +35632,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "normalize-package-data"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/normalize-package-data/-/normalize-package-data-3.0.2.tgz";
         sha512 = "6CdZocmfGaKnIHPVFhJJZ3GuR8SsLKvDANFp47Jmy51aKIr8akjAWTSxtpI+MBgBFdSMRyo4hMpDlT6dTffgZg==";
@@ -32209,6 +35662,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "normalize-path"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/normalize-path/-/normalize-path-2.1.1.tgz";
         sha1 = "1ab28b556e198363a8c1a6f7e6fa20137fe6aed9";
@@ -32236,6 +35692,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "normalize-path"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/normalize-path/-/normalize-path-3.0.0.tgz";
         sha512 = "6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==";
@@ -32263,6 +35722,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "normalize-url"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/normalize-url/-/normalize-url-6.1.0.tgz";
         sha512 = "DlL+XwOy3NxAQ8xuC0okPgK46iuVNAK01YN7RueYBqqFeGsBjV9XmCAzAdgt+667bCl5kPh9EqKKDwnaPG1I7A==";
@@ -32290,6 +35752,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "npm-cli-dir"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/npm-cli-dir/-/npm-cli-dir-2.0.2.tgz";
         sha512 = "ibO7mB5Na7yv4fFTi39y3dKeK0D51ttyldqqOZKR9GU0Qwr0FFycQhXIliwqzNCVRkNi/iTG0D9WIVt7pP+vGQ==";
@@ -32317,6 +35782,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "npm-cli-path"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/npm-cli-path/-/npm-cli-path-2.0.5.tgz";
         sha512 = "Mdd8f1l0o7KUkL8Mty5XbaJVD6hQ/Kq10AFgyjhHg6d/0KHXc4p/O6hPWXSmoJ/RXyzPKIqDCXM1zq46i+Yfeg==";
@@ -32344,6 +35812,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "npm-package-arg"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/npm-package-arg/-/npm-package-arg-6.1.1.tgz";
         sha512 = "qBpssaL3IOZWi5vEKUKW0cO7kzLeT+EQO9W8RsLOZf76KF9E/K9+wH0C7t06HXPpaH8WH5xF1MExLuCwbTqRUg==";
@@ -32371,6 +35842,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "npm-package-arg"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/npm-package-arg/-/npm-package-arg-8.1.5.tgz";
         sha512 = "LhgZrg0n0VgvzVdSm1oiZworPbTxYHUJCgtsJW8mGvlDpxTM1vSJc3m5QZeUkhAHIzbz3VCHd/R4osi1L1Tg/Q==";
@@ -32398,6 +35872,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "npm-registry-client"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/npm-registry-client/-/npm-registry-client-8.6.0.tgz";
         sha512 = "Qs6P6nnopig+Y8gbzpeN/dkt+n7IyVd8f45NTMotGk6Qo7GfBmzwYx6jRLoOOgKiMnaQfYxsuyQlD8Mc3guBhg==";
@@ -32425,6 +35902,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "npm-run-path"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/npm-run-path/-/npm-run-path-2.0.2.tgz";
         sha1 = "35a9232dfa35d7067b4cb2ddf2357b1871536c5f";
@@ -32452,6 +35932,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "npm-run-path"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/npm-run-path/-/npm-run-path-4.0.1.tgz";
         sha512 = "S48WzZW777zhNIrn7gxOlISNAqi9ZC/uQFnRdbeIHhZhCA6UqpkOT8T1G7BvfdgP4Er8gF4sUbaS0i7QvIfCWw==";
@@ -32479,6 +35962,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "npmlog"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/npmlog/-/npmlog-4.1.2.tgz";
         sha512 = "2uUqazuKlTaSI/dC8AzicUck7+IrEaOnN/e0jd3Xtt1KcGpwx30v50mL7oPyr/h9bL3E4aZccVwpwP+5W9Vjkg==";
@@ -32506,6 +35992,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "number-is-nan"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/number-is-nan/-/number-is-nan-1.0.1.tgz";
         sha1 = "097b602b53422a522c1afb8790318336941a011d";
@@ -32533,6 +36022,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nwsapi"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/nwsapi/-/nwsapi-2.2.0.tgz";
         sha512 = "h2AatdwYH+JHiZpv7pt/gSX1XoRGb7L/qSIeuqA6GwYoF9w1vP1cw42TO0aI2pNyshRK5893hNSl+1//vHK7hQ==";
@@ -32560,6 +36052,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nyc"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/nyc/-/nyc-14.1.1.tgz";
         sha512 = "OI0vm6ZGUnoGZv/tLdZ2esSVzDwUC88SNs+6JoSOMVxA+gKMB8Tk7jBwgemLx4O40lhhvZCVw1C+OYLOBOPXWw==";
@@ -32587,6 +36082,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nyc"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/nyc/-/nyc-15.1.0.tgz";
         sha512 = "jMW04n9SxKdKi1ZMGhvUTHBN0EICCRkHemEoE5jm6mTYcqcdas0ATzgUgejlQUHMvpnOZqGB5Xxsv9KxJW1j8A==";
@@ -32614,6 +36112,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nyc"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/nyc/-/nyc-3.2.2.tgz";
         sha1 = "a21223ffcd86bf3d2d2ae9e14b8a08aeade046ee";
@@ -32641,6 +36142,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "nyc"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/nyc/-/nyc-6.6.1.tgz";
         sha1 = "2f6014610a57070021c4c067e9b9e330a23ac6a7";
@@ -32668,6 +36172,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "oauth-sign"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/oauth-sign/-/oauth-sign-0.8.2.tgz";
         sha1 = "46a6ab7f0aead8deae9ec0565780b7d4efeb9d43";
@@ -32695,6 +36202,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "oauth-sign"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/oauth-sign/-/oauth-sign-0.9.0.tgz";
         sha512 = "fexhUFFPTGV8ybAtSIGbV6gOkSv8UtRbDBnAyLQw4QPKkgNlsH2ByPGtMUqdWkos6YCRmAqViwgZrJc/mRDzZQ==";
@@ -32722,6 +36232,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "obj-props"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/obj-props/-/obj-props-1.3.0.tgz";
         sha512 = "k2Xkjx5wn6eC3537SWAXHzB6lkI81kS+icMKMkh4nG3w7shWG6MaWOBrNvhWVOszrtL5uxdfymQQfPUxwY+2eg==";
@@ -32749,6 +36262,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object-assign"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/object-assign/-/object-assign-4.1.1.tgz";
         sha1 = "2109adc7965887cfc05cbbd442cac8bfbb360863";
@@ -32776,6 +36292,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object-copy"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/object-copy/-/object-copy-0.1.0.tgz";
         sha1 = "7e7d858b781bd7c991a41ba975ed3812754e998c";
@@ -32803,6 +36322,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object-inspect"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/object-inspect/-/object-inspect-1.10.3.tgz";
         sha512 = "e5mCJlSH7poANfC8z8S9s9S2IN5/4Zb3aZ33f5s8YqoazCFzNLloLU8r5VCG+G7WoqLvAAZoVMcy3tp/3X0Plw==";
@@ -32830,6 +36352,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object-inspect"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/object-inspect/-/object-inspect-1.7.0.tgz";
         sha512 = "a7pEHdh1xKIAgTySUGgLMx/xwDZskN1Ud6egYYN3EdRW4ZMPNEDUTF+hwy2LUC+Bl+SyLXANnwz/jyh/qutKUw==";
@@ -32857,6 +36382,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object-is"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/object-is/-/object-is-1.1.5.tgz";
         sha512 = "3cyDsyHgtmi7I7DfSSI2LDp6SK2lwvtbg0p0R1e0RvTqF5ceGx+K2dfSjm1bKDMVCFEDAQvy+o8c6a7VujOddw==";
@@ -32884,6 +36412,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object-keys"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/object-keys/-/object-keys-1.1.1.tgz";
         sha512 = "NuAESUOUMrlIXOfHKzD6bpPu3tYt3xvjNdRIQ+FeT0lNb4K8WR70CaDxhuNguS2XG+GjkyMwOzsN5ZktImfhLA==";
@@ -32911,6 +36442,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object-visit"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/object-visit/-/object-visit-1.0.1.tgz";
         sha1 = "f79c4493af0c5377b59fe39d395e41042dd045bb";
@@ -32938,6 +36472,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object.assign"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/object.assign/-/object.assign-4.1.0.tgz";
         sha512 = "exHJeq6kBKj58mqGyTQ9DFvrZC/eR6OwxzoM9YRoGBqrXYonaFyGiFMuc9VZrXf7DarreEwMpurG3dd+CNyW5w==";
@@ -32965,6 +36502,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object.assign"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/object.assign/-/object.assign-4.1.2.tgz";
         sha512 = "ixT2L5THXsApyiUPYKmW+2EHpXXe5Ii3M+f4e+aJFAHao5amFRW6J0OO6c/LU8Be47utCx2GL89hxGB6XSmKuQ==";
@@ -32992,6 +36532,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object.entries"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/object.entries/-/object.entries-1.1.4.tgz";
         sha512 = "h4LWKWE+wKQGhtMjZEBud7uLGhqyLwj8fpHOarZhD2uY3C9cRtk57VQ89ke3moByLXMedqs3XCHzyb4AmA2DjA==";
@@ -33019,6 +36562,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object.fromentries"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/object.fromentries/-/object.fromentries-2.0.4.tgz";
         sha512 = "EsFBshs5RUUpQEY1D4q/m59kMfz4YJvxuNCJcv/jWwOJr34EaVnG11ZrZa0UHB3wnzV1wx8m58T4hQL8IuNXlQ==";
@@ -33046,6 +36592,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object.getownpropertydescriptors"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/object.getownpropertydescriptors/-/object.getownpropertydescriptors-2.1.2.tgz";
         sha512 = "WtxeKSzfBjlzL+F9b7M7hewDzMwy+C8NRssHd1YrNlzHzIDrXcXiNOMrezdAEM4UXixgV+vvnyBeN7Rygl2ttQ==";
@@ -33073,6 +36622,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object.getprototypeof"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/object.getprototypeof/-/object.getprototypeof-1.0.1.tgz";
         sha512 = "orf7CoEkZKn1HYzA5KIt6G3Z2G4LKi1CiIK73c2PA2OK7ZASYp+rlIymYSs09qyrMm2o14U00z3VeD7MSsdvNw==";
@@ -33100,6 +36652,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object.pick"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/object.pick/-/object.pick-1.3.0.tgz";
         sha1 = "87a10ac4c1694bd2e1cbf53591a66141fb5dd747";
@@ -33127,6 +36682,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object.values"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/object.values/-/object.values-1.1.4.tgz";
         sha512 = "TnGo7j4XSnKQoK3MfvkzqKCi0nVe/D9I9IjwTNYdb/fxYHpjrluHVOgw0AF6jrRFGMPHdfuidR09tIDiIvnaSg==";
@@ -33154,6 +36712,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "once"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/once/-/once-1.3.3.tgz";
         sha1 = "b2e261557ce4c314ec8304f3fa82663e4297ca20";
@@ -33181,6 +36742,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "once"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/once/-/once-1.4.0.tgz";
         sha1 = "583b1aa775961d4b113ac17d9c50baef9dd76bd1";
@@ -33208,6 +36772,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "onetime"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/onetime/-/onetime-1.1.0.tgz";
         sha1 = "a1f7838f8314c516f05ecefcbc4ccfe04b4ed789";
@@ -33235,6 +36802,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "onetime"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/onetime/-/onetime-2.0.1.tgz";
         sha1 = "067428230fd67443b2794b22bba528b6867962d4";
@@ -33262,6 +36832,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "onetime"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/onetime/-/onetime-5.1.2.tgz";
         sha512 = "kbpaSSGJTWdAY5KPVeMOKXSrPtr8C8C7wodJbcsd51jRnmD+GZu8Y0VoU6Dm5Z4vWr0Ig/1NKuWRKf7j5aaYSg==";
@@ -33289,6 +36862,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "only-shallow"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/only-shallow/-/only-shallow-1.2.0.tgz";
         sha1 = "71cecedba9324bc0518aef10ec080d3249dc2465";
@@ -33316,6 +36892,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "opener"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/opener/-/opener-1.5.2.tgz";
         sha512 = "ur5UIdyw5Y7yEj9wLzhqXiy6GZ3Mwx0yGI+5sMn2r0N0v3cKJvUmFH5yPP+WXh9e0xfyzyJX95D8l088DNFj7A==";
@@ -33343,6 +36922,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "optional"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/optional/-/optional-0.1.4.tgz";
         sha512 = "gtvrrCfkE08wKcgXaVwQVgwEQ8vel2dc5DDBn9RLQZ3YtmtkBss6A2HY6BnJH4N/4Ku97Ri/SF8sNWE2225WJw==";
@@ -33370,6 +36952,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "optionator"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/optionator/-/optionator-0.5.0.tgz";
         sha1 = "b75a8995a2d417df25b6e4e3862f50aa88651368";
@@ -33397,6 +36982,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "optionator"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/optionator/-/optionator-0.8.3.tgz";
         sha512 = "+IW9pACdk3XWmmTXG8m3upGUJst5XRGzxMRjXzAuJ1XnIFNvfhjjIuYkDvysnPQ7qzqVzLt78BCruntqRhWQbA==";
@@ -33424,6 +37012,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "optionator"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/optionator/-/optionator-0.9.1.tgz";
         sha512 = "74RlY5FCnhq4jRxVUPKDaRwrVNXMqsGsiW6AJw4XK8hmtm10wC0ypZBLw5IIp85NZMr91+qd1RvvENwg7jjRFw==";
@@ -33451,6 +37042,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "optparse"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/optparse/-/optparse-1.0.5.tgz";
         sha1 = "75e75a96506611eb1c65ba89018ff08a981e2c16";
@@ -33478,6 +37072,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "os-browserify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/os-browserify/-/os-browserify-0.3.0.tgz";
         sha1 = "854373c7f5c2315914fc9bfc6bd8238fdda1ec27";
@@ -33505,6 +37102,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "os-homedir"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/os-homedir/-/os-homedir-1.0.2.tgz";
         sha1 = "ffbc4988336e0e833de0c168c7ef152121aa7fb3";
@@ -33532,6 +37132,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "os-locale"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/os-locale/-/os-locale-1.4.0.tgz";
         sha1 = "20f9f17ae29ed345e8bde583b13d2009803c14d9";
@@ -33559,6 +37162,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "os-tmpdir"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/os-tmpdir/-/os-tmpdir-1.0.2.tgz";
         sha1 = "bbe67406c79aa85c5cfec766fe5734555dfa1274";
@@ -33586,6 +37192,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "osenv"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/osenv/-/osenv-0.1.5.tgz";
         sha512 = "0CWcCECdMVc2Rw3U5w9ZjqX6ga6ubk1xDVKxtBQPK7wis/0F2r9T6k4ydGYhecl7YUBxBVxhL5oisPsNxAPe2g==";
@@ -33613,6 +37222,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "own-or"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/own-or/-/own-or-1.0.0.tgz";
         sha1 = "4e877fbeda9a2ec8000fbc0bcae39645ee8bf8dc";
@@ -33640,6 +37252,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "own-or-env"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/own-or-env/-/own-or-env-1.0.1.tgz";
         sha512 = "y8qULRbRAlL6x2+M0vIe7jJbJx/kmUTzYonRAa2ayesR2qWLswninkVyeJe4x3IEXhdgoNodzjQRKAoEs6Fmrw==";
@@ -33667,6 +37282,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-each-series"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/p-each-series/-/p-each-series-2.2.0.tgz";
         sha512 = "ycIL2+1V32th+8scbpTvyHNaHe02z0sjgh91XXjAk+ZeXoPN4Z46DVUnzdso0aX4KckKw0FNNFHdjZ2UsZvxiA==";
@@ -33694,6 +37312,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-finally"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/p-finally/-/p-finally-1.0.0.tgz";
         sha1 = "3fbcfb15b899a44123b34b6dcc18b724336a2cae";
@@ -33721,6 +37342,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-limit"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/p-limit/-/p-limit-1.3.0.tgz";
         sha512 = "vvcXsLAJ9Dr5rQOPk7toZQZJApBl2K4J6dANSsEuh6QI41JYcsS/qhTGa9ErIUUgK3WNQoJYvylxvjqmiqEA9Q==";
@@ -33748,6 +37372,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-limit"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/p-limit/-/p-limit-2.3.0.tgz";
         sha512 = "//88mFWSJx8lxCzwdAABTJL2MyWB12+eIY7MDL2SqLmAkeKU9qxRvWuSyTjm3FUmpBEMuFfckAIqEaVGUDxb6w==";
@@ -33775,6 +37402,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-limit"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/p-limit/-/p-limit-3.1.0.tgz";
         sha512 = "TYOanM3wGwNGsZN2cVTYPArw454xnXj5qmWF1bEoAc4+cU/ol7GVh7odevjp1FNHduHc3KZMcFduxU5Xc6uJRQ==";
@@ -33802,6 +37432,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-locate"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/p-locate/-/p-locate-2.0.0.tgz";
         sha1 = "20a0103b222a70c8fd39cc2e580680f3dde5ec43";
@@ -33829,6 +37462,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-locate"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/p-locate/-/p-locate-3.0.0.tgz";
         sha512 = "x+12w/To+4GFfgJhBEpiDcLozRJGegY+Ei7/z0tSLkMmxGZNybVMSfWj9aJn8Z5Fc7dBUNJOOVgPv2H7IwulSQ==";
@@ -33856,6 +37492,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-locate"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/p-locate/-/p-locate-4.1.0.tgz";
         sha512 = "R79ZZ/0wAxKGu3oYMlz8jy/kbhsNrS7SKZ7PxEHBgJ5+F2mtFW2fK2cOtBh1cHYkQsbzFV7I+EoRKe6Yt0oK7A==";
@@ -33883,6 +37522,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-locate"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/p-locate/-/p-locate-5.0.0.tgz";
         sha512 = "LaNjtRWUBY++zB5nE/NwcaoMylSPk+S+ZHNB1TzdbMJMny6dynpAGt7X/tl/QYq3TIeE6nxHppbo2LGymrG5Pw==";
@@ -33910,6 +37552,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-map"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/p-map/-/p-map-3.0.0.tgz";
         sha512 = "d3qXVTF/s+W+CdJ5A29wywV2n8CQQYahlgz2bFiA+4eVNJbHJodPZ+/gXwPGh0bOqA+j8S+6+ckmvLGPk1QpxQ==";
@@ -33937,6 +37582,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-map"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/p-map/-/p-map-4.0.0.tgz";
         sha512 = "/bjOqmgETBYB5BoEeGVea8dmvHb2m9GLy1E9W43yeyfP6QQCZGFNa+XRceJEuDB6zqr+gKpIAmlLebMpykw/MQ==";
@@ -33964,6 +37612,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-try"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/p-try/-/p-try-1.0.0.tgz";
         sha1 = "cbc79cdbaf8fd4228e13f621f2b1a237c1b207b3";
@@ -33991,6 +37642,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "p-try"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/p-try/-/p-try-2.2.0.tgz";
         sha512 = "R4nPAVTAU0B9D35/Gk3uJf/7XYbQcyohSKdvAxIRSNghFl4e71hVoGnBNQz9cWaXxO2I10KTC+3jMdvvoKw6dQ==";
@@ -34018,6 +37672,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "package-hash"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/package-hash/-/package-hash-3.0.0.tgz";
         sha512 = "lOtmukMDVvtkL84rJHI7dpTYq+0rli8N2wlnqUcBuDWCfVhRUfOmnR9SsoHFMLpACvEV60dX7rd0rFaYDZI+FA==";
@@ -34045,6 +37702,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "package-hash"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/package-hash/-/package-hash-4.0.0.tgz";
         sha512 = "whdkPIooSu/bASggZ96BWVvZTRMOFxnyUG5PnTSGKoJE2gd5mbVNmR2Nj20QFzxYYgAXpoqC+AiXzl+UMRh7zQ==";
@@ -34072,6 +37732,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pako"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pako/-/pako-1.0.11.tgz";
         sha512 = "4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==";
@@ -34099,6 +37762,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "parent-module"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/parent-module/-/parent-module-1.0.1.tgz";
         sha512 = "GQ2EWRpQV8/o+Aw8YqtfZZPfNRWZYkbidE9k5rpl/hC3vtHHBfGm2Ifi6qWV+coDGkrUKZAxE3Lot5kcsRlh+g==";
@@ -34126,6 +37792,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "parents"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/parents/-/parents-1.0.1.tgz";
         sha1 = "fedd4d2bf193a77745fe71e371d73c3307d9c751";
@@ -34153,6 +37822,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "parse-asn1"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/parse-asn1/-/parse-asn1-5.1.6.tgz";
         sha512 = "RnZRo1EPU6JBnra2vGHj0yhp6ebyjBZpmUCLHWiFhxlzvBCCpAuZ7elsBp1PVAbQN0/04VD/19rfzlBSwLstMw==";
@@ -34180,6 +37852,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "parse-json"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/parse-json/-/parse-json-2.2.0.tgz";
         sha1 = "f480f40434ef80741f8469099f8dea18f55a4dc9";
@@ -34207,6 +37882,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "parse-json"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/parse-json/-/parse-json-4.0.0.tgz";
         sha1 = "be35f5425be1f7f6c747184f98a788cb99477ee0";
@@ -34234,6 +37912,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "parse-json"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/parse-json/-/parse-json-5.2.0.tgz";
         sha512 = "ayCKvm/phCGxOkYRSCM82iDwct8/EonSEgCSxWxD7ve6jHggsFl4fZVQBPRNgQoKiuV/odhFrGzQXZwbifC8Rg==";
@@ -34261,6 +37942,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "parse-path"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/parse-path/-/parse-path-4.0.3.tgz";
         sha512 = "9Cepbp2asKnWTJ9x2kpw6Fe8y9JDbqwahGCTvklzd/cEq5C5JC59x2Xb0Kx+x0QZ8bvNquGO8/BWP0cwBHzSAA==";
@@ -34288,6 +37972,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "parse-url"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/parse-url/-/parse-url-6.0.0.tgz";
         sha512 = "cYyojeX7yIIwuJzledIHeLUBVJ6COVLeT4eF+2P6aKVzwvgKQPndCBv3+yQ7pcWjqToYwaligxzSYNNmGoMAvw==";
@@ -34315,6 +38002,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "parse5"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/parse5/-/parse5-6.0.1.tgz";
         sha512 = "Ofn/CTFzRGTTxwpNEs9PP93gXShHcTq255nzRYSKe8AkVpZY7e1fpmTfOyoIvjP5HG7Z2ZM7VS9PPhQGW2pOpw==";
@@ -34342,6 +38032,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "parsimmon"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/parsimmon/-/parsimmon-1.18.0.tgz";
         sha512 = "EtVsGuQfDgwGgXzsSDe+5egRPwbcgKRd/omQ1L3Oj2pHy0gYqd+Q7zrBIQ7P/BN6DWUP9vV45HIgZHCmssdzMg==";
@@ -34369,6 +38062,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pascalcase"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pascalcase/-/pascalcase-0.1.1.tgz";
         sha1 = "b363e55e8006ca6fe21784d2db22bd15d7917f14";
@@ -34396,6 +38092,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-browserify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/path-browserify/-/path-browserify-0.0.1.tgz";
         sha512 = "BapA40NHICOS+USX9SN4tyhq+A2RrN/Ws5F0Z5aMHDp98Fl86lX8Oti8B7uN93L4Ifv4fHOEA+pQw87gmMO/lQ==";
@@ -34423,6 +38122,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-exists"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/path-exists/-/path-exists-3.0.0.tgz";
         sha1 = "ce0ebeaa5f78cb18925ea7d810d7b59b010fd515";
@@ -34450,6 +38152,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-exists"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/path-exists/-/path-exists-4.0.0.tgz";
         sha512 = "ak9Qy5Q7jYb2Wwcey5Fpvg2KoAc/ZIhLSLOSBmRmygPsGwkVVt0fZa0qrtMz+m6tJTAHfZQ8FnmB4MG4LWy7/w==";
@@ -34477,6 +38182,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-is-absolute"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/path-is-absolute/-/path-is-absolute-1.0.1.tgz";
         sha1 = "174b9268735534ffbc7ace6bf53a5a9e1b5c5f5f";
@@ -34504,6 +38212,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-is-inside"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/path-is-inside/-/path-is-inside-1.0.2.tgz";
         sha1 = "365417dede44430d1c11af61027facf074bdfc53";
@@ -34531,6 +38242,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-key"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/path-key/-/path-key-2.0.1.tgz";
         sha1 = "411cadb574c5a140d3a4b1910d40d80cc9f40b40";
@@ -34558,6 +38272,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-key"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/path-key/-/path-key-3.1.1.tgz";
         sha512 = "ojmeN0qd+y0jszEtoY48r0Peq5dwMEkIlCOu6Q5f41lfkswXuKtYrhgoTpLnyIcHm24Uhqx+5Tqm2InSwLhE6Q==";
@@ -34585,6 +38302,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-parse"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/path-parse/-/path-parse-1.0.7.tgz";
         sha512 = "LDJzPVEEEPR+y48z93A0Ed0yXb8pAByGWo/k5YYdYgpY2/2EsOsksJrq7lOHxryrVOn1ejG6oAp8ahvOIQD8sw==";
@@ -34612,6 +38332,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-platform"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/path-platform/-/path-platform-0.11.15.tgz";
         sha1 = "e864217f74c36850f0852b78dc7bf7d4a5721bf2";
@@ -34639,6 +38362,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-type"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/path-type/-/path-type-2.0.0.tgz";
         sha1 = "f012ccb8415b7096fc2daa1054c3d72389594c73";
@@ -34666,6 +38392,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-type"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/path-type/-/path-type-3.0.0.tgz";
         sha512 = "T2ZUsdZFHgA3u4e5PfPbjd7HDDpxPnQb5jN0SrDsjNSuVXHJqtwTnWqG0B1jZrgmJ/7lj1EmVIByWt1gxGkWvg==";
@@ -34693,6 +38422,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "path-type"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/path-type/-/path-type-4.0.0.tgz";
         sha512 = "gDKb8aZMDeD/tZWs9P6+q0J9Mwkdl6xMV8TjnGP3qJVJ06bdMgkbBlLU8IdfOsIsFz2BW1rNVT3XuNEl8zPAvw==";
@@ -34720,6 +38452,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pathval"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pathval/-/pathval-1.1.1.tgz";
         sha512 = "Dp6zGqpTdETdR63lehJYPeIOqpiNBNtc7BpWSLrOje7UaIsE5aY92r/AunQA7rsXvet3lrJ3JnZX29UPTKXyKQ==";
@@ -34747,6 +38482,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pbkdf2"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pbkdf2/-/pbkdf2-3.1.2.tgz";
         sha512 = "iuh7L6jA7JEGu2WxDwtQP1ddOpaJNC4KlDEFfdQajSGgGPNi4OyDc2R7QnbY2bR9QjBVGwgvTdNJZoE7RaxUMA==";
@@ -34774,6 +38512,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "perf-regexes"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/perf-regexes/-/perf-regexes-1.0.1.tgz";
         sha512 = "L7MXxUDtqr4PUaLFCDCXBfGV/6KLIuSEccizDI7JxT+c9x1G1v04BQ4+4oag84SHaCdrBgQAIs/Cqn+flwFPng==";
@@ -34801,6 +38542,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "performance-now"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/performance-now/-/performance-now-2.1.0.tgz";
         sha1 = "6309f4e0e5fa913ec1c69307ae364b4b377c9e7b";
@@ -34828,6 +38572,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "picomatch"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/picomatch/-/picomatch-2.3.0.tgz";
         sha512 = "lY1Q/PiJGC2zOv/z391WOTD+Z02bCgsFfvxoXXf6h7kv9o+WmsmzYqrAwY63sNgOxE4xEdq0WyUnXfKeBrSvYw==";
@@ -34855,6 +38602,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pify/-/pify-2.3.0.tgz";
         sha1 = "ed141a6ac043a849ea588498e7dca8b15330e90c";
@@ -34882,6 +38632,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pify/-/pify-3.0.0.tgz";
         sha1 = "e5a4acd2c101fdf3d9a4d07f0dbc4db49dd28176";
@@ -34909,6 +38662,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pify/-/pify-4.0.1.tgz";
         sha512 = "uB80kBFb/tfd68bVleG9T5GGsGPjJrLAUpR5PZIrhBnIaRTQRjqdJSsIKkOP6OAIFbj7GOrcudc5pNjZ+geV2g==";
@@ -34936,6 +38692,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pinkie"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pinkie/-/pinkie-2.0.4.tgz";
         sha1 = "72556b80cfa0d48a974e80e77248e80ed4f7f870";
@@ -34963,6 +38722,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pinkie-promise"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pinkie-promise/-/pinkie-promise-2.0.1.tgz";
         sha1 = "2135d6dfa7a358c069ac9b178776288228450ffa";
@@ -34990,6 +38752,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pirates"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pirates/-/pirates-3.0.2.tgz";
         sha512 = "c5CgUJq6H2k6MJz72Ak1F5sN9n9wlSlJyEnwvpm9/y3WB4E3pHBDT2c6PEiS1vyJvq2bUxUAIu0EGf8Cx4Ic7Q==";
@@ -35017,6 +38782,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pirates"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pirates/-/pirates-4.0.1.tgz";
         sha512 = "WuNqLTbMI3tmfef2TKxlQmAiLHKtFhlsCZnPIpuv2Ow0RDVO8lfy1Opf4NUzlMXLjPl+Men7AuVdX6TA+s+uGA==";
@@ -35044,6 +38812,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pkg-conf"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pkg-conf/-/pkg-conf-3.1.0.tgz";
         sha512 = "m0OTbR/5VPNPqO1ph6Fqbj7Hv6QU7gR/tQW40ZqrL1rjgCU85W6C1bJn0BItuJqnR98PWzw7Z8hHeChD1WrgdQ==";
@@ -35071,6 +38842,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pkg-config"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pkg-config/-/pkg-config-1.1.1.tgz";
         sha1 = "557ef22d73da3c8837107766c52eadabde298fe4";
@@ -35098,6 +38872,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pkg-dir"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pkg-dir/-/pkg-dir-2.0.0.tgz";
         sha1 = "f6d5d1109e19d63edf428e0bd57e12777615334b";
@@ -35125,6 +38902,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pkg-dir"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pkg-dir/-/pkg-dir-3.0.0.tgz";
         sha512 = "/E57AYkoeQ25qkxMj5PBOVgF8Kiu/h7cYS30Z5+R7WaiCCBfLq58ZI/dSeaEKb9WVJV5n/03QwrN3IeWIFllvw==";
@@ -35152,6 +38932,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pkg-dir"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pkg-dir/-/pkg-dir-4.2.0.tgz";
         sha512 = "HRDzbaKjC+AOWVXxAU/x54COGeIv9eb+6CkDSQoNTt4XyWoIJvuPsXizxu/Fr23EiekbtZwmh1IcIG/l/a10GQ==";
@@ -35179,6 +38962,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pkg-up"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pkg-up/-/pkg-up-2.0.0.tgz";
         sha1 = "c819ac728059a461cab1c3889a2be3c49a004d7f";
@@ -35206,6 +38992,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "platform"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/platform/-/platform-1.3.6.tgz";
         sha512 = "fnWVljUchTro6RiCFvCXBbNhJc2NijN7oIQxbwsyL0buWJPG85v81ehlHI9fXrJsMNgTofEoWIQeClKpgxFLrg==";
@@ -35233,6 +39022,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "plur"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/plur/-/plur-4.0.0.tgz";
         sha512 = "4UGewrYgqDFw9vV6zNV+ADmPAUAfJPKtGvb/VdpQAx25X5f3xXdGdyOEVFwkl8Hl/tl7+xbeHqSEM+D5/TirUg==";
@@ -35260,6 +39052,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pluralize"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pluralize/-/pluralize-1.2.1.tgz";
         sha1 = "d1a21483fd22bb41e58a12fa3421823140897c45";
@@ -35287,6 +39082,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "posix-character-classes"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/posix-character-classes/-/posix-character-classes-0.1.1.tgz";
         sha1 = "01eac0fe3b5af71a2a6c02feabb8c1fef7e00eab";
@@ -35314,6 +39112,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "prelude-ls"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/prelude-ls/-/prelude-ls-1.1.2.tgz";
         sha1 = "21932a549f5e52ffd9a827f570e04be62a97da54";
@@ -35341,6 +39142,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "prelude-ls"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/prelude-ls/-/prelude-ls-1.2.1.tgz";
         sha512 = "vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==";
@@ -35368,6 +39172,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "prettier"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/prettier/-/prettier-2.3.2.tgz";
         sha512 = "lnJzDfJ66zkMy58OL5/NY5zp70S7Nz6KqcKkXYzn2tMVrNxvbqaBpg7H3qHaLxCJ5lNMsGuM8+ohS7cZrthdLQ==";
@@ -35395,6 +39202,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pretty-format"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pretty-format/-/pretty-format-22.4.3.tgz";
         sha512 = "S4oT9/sT6MN7/3COoOy+ZJeA92VmOnveLHgrwBE3Z1W5N9S2A1QGNYiE1z75DAENbJrXXUb+OWXhpJcg05QKQQ==";
@@ -35422,6 +39232,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pretty-format"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pretty-format/-/pretty-format-24.9.0.tgz";
         sha512 = "00ZMZUiHaJrNfk33guavqgvfJS30sLYf0f8+Srklv0AMPodGGHcoHgksZ3OThYnIvOd+8yMCn0YiEOogjlgsnA==";
@@ -35449,6 +39262,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pretty-format"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pretty-format/-/pretty-format-26.6.2.tgz";
         sha512 = "7AeGuCYNGmycyQbCqd/3PWH4eOoX/OiCa0uphp57NVTeAGdJGaAliecxwBDHYQCIvrW7aDBZCYeNTP/WX69mkg==";
@@ -35476,6 +39292,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pretty-format"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pretty-format/-/pretty-format-27.0.6.tgz";
         sha512 = "8tGD7gBIENgzqA+UBzObyWqQ5B778VIFZA/S66cclyd5YkFLYs2Js7gxDKf0MXtTc9zcS7t1xhdfcElJ3YIvkQ==";
@@ -35503,6 +39322,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "process"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/process/-/process-0.11.10.tgz";
         sha1 = "7332300e840161bda3e69a1d1d91a7d4bc16f182";
@@ -35530,6 +39352,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "process-nextick-args"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/process-nextick-args/-/process-nextick-args-2.0.1.tgz";
         sha512 = "3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==";
@@ -35557,6 +39382,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "process-on-spawn"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/process-on-spawn/-/process-on-spawn-1.0.0.tgz";
         sha512 = "1WsPDsUSMmZH5LeMLegqkPDrsGgsWwk1Exipy2hvB0o/F0ASzbpIctSCcZIK1ykJvtTJULEH+20WOFjMvGnCTg==";
@@ -35584,6 +39412,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "progress"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/progress/-/progress-1.1.8.tgz";
         sha1 = "e260c78f6161cdd9b0e56cc3e0a85de17c7a57be";
@@ -35611,6 +39442,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "progress"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/progress/-/progress-2.0.3.tgz";
         sha512 = "7PiHtLll5LdnKIMw100I+8xJXR5gW2QwWYkT6iJva0bXitZKa/XMrSbdmg3r2Xnaidz9Qumd0VPaMrZlF9V9sA==";
@@ -35638,6 +39472,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "promise-inflight"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/promise-inflight/-/promise-inflight-1.0.1.tgz";
         sha1 = "98472870bf228132fcbdd868129bad12c3c029e3";
@@ -35665,6 +39502,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "promise-retry"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/promise-retry/-/promise-retry-2.0.1.tgz";
         sha512 = "y+WKFlBR8BGXnsNlIHFGPZmyDf3DFMoLhaflAnyZgV6rG6xu+JwesTo2Q9R6XwYmtmwAFCkAk3e35jEdoeh/3g==";
@@ -35692,6 +39532,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "prompts"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/prompts/-/prompts-2.4.1.tgz";
         sha512 = "EQyfIuO2hPDsX1L/blblV+H7I0knhgAd82cVneCwcdND9B8AuCDuRcBH6yIcG4dFzlOUqbazQqwGjx5xmsNLuQ==";
@@ -35719,6 +39562,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "prop-types"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/prop-types/-/prop-types-15.7.2.tgz";
         sha512 = "8QQikdH7//R2vurIJSutZ1smHYTcLpRWEOlHnzcWHmBYrOGUysKwSsrC89BCiFj3CbrfJ/nXFdJepOVrY1GCHQ==";
@@ -35746,6 +39592,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "propagate"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/propagate/-/propagate-2.0.1.tgz";
         sha512 = "vGrhOavPSTz4QVNuBNdcNXePNdNMaO1xj9yBeH1ScQPjk/rhg9sSlCXPhMkFuaNNW/syTvYqsnbIJxMBfRbbag==";
@@ -35773,6 +39622,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "proto-list"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/proto-list/-/proto-list-1.2.4.tgz";
         sha1 = "212d5bfe1318306a420f6402b8e26ff39647a849";
@@ -35800,6 +39652,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "proto-props"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/proto-props/-/proto-props-2.0.0.tgz";
         sha512 = "2yma2tog9VaRZY2mn3Wq51uiSW4NcPYT1cQdBagwyrznrilKSZwIZ0UG3ZPL/mx+axEns0hE35T5ufOYZXEnBQ==";
@@ -35827,6 +39682,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "protocols"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/protocols/-/protocols-1.4.8.tgz";
         sha512 = "IgjKyaUSjsROSO8/D49Ab7hP8mJgTYcqApOqdPhLoPxAplXmkp+zRvsrSQjFn5by0rhm4VH0GAUELIPpx7B1yg==";
@@ -35854,6 +39712,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "proxyquire"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/proxyquire/-/proxyquire-2.1.3.tgz";
         sha512 = "BQWfCqYM+QINd+yawJz23tbBM40VIGXOdDw3X344KcclI/gtBbdWF6SlQ4nK/bYhF9d27KYug9WzljHC6B9Ysg==";
@@ -35881,6 +39742,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pseudomap"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pseudomap/-/pseudomap-1.0.2.tgz";
         sha1 = "f052a28da70e618917ef0a8ac34c1ae5a68286b3";
@@ -35908,6 +39772,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "psl"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/psl/-/psl-1.8.0.tgz";
         sha512 = "RIdOzyoavK+hA18OGGWDqUTsCLhtA7IcZ/6NCs4fFJaHBDab+pDDmDIByWFRQJq2Cd7r1OoQxBGKOaztq+hjIQ==";
@@ -35935,6 +39802,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "public-encrypt"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/public-encrypt/-/public-encrypt-4.0.3.tgz";
         sha512 = "zVpa8oKZSz5bTMTFClc1fQOnyyEzpl5ozpi1B5YcvBrdohMjH2rfsBtyXcuNuwjsDIXmBYlF2N5FlJYhR29t8Q==";
@@ -35962,6 +39832,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pump"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pump/-/pump-1.0.3.tgz";
         sha512 = "8k0JupWme55+9tCVE+FS5ULT3K6AbgqrGa58lTT49RpyfwwcGedHqaC5LlQNdEAumn/wFsu6aPwkuPMioy8kqw==";
@@ -35989,6 +39862,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "pump"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/pump/-/pump-3.0.0.tgz";
         sha512 = "LwZy+p3SFs1Pytd/jYct4wpv49HiYCqd9Rlc5ZVdk0V+8Yzv6jR5Blk3TRmPL1ft69TxP0IMZGJ+WPFU2BFhww==";
@@ -36016,6 +39892,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "punycode"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/punycode/-/punycode-1.3.2.tgz";
         sha1 = "9653a036fb7c1ee42342f2325cceefea3926c48d";
@@ -36043,6 +39922,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "punycode"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/punycode/-/punycode-1.4.1.tgz";
         sha1 = "c0d5a63b2718800ad8e1eb0fa5269c84dd41845e";
@@ -36070,6 +39952,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "punycode"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/punycode/-/punycode-2.1.1.tgz";
         sha512 = "XRsRjdf+j5ml+y/6GKHPZbrF/8p2Yga0JPtdqTIY2Xe5ohJPD9saDJJLPvp9+NSBprVvevdXZybnj2cv8OEd0A==";
@@ -36097,6 +39982,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "q-i"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/q-i/-/q-i-2.0.1.tgz";
         sha512 = "tr7CzPNxkBDBuPzqi/HDUS4uBOppb91akNTeh56TYio8TiIeXp2Yp8ea9NmDu2DmGH35ZjJDq6C3E4SepVZ4bQ==";
@@ -36124,6 +40012,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "qs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/qs/-/qs-1.2.2.tgz";
         sha1 = "19b57ff24dc2a99ce1f8bdf6afcda59f8ef61f88";
@@ -36151,6 +40042,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "qs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/qs/-/qs-6.10.1.tgz";
         sha512 = "M528Hph6wsSVOBiYUnGf+K/7w0hNshs/duGsNXPUCLH5XAqjEtiPGwNONLV0tBH8NoGb0mvD5JubnUTrujKDTg==";
@@ -36178,6 +40072,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "qs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/qs/-/qs-6.3.2.tgz";
         sha1 = "e75bd5f6e268122a2a0e0bda630b2550c166502c";
@@ -36205,6 +40102,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "qs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/qs/-/qs-6.5.2.tgz";
         sha512 = "N5ZAX4/LxJmF+7wN74pUD6qAh9/wnvdQcjq9TZjevvXzSUo7bfmw91saqMjzGS2xq91/odN2dW/WOl7qQHNDGA==";
@@ -36232,6 +40132,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "queoid"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/queoid/-/queoid-1.1.9.tgz";
         sha512 = "53H4q1OymjcOhRBQmIXHP/xcioNE9lPWEe/qxspbcoV8ssHgZRT37PveyEDZV1afsUvrap9mZ2HFhV8qmrabdA==";
@@ -36259,6 +40162,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "query-string"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/query-string/-/query-string-6.14.1.tgz";
         sha512 = "XDxAeVmpfu1/6IjyT/gXHOl+S0vQ9owggJ30hhWKdHAsNPOcasn5o9BW0eejZqL2e4vMjhAxoW3jVHcD6mbcYw==";
@@ -36286,6 +40192,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "querystring"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/querystring/-/querystring-0.2.0.tgz";
         sha1 = "b209849203bb25df820da756e747005878521620";
@@ -36313,6 +40222,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "querystring-es3"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/querystring-es3/-/querystring-es3-0.2.1.tgz";
         sha1 = "9ec61f79049875707d69414596fd907a4d711e73";
@@ -36340,6 +40252,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "queue-microtask"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/queue-microtask/-/queue-microtask-1.2.3.tgz";
         sha512 = "NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==";
@@ -36367,6 +40282,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "quick-lru"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/quick-lru/-/quick-lru-4.0.1.tgz";
         sha512 = "ARhCpm70fzdcvNQfPoy49IaanKkTlRWF2JMzqhcJbhSFRZv7nPTvZJdcY7301IPmvW+/p0RgIWnQDLJxifsQ7g==";
@@ -36394,6 +40312,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "r-json"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/r-json/-/r-json-1.2.10.tgz";
         sha512 = "hu9vyLjSlHXT62NAS7DjI9WazDlvjN0lgp3n431dCVnirVcLkZIpzSwA3orhZEKzdDD2jqNYI+w0yG0aFf4kpA==";
@@ -36421,6 +40342,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rambda"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/rambda/-/rambda-6.4.0.tgz";
         sha512 = "aBoE7YrGQP1xnxjyg5fhupfS+FTrDVjZMtwpezl15RKLNnKLOYDfjx/0xDE+8GyWbbZfODRkAOZmnpvxrAONbQ==";
@@ -36448,6 +40372,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rambdax"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/rambdax/-/rambdax-7.0.1.tgz";
         sha512 = "Xrrp45dg1PLt40LMcjfNyVDcPBndzpR2t+AXGAcc9iqU9lD9bnk/b1B+n4W5tFXoSKDmZmgckcA8ajgVzbtxGA==";
@@ -36475,6 +40402,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rambdax"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/rambdax/-/rambdax-7.2.0.tgz";
         sha512 = "l1r7tYf/oRIpCiw1BJB7kSYl9i7H4tJheKbnWq95DM83Q4CazmRYJ+WM/VRaffr09yvMCdgeF4n6Ya4uWBe/Aw==";
@@ -36502,6 +40432,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ramda"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ramda/-/ramda-0.27.1.tgz";
         sha512 = "PgIdVpn5y5Yns8vqb8FzBUEYn98V3xcPgawAkkgj0YJ0qDsnHCiNmZYfOGMgOvoB0eWFLpYbhxUR3mxfDIMvpw==";
@@ -36529,6 +40462,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "randombytes"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/randombytes/-/randombytes-2.1.0.tgz";
         sha512 = "vYl3iOX+4CKUWuxGi9Ukhie6fsqXqS9FE2Zaic4tNFD2N2QQaXOMFbuKK4QmDHC0JO6B1Zp41J0LpT0oR68amQ==";
@@ -36556,6 +40492,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "randomfill"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/randomfill/-/randomfill-1.0.4.tgz";
         sha512 = "87lcbR8+MhcWcUiQ+9e+Rwx8MyR2P7qnt15ynUlbm3TU/fjbgz4GsvfSUDTemtCCtVCqb4ZcEFlyPNTh9bBTLw==";
@@ -36583,6 +40522,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "react"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/react/-/react-16.14.0.tgz";
         sha512 = "0X2CImDkJGApiAlcf0ODKIneSwBPhqJawOa5wCtKbu7ZECrmS26NvtSILynQ66cgkT/RJ4LidJOc3bUESwmU8g==";
@@ -36610,6 +40552,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "react-is"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/react-is/-/react-is-16.13.1.tgz";
         sha512 = "24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==";
@@ -36637,6 +40582,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "react-is"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/react-is/-/react-is-17.0.2.tgz";
         sha512 = "w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w==";
@@ -36664,6 +40612,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "read-dir-files"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/read-dir-files/-/read-dir-files-0.1.1.tgz";
         sha1 = "d79ecfdf323ac0a4d4ac6e2293387e974ed21782";
@@ -36691,6 +40642,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "read-only-stream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/read-only-stream/-/read-only-stream-2.0.0.tgz";
         sha1 = "2724fd6a8113d73764ac288d4386270c1dbf17f0";
@@ -36718,6 +40672,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "read-pkg"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/read-pkg/-/read-pkg-2.0.0.tgz";
         sha1 = "8ef1c0623c6a6db0dc6713c4bfac46332b2368f8";
@@ -36745,6 +40702,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "read-pkg"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/read-pkg/-/read-pkg-3.0.0.tgz";
         sha1 = "9cbc686978fee65d16c00e2b19c237fcf6e38389";
@@ -36772,6 +40732,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "read-pkg"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/read-pkg/-/read-pkg-5.2.0.tgz";
         sha512 = "Ug69mNOpfvKDAc2Q8DRpMjjzdtrnv9HcSMX+4VsZxD1aZ6ZzrIE7rlzXBtWTyhULSMKg076AW6WR5iZpD0JiOg==";
@@ -36799,6 +40762,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "read-pkg-up"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/read-pkg-up/-/read-pkg-up-2.0.0.tgz";
         sha1 = "6b72a8048984e0c41e79510fd5e9fa99b3b549be";
@@ -36826,6 +40792,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "read-pkg-up"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/read-pkg-up/-/read-pkg-up-3.0.0.tgz";
         sha1 = "3ed496685dba0f8fe118d0691dc51f4a1ff96f07";
@@ -36853,6 +40822,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "read-pkg-up"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/read-pkg-up/-/read-pkg-up-4.0.0.tgz";
         sha512 = "6etQSH7nJGsK0RbG/2TeDzZFa8shjQ1um+SwQQ5cwKy0dhSXdOncEhb1CPpvQG4h7FyOV6EB6YlV0yJvZQNAkA==";
@@ -36880,6 +40852,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "read-pkg-up"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/read-pkg-up/-/read-pkg-up-7.0.1.tgz";
         sha512 = "zK0TB7Xd6JpCLmlLmufqykGE+/TlOePD6qKClNW7hHDKFh/J7/7gCWGR7joEQEW1bKq3a3yUZSObOoWLFQ4ohg==";
@@ -36907,6 +40882,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "readable-stream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/readable-stream/-/readable-stream-1.0.34.tgz";
         sha1 = "125820e34bc842d2f2aaafafe4c2916ee32c157c";
@@ -36934,6 +40912,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "readable-stream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/readable-stream/-/readable-stream-2.3.7.tgz";
         sha512 = "Ebho8K4jIbHAxnuxi7o42OrZgF/ZTNcsZj6nRKyUmkhLFq8CHItp/fy6hQZuZmP/n3yZ9VBUbp4zz/mX8hmYPw==";
@@ -36961,6 +40942,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "readable-stream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/readable-stream/-/readable-stream-3.6.0.tgz";
         sha512 = "BViHy7LKeTz4oNnkcLJ+lVSL6vpiFeX6/d3oSH8zCW7UxP2onchk+vTGB143xuFjHS3deTgkKoXXymXqymiIdA==";
@@ -36988,6 +40972,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "readdirp"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/readdirp/-/readdirp-3.5.0.tgz";
         sha512 = "cMhu7c/8rdhkHXWsY+osBhfSy0JikwpHK/5+imo+LpeasTF8ouErHrlYkwT0++njiyuDvc7OFY5T3ukvZ8qmFQ==";
@@ -37015,6 +41002,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "readdirp"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/readdirp/-/readdirp-3.6.0.tgz";
         sha512 = "hOS089on8RduqdbhvQ5Z37A0ESjsqz6qnRcffsMU3495FuTdqSm+7bhJ29JvIOsBDEEnan5DPu9t3To9VRlMzA==";
@@ -37042,6 +41032,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "readline2"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/readline2/-/readline2-1.0.1.tgz";
         sha1 = "41059608ffc154757b715d9989d199ffbf372e35";
@@ -37069,6 +41062,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "real-executable-path"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/real-executable-path/-/real-executable-path-2.0.2.tgz";
         sha512 = "fRv44zvrzFeItoj/f/SNBqO/VWUHSZeqQ28oPOzd6weXaiRG6OVGu7UrHe6pY8JlXeoe/7gWYv6kOFHmHk4EFw==";
@@ -37096,6 +41092,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "real-executable-path-callback"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/real-executable-path-callback/-/real-executable-path-callback-2.1.2.tgz";
         sha512 = "dyOgKEhLKNg9tgFPs354X5fQpaAsUT+3dTO3JYoNLdPhMmRDjwwre6zHw58biFMVeFx9yxwI6MC7iMDfxSuMJA==";
@@ -37123,6 +41122,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "redent"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/redent/-/redent-3.0.0.tgz";
         sha512 = "6tDA8g98We0zd0GvVeMT9arEOnTw9qM03L9cJXaCjrip1OO764RDBLBfrB4cwzNGDj5OA5ioymC9GkizgWJDUg==";
@@ -37150,6 +41152,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "reflect.getprototypeof"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/reflect.getprototypeof/-/reflect.getprototypeof-1.0.0.tgz";
         sha512 = "+0EPfQjXK+0X35YbfoXm6SKonJYwD1seJiS170Hl7MVLp5eGAKOGqbnLVtvC9boQ5qV5UpDNop+p0beVYbSI+Q==";
@@ -37177,6 +41182,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regenerate"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/regenerate/-/regenerate-1.4.2.tgz";
         sha512 = "zrceR/XhGYU/d/opr2EKO7aRHUeiBI8qjtfHqADTwZd6Szfy16la6kqD0MIUs5z5hx6AaKa+PixpPrR289+I0A==";
@@ -37204,6 +41212,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regenerate-unicode-properties"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/regenerate-unicode-properties/-/regenerate-unicode-properties-8.2.0.tgz";
         sha512 = "F9DjY1vKLo/tPePDycuH3dn9H1OTPIkVD9Kz4LODu+F2C75mgjAJ7x/gwy6ZcSNRAAkhNlJSOHRe8k3p+K9WhA==";
@@ -37231,6 +41242,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regenerator-runtime"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/regenerator-runtime/-/regenerator-runtime-0.13.8.tgz";
         sha512 = "o/ASGwgZ6UiVjspr4YnzHKF1NbBdX+mCPkSeymofk/d7I+csCYn3ZgZMMVtXeecpT8DBiI2nAlYkHd+xNCqu4A==";
@@ -37258,6 +41272,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regenerator-transform"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/regenerator-transform/-/regenerator-transform-0.14.5.tgz";
         sha512 = "eOf6vka5IO151Jfsw2NO9WpGX58W6wWmefK3I1zEGr0lOD0u8rwPaNqQL1aRxUaxLeKO3ArNh3VYg1KbaD+FFw==";
@@ -37285,6 +41302,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regex-escape"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/regex-escape/-/regex-escape-3.4.10.tgz";
         sha512 = "qEqf7uzW+iYcKNLMDFnMkghhQBnGdivT6KqVQyKsyjSWnoFyooXVnxrw9dtv3AFLnD6VBGXxtZGAQNFGFTnCqA==";
@@ -37312,6 +41332,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regex-not"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/regex-not/-/regex-not-1.0.2.tgz";
         sha512 = "J6SDjUgDxQj5NusnOtdFxDwN/+HWykR8GELwctJ7mdqhcyy1xEc4SRFHUXvxTp661YaVKAjfRLZ9cCqS6tn32A==";
@@ -37339,6 +41362,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regexp.prototype.flags"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/regexp.prototype.flags/-/regexp.prototype.flags-1.3.1.tgz";
         sha512 = "JiBdRBq91WlY7uRJ0ds7R+dU02i6LKi8r3BuQhNXn+kmeLN+EfHhfjqMRis1zJxnlu88hq/4dx0P2OP3APRTOA==";
@@ -37366,6 +41392,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regexpp"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/regexpp/-/regexpp-2.0.1.tgz";
         sha512 = "lv0M6+TkDVniA3aD1Eg0DVpfU/booSu7Eev3TDO/mZKHBfVjgCGTV4t4buppESEYDtkArYFOxTJWv6S5C+iaNw==";
@@ -37393,6 +41422,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regexpp"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/regexpp/-/regexpp-3.2.0.tgz";
         sha512 = "pq2bWo9mVD43nbts2wGv17XLiNLya+GklZ8kaDLV2Z08gDCsGpnKn9BFMepvWuHCbyVvY7J5o5+BVvoQbmlJLg==";
@@ -37420,6 +41452,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regexpu-core"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/regexpu-core/-/regexpu-core-4.7.1.tgz";
         sha512 = "ywH2VUraA44DZQuRKzARmw6S66mr48pQVva4LBeRhcOltJ6hExvWly5ZjFLYo67xbIxb6W1q4bAGtgfEl20zfQ==";
@@ -37447,6 +41482,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regjsgen"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/regjsgen/-/regjsgen-0.5.2.tgz";
         sha512 = "OFFT3MfrH90xIW8OOSyUrk6QHD5E9JOTeGodiJeBS3J6IwlgzJMNE/1bZklWz5oTg+9dCMyEetclvCVXOPoN3A==";
@@ -37474,6 +41512,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "regjsparser"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/regjsparser/-/regjsparser-0.6.9.tgz";
         sha512 = "ZqbNRz1SNjLAiYuwY0zoXW8Ne675IX5q+YHioAGbCw4X96Mjl2+dcX9B2ciaeyYjViDAfvIjFpQjJgLttTEERQ==";
@@ -37501,6 +41542,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "release-zalgo"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/release-zalgo/-/release-zalgo-1.0.0.tgz";
         sha1 = "09700b7e5074329739330e535c5a90fb67851730";
@@ -37528,6 +41572,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "remove-trailing-separator"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/remove-trailing-separator/-/remove-trailing-separator-1.1.0.tgz";
         sha1 = "c24bce2a283adad5bc3f58e0d48249b92379d8ef";
@@ -37555,6 +41602,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "repeat-element"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/repeat-element/-/repeat-element-1.1.4.tgz";
         sha512 = "LFiNfRcSu7KK3evMyYOuCzv3L10TW7yC1G2/+StMjK8Y6Vqd2MG7r/Qjw4ghtuCOjFvlnms/iMmLqpvW/ES/WQ==";
@@ -37582,6 +41632,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "repeat-string"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/repeat-string/-/repeat-string-1.6.1.tgz";
         sha1 = "8dcae470e1c88abc2d600fff4a776286da75e637";
@@ -37609,6 +41662,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "request"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/request/-/request-2.42.0.tgz";
         sha1 = "572bd0148938564040ac7ab148b96423a063304a";
@@ -37636,6 +41692,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "request"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/request/-/request-2.79.0.tgz";
         sha1 = "4dfe5bf6be8b8cdc37fcf93e04b65577722710de";
@@ -37663,6 +41722,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "request"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/request/-/request-2.88.2.tgz";
         sha512 = "MsvtOrfG9ZcrOwAW+Qi+F6HbD0CWXEh9ou77uOb7FM2WPhwT7smM833PzanhJLsgXjN89Ir6V2PczXNnMpwKhw==";
@@ -37690,6 +41752,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "require-directory"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/require-directory/-/require-directory-2.1.1.tgz";
         sha1 = "8c64ad5fd30dab1c976e2344ffe7f792a6a6df42";
@@ -37717,6 +41782,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "require-from-string"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/require-from-string/-/require-from-string-2.0.2.tgz";
         sha512 = "Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==";
@@ -37744,6 +41812,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "require-inject"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/require-inject/-/require-inject-1.4.4.tgz";
         sha512 = "5Y5ctRN84+I4iOZO61gm+48tgP/6Hcd3VZydkaEM3MCuOvnHRsTJYQBOc01faI/Z9at5nsCAJVHhlfPA6Pc0Og==";
@@ -37771,6 +41842,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "require-main-filename"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/require-main-filename/-/require-main-filename-2.0.0.tgz";
         sha512 = "NKN5kMDylKuldxYLSUfrbo5Tuzh4hd+2E8NPPX02mZtn1VuREQToYe/ZdlJy+J3uCpfaiGF05e7B8W0iXbQHmg==";
@@ -37798,6 +41872,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "require-uncached"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/require-uncached/-/require-uncached-1.0.3.tgz";
         sha1 = "4e0d56d6c9662fd31e43011c4b95aa49955421d3";
@@ -37825,6 +41902,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "requizzle"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/requizzle/-/requizzle-0.2.3.tgz";
         sha512 = "YanoyJjykPxGHii0fZP0uUPEXpvqfBDxWV7s6GKAiiOsiqhX6vHNyW3Qzdmqp/iq/ExbhaGbVrjB4ruEVSM4GQ==";
@@ -37852,6 +41932,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "resolve"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/resolve/-/resolve-1.1.7.tgz";
         sha1 = "203114d82ad2c5ed9e8e0411b3932875e889e97b";
@@ -37879,6 +41962,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "resolve"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/resolve/-/resolve-1.17.0.tgz";
         sha512 = "ic+7JYiV8Vi2yzQGFWOkiZD5Z9z7O2Zhm9XMaTxdJExKasieFCr+yXZ/WmXsckHiKl12ar0y6XiXDx3m4RHn1w==";
@@ -37906,6 +41992,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "resolve"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/resolve/-/resolve-1.20.0.tgz";
         sha512 = "wENBPt4ySzg4ybFQW2TT1zMQucPK95HSh/nq2CFTZVOGut2+pQvSsgtda4d26YrYcr067wjbmzOG8byDPBX63A==";
@@ -37933,6 +42022,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "resolve-cwd"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/resolve-cwd/-/resolve-cwd-3.0.0.tgz";
         sha512 = "OrZaX2Mb+rJCpH/6CpSqt9xFVpN++x01XnN2ie9g6P5/3xelLAkXWVADpdz1IHD/KFfEXyE6V0U01OQ3UO2rEg==";
@@ -37960,6 +42052,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "resolve-from"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/resolve-from/-/resolve-from-1.0.1.tgz";
         sha1 = "26cbfe935d1aeeeabb29bc3fe5aeb01e93d44226";
@@ -37987,6 +42082,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "resolve-from"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/resolve-from/-/resolve-from-3.0.0.tgz";
         sha1 = "b22c7af7d9d6881bc8b6e653335eebcb0a188748";
@@ -38014,6 +42112,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "resolve-from"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/resolve-from/-/resolve-from-4.0.0.tgz";
         sha512 = "pb/MYmXstAkysRFx8piNI1tGFNQIFA3vkE3Gq4EuA1dF6gHp/+vgZqsCGJapvy8N3Q+4o7FwvquPJcnZ7RYy4g==";
@@ -38041,6 +42142,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "resolve-from"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/resolve-from/-/resolve-from-5.0.0.tgz";
         sha512 = "qYg9KP24dD5qka9J47d0aVky0N+b4fTU89LN9iDnjB5waksiC49rvMB0PrUJQGoTmH50XPiqOvAjDfaijGxYZw==";
@@ -38068,6 +42172,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "resolve-from-npm"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/resolve-from-npm/-/resolve-from-npm-2.0.4.tgz";
         sha512 = "JrwN+SRILVjq/mdPNd6bhoOvYMBFf0CYqvfAgaDGB9dWjyr3XDAe40O2WcxToYWMmbQabM4FM6hHVLcSxBPKOQ==";
@@ -38095,6 +42202,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "resolve-url"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/resolve-url/-/resolve-url-0.2.1.tgz";
         sha1 = "2c637fe77c893afd2a663fe21aa9080068e2052a";
@@ -38122,6 +42232,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "restore-cursor"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/restore-cursor/-/restore-cursor-1.0.1.tgz";
         sha1 = "34661f46886327fed2991479152252df92daa541";
@@ -38149,6 +42262,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "restore-cursor"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/restore-cursor/-/restore-cursor-2.0.0.tgz";
         sha1 = "9f7ee287f82fd326d4fd162923d62129eee0dfaf";
@@ -38176,6 +42292,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "restore-cursor"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/restore-cursor/-/restore-cursor-3.1.0.tgz";
         sha512 = "l+sSefzHpj5qimhFSE5a8nufZYAM3sBSVMAPtYkmC+4EH2anSGaEMXSD0izRQbu9nfyQ9y5JrVmp7E8oZrUjvA==";
@@ -38203,6 +42322,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "resumer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/resumer/-/resumer-0.0.0.tgz";
         sha1 = "f1e8f461e4064ba39e82af3cdc2a8c893d076759";
@@ -38230,6 +42352,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ret"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ret/-/ret-0.1.15.tgz";
         sha512 = "TTlYpa+OL+vMMNG24xSlQGEJ3B/RzEfUlLct7b5G/ytav+wPrplCpVMFuwzXbkecJrb6IYo1iFb0S9v37754mg==";
@@ -38257,6 +42382,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "retry"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/retry/-/retry-0.10.1.tgz";
         sha1 = "e76388d217992c252750241d3d3956fed98d8ff4";
@@ -38284,6 +42412,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "retry"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/retry/-/retry-0.12.0.tgz";
         sha1 = "1b42a6266a21f07421d1b0b54b7dc167b01c013b";
@@ -38311,6 +42442,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "reusify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/reusify/-/reusify-1.0.4.tgz";
         sha512 = "U9nH88a3fc/ekCF1l0/UP1IosiuIjyTh7hBvXVMHYgVcfGvt897Xguj2UOLDeI5BG2m7/uwyaLVT6fbtCwTyzw==";
@@ -38338,6 +42472,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rimraf"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/rimraf/-/rimraf-2.6.3.tgz";
         sha512 = "mwqeW5XsA2qAejG46gYdENaxXjx9onRNCfn7L0duuP4hCuTIi/QO7PDK07KJfp1d+izWPrzEJDcSqBa0OZQriA==";
@@ -38365,6 +42502,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rimraf"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/rimraf/-/rimraf-2.7.1.tgz";
         sha512 = "uWjbaKIK3T1OSVptzX7Nl6PvQ3qAGtKEtVRjRuazjfL3Bx5eI409VZSqgND+4UNnmzLVdPj9FqFJNPqBZFve4w==";
@@ -38392,6 +42532,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rimraf"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/rimraf/-/rimraf-3.0.2.tgz";
         sha512 = "JZkJMZkAGFFPP2YqXZXPbMlMBgsxzE8ILs4lMIX/2o0L9UBw9O/Y3o6wFw/i9YLapcUJWwqbi3kdxIPdC62TIA==";
@@ -38419,6 +42562,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ripemd160"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ripemd160/-/ripemd160-2.0.2.tgz";
         sha512 = "ii4iagi25WusVoiC4B4lq7pbXfAp3D9v5CwfkY33vffw2+pkDjY1D8GaN7spsxvCSx8dkPqOZCEZyfxcmJG2IA==";
@@ -38446,6 +42592,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rmfr"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/rmfr/-/rmfr-2.0.0.tgz";
         sha512 = "nQptLCZeyyJfgbpf2x97k5YE8vzDn7bhwx9NlvODdhgbU0mL1ruh71X0HYdRaOEvWC7Cr+SfV0p5p+Ib5yOl7A==";
@@ -38473,6 +42622,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rollup"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/rollup/-/rollup-2.38.5.tgz";
         sha512 = "VoWt8DysFGDVRGWuHTqZzT02J0ASgjVq/hPs9QcBOGMd7B+jfTr/iqMVEyOi901rE3xq+Deq66GzIT1yt7sGwQ==";
@@ -38500,6 +42652,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rollup-plugin-cleanup"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/rollup-plugin-cleanup/-/rollup-plugin-cleanup-3.2.1.tgz";
         sha512 = "zuv8EhoO3TpnrU8MX8W7YxSbO4gmOR0ny06Lm3nkFfq0IVKdBUtHwhVzY1OAJyNCIAdLiyPnOrU0KnO0Fri1GQ==";
@@ -38527,6 +42682,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rollup-plugin-sourcemaps"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/rollup-plugin-sourcemaps/-/rollup-plugin-sourcemaps-0.6.3.tgz";
         sha512 = "paFu+nT1xvuO1tPFYXGe+XnQvg4Hjqv/eIhG8i5EspfYYPBKL57X7iVbfv55aNVASg3dzWvES9dmWsL2KhfByw==";
@@ -38554,6 +42712,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rollup-plugin-uglify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/rollup-plugin-uglify/-/rollup-plugin-uglify-6.0.4.tgz";
         sha512 = "ddgqkH02klveu34TF0JqygPwZnsbhHVI6t8+hGTcYHngPkQb5MIHI0XiztXIN/d6V9j+efwHAqEL7LspSxQXGw==";
@@ -38581,6 +42742,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rollup-pluginutils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/rollup-pluginutils/-/rollup-pluginutils-2.8.2.tgz";
         sha512 = "EEp9NhnUkwY8aif6bxgovPHMoMoNr2FulJziTndpt5H9RdwC47GSGuII9XxpSdzVGM0GWrNPHV6ie1LTNJPaLQ==";
@@ -38608,6 +42772,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rsvp"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/rsvp/-/rsvp-4.8.5.tgz";
         sha512 = "nfMOlASu9OnRJo1mbEk2cz0D56a1MBNrJ7orjRZQG10XDyuvwksKbuXNp6qa+kbn839HwjwhBzhFmdsaEAfauA==";
@@ -38635,6 +42802,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "run-async"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/run-async/-/run-async-0.1.0.tgz";
         sha1 = "c8ad4a5e110661e402a7d21b530e009f25f8e389";
@@ -38662,6 +42832,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "run-async"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/run-async/-/run-async-2.4.1.tgz";
         sha512 = "tvVnVv01b8c1RrA6Ep7JkStj85Guv/YrMcwqYQnwjsAS2cTmmPGBBjAjpCW7RrSodNSoE2/qg9O4bceNvUuDgQ==";
@@ -38689,6 +42862,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "run-parallel"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/run-parallel/-/run-parallel-1.2.0.tgz";
         sha512 = "5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==";
@@ -38716,6 +42892,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "runforcover"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/runforcover/-/runforcover-0.0.2.tgz";
         sha1 = "344f057d8d45d33aebc6cc82204678f69c4857cc";
@@ -38743,6 +42922,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rx-lite"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/rx-lite/-/rx-lite-3.1.2.tgz";
         sha1 = "19ce502ca572665f3b647b10939f97fd1615f102";
@@ -38770,6 +42952,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "rxjs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/rxjs/-/rxjs-6.6.7.tgz";
         sha512 = "hTdwr+7yYNIT5n4AMYp85KA6yw2Va0FLa3Rguvbpa4W3I5xynaBZo41cM3XM+4Q6fRMj3sBYIR1VAmZMXYJvRQ==";
@@ -38797,6 +42982,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "safe-buffer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/safe-buffer/-/safe-buffer-5.1.2.tgz";
         sha512 = "Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g==";
@@ -38824,6 +43012,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "safe-buffer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/safe-buffer/-/safe-buffer-5.2.1.tgz";
         sha512 = "rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ==";
@@ -38851,6 +43042,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "safe-regex"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/safe-regex/-/safe-regex-1.1.0.tgz";
         sha1 = "40a3669f3b077d1e943d44629e157dd48023bf2e";
@@ -38878,6 +43072,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "safer-buffer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/safer-buffer/-/safer-buffer-2.1.2.tgz";
         sha512 = "YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==";
@@ -38905,6 +43102,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "sane"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/sane/-/sane-4.1.0.tgz";
         sha512 = "hhbzAgTIX8O7SHfp2c8/kREfEn4qO/9q8C9beyY6+tvZ87EpoZ3i1RIEvp27YBswnNbY9mWd6paKVmKbAgLfZA==";
@@ -38932,6 +43132,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "saxes"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/saxes/-/saxes-5.0.1.tgz";
         sha512 = "5LBh1Tls8c9xgGjw3QrMwETmTMVk0oFgvrFSvWx62llR2hcEInrKNZ2GZCCuuy2lvWrdl5jhbpeqc5hRYKFOcw==";
@@ -38959,6 +43162,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "semver"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/semver/-/semver-4.3.6.tgz";
         sha1 = "300bc6e0e86374f7ba61068b5b1ecd57fc6532da";
@@ -38986,6 +43192,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "semver"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/semver/-/semver-5.7.1.tgz";
         sha512 = "sauaDf/PZdVgrLTNYHRtpXa1iRiKcaebiKQ1BJdpQlWH2lCvexQdX55snPFyK7QzpudqbCI0qXFfOasHdyNDGQ==";
@@ -39013,6 +43222,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "semver"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/semver/-/semver-6.3.0.tgz";
         sha512 = "b39TBaTSfV6yBrapU89p5fKekE2m/NwnDocOVruQFS1/veMgdzuPcnOM34M6CwxW8jH/lxEa5rBoDeUwu5HHTw==";
@@ -39040,6 +43252,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "semver"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/semver/-/semver-7.0.0.tgz";
         sha512 = "+GB6zVA9LWh6zovYQLALHwv5rb2PHGlJi3lfiqIHxR0uuwCgefcOJc59v9fv1w8GbStwxuuqqAjI9NMAOOgq1A==";
@@ -39067,6 +43282,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "semver"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/semver/-/semver-7.3.5.tgz";
         sha512 = "PoeGJYh8HK4BTO/a9Tf6ZG3veo/A7ZVsYrSA6J8ny9nb3B1VrpkuN+z9OE5wfE5p6H4LchYZsegiQgbJD94ZFQ==";
@@ -39094,6 +43312,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "serialize-javascript"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/serialize-javascript/-/serialize-javascript-2.1.2.tgz";
         sha512 = "rs9OggEUF0V4jUSecXazOYsLfu7OGK2qIn3c7IPBiffz32XniEp/TX9Xmc9LQfK2nQ2QKHvZ2oygKUGU0lG4jQ==";
@@ -39121,6 +43342,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "serialize-javascript"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/serialize-javascript/-/serialize-javascript-5.0.1.tgz";
         sha512 = "SaaNal9imEO737H2c05Og0/8LUXG7EnsZyMa8MzkmuHoELfT6txuj0cMqRj6zfPKnmQ1yasR4PCJc8x+M4JSPA==";
@@ -39148,6 +43372,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "set-blocking"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/set-blocking/-/set-blocking-2.0.0.tgz";
         sha1 = "045f9782d011ae9a6803ddd382b24392b3d890f7";
@@ -39175,6 +43402,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "set-value"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/set-value/-/set-value-2.0.1.tgz";
         sha512 = "JxHc1weCN68wRY0fhCoXpyK55m/XPHafOmK4UWD7m2CI14GMcFypt4w/0+NV5f/ZMby2F6S2wwA7fgynh9gWSw==";
@@ -39202,6 +43432,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "sha.js"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/sha.js/-/sha.js-2.4.11.tgz";
         sha512 = "QMEp5B7cftE7APOjk5Y6xgrbWu+WkLVQwk8JNjZ8nKRciZaByEW6MubieAiToS7+dwvrjGhH8jRXz3MVd0AYqQ==";
@@ -39229,6 +43462,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "shasum"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/shasum/-/shasum-1.0.2.tgz";
         sha1 = "e7012310d8f417f4deb5712150e5678b87ae565f";
@@ -39256,6 +43492,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "shasum-object"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/shasum-object/-/shasum-object-1.0.0.tgz";
         sha512 = "Iqo5rp/3xVi6M4YheapzZhhGPVs0yZwHj7wvwQ1B9z8H6zk+FEnI7y3Teq7qwnekfEhu8WmG2z0z4iWZaxLWVg==";
@@ -39283,6 +43522,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "shebang-command"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/shebang-command/-/shebang-command-1.2.0.tgz";
         sha1 = "44aac65b695b03398968c39f363fee5deafdf1ea";
@@ -39310,6 +43552,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "shebang-command"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/shebang-command/-/shebang-command-2.0.0.tgz";
         sha512 = "kHxr2zZpYtdmrN1qDjrrX/Z1rR1kG8Dx+gkpK1G4eXmvXswmcE1hTWBWYUzlraYw1/yZp6YuDY77YtvbN0dmDA==";
@@ -39337,6 +43582,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "shebang-regex"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/shebang-regex/-/shebang-regex-1.0.0.tgz";
         sha1 = "da42f49740c0b42db2ca9728571cb190c98efea3";
@@ -39364,6 +43612,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "shebang-regex"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/shebang-regex/-/shebang-regex-3.0.0.tgz";
         sha512 = "7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==";
@@ -39391,6 +43642,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "shell-quote"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/shell-quote/-/shell-quote-1.7.2.tgz";
         sha512 = "mRz/m/JVscCrkMyPqHc/bczi3OQHkLTqXHEFu0zDhK/qfv3UcOA4SVmRCLmos4bhjr9ekVQubj/R7waKapmiQg==";
@@ -39418,6 +43672,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "shelljs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/shelljs/-/shelljs-0.6.1.tgz";
         sha1 = "ec6211bed1920442088fe0f70b2837232ed2c8a8";
@@ -39445,6 +43702,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "side-channel"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/side-channel/-/side-channel-1.0.4.tgz";
         sha512 = "q5XPytqFEIKHkGdiMIrY10mvLRvnQh42/+GoBlFW3b2LXLE2xxJpZFdm94we0BaoV3RwJyGqg5wS7epxTv0Zvw==";
@@ -39472,6 +43732,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "sigmund"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/sigmund/-/sigmund-1.0.1.tgz";
         sha1 = "3ff21f198cad2175f9f3b781853fd94d0d19b590";
@@ -39499,6 +43762,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "signal-exit"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/signal-exit/-/signal-exit-2.1.2.tgz";
         sha1 = "375879b1f92ebc3b334480d038dc546a6d558564";
@@ -39526,6 +43792,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "signal-exit"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/signal-exit/-/signal-exit-3.0.3.tgz";
         sha512 = "VUJ49FC8U1OxwZLxIbTTrDvLnf/6TDgxZcK8wxR8zs13xpx7xbG60ndBlhNrFi2EMuFRoeDoJO7wthSLq42EjA==";
@@ -39553,6 +43822,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "simple-concat"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/simple-concat/-/simple-concat-1.0.1.tgz";
         sha512 = "cSFtAPtRhljv69IK0hTVZQ+OfE9nePi/rtJmw5UjHeVyVroEqJXP1sFztKUy1qU+xvz3u/sfYJLa947b7nAN2Q==";
@@ -39580,6 +43852,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "sisteransi"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/sisteransi/-/sisteransi-1.0.5.tgz";
         sha512 = "bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==";
@@ -39607,6 +43882,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "skip-regex"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/skip-regex/-/skip-regex-1.0.2.tgz";
         sha512 = "pEjMUbwJ5Pl/6Vn6FsamXHXItJXSRftcibixDmNCWbWhic0hzHrwkMZo0IZ7fMRH9KxcWDFSkzhccB4285PutA==";
@@ -39634,6 +43912,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "slash"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/slash/-/slash-2.0.0.tgz";
         sha512 = "ZYKh3Wh2z1PpEXWr0MpSBZ0V6mZHAQfYevttO11c51CaWjGTaadiKZ+wVt1PbMlDV5qhMFslpZCemhwOK7C89A==";
@@ -39661,6 +43942,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "slash"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/slash/-/slash-3.0.0.tgz";
         sha512 = "g9Q1haeby36OSStwb4ntCGGGaKsaVSjQ68fBxoQcutl5fS1vuY18H3wSt3jFyFtrkx+Kz0V1G85A4MyAdDMi2Q==";
@@ -39688,6 +43972,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "slasp"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/slasp/-/slasp-0.0.4.tgz";
         sha1 = "9adc26ee729a0f95095851a5489f87a5258d57a9";
@@ -39715,6 +44002,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "slice-ansi"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/slice-ansi/-/slice-ansi-0.0.4.tgz";
         sha1 = "edbf8903f66f7ce2f8eafd6ceed65e264c831b35";
@@ -39742,6 +44032,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "slice-ansi"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/slice-ansi/-/slice-ansi-2.1.0.tgz";
         sha512 = "Qu+VC3EwYLldKa1fCxuuvULvSJOKEgk9pi8dZeCVK7TqBfUNTH4sFkk4joj8afVSfAYgJoSOetjx9QWOJ5mYoQ==";
@@ -39769,6 +44062,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "slice-ansi"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/slice-ansi/-/slice-ansi-4.0.0.tgz";
         sha512 = "qMCMfhY040cVHT43K9BFygqYbUPFZKHOg7K73mtTWJRb8pyP3fzf4Ixd5SzdEJQ6MRUg/WBnOLxghZtKKurENQ==";
@@ -39796,6 +44092,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "slide"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/slide/-/slide-1.1.6.tgz";
         sha1 = "56eb027d65b4d2dce6cb2e2d32c4d4afc9e1d707";
@@ -39823,6 +44122,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "smart-buffer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/smart-buffer/-/smart-buffer-4.1.0.tgz";
         sha512 = "iVICrxOzCynf/SNaBQCw34eM9jROU/s5rzIhpOvzhzuYHfJR/DhZfDkXiZSgKXfgv26HT3Yni3AV/DGw0cGnnw==";
@@ -39850,6 +44152,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "snapdragon"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/snapdragon/-/snapdragon-0.8.2.tgz";
         sha512 = "FtyOnWN/wCHTVXOMwvSv26d+ko5vWlIDD6zoUJ7LW8vh+ZBC8QdljveRP+crNrtBwioEUWy/4dMtbBjA4ioNlg==";
@@ -39877,6 +44182,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "snapdragon-node"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/snapdragon-node/-/snapdragon-node-2.1.1.tgz";
         sha512 = "O27l4xaMYt/RSQ5TR3vpWCAB5Kb/czIcqUFOM/C4fYcLnbZUc1PkjTAMjof2pBWaSTwOUd6qUHcFGVGj7aIwnw==";
@@ -39904,6 +44212,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "snapdragon-util"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/snapdragon-util/-/snapdragon-util-3.0.1.tgz";
         sha512 = "mbKkMdQKsjX4BAL4bRYTj21edOf8cN7XHdYUJEe+Zn99hVEYcMvKPct1IqNe7+AZPirn8BCDOQBHQZknqmKlZQ==";
@@ -39931,6 +44242,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "sntp"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/sntp/-/sntp-1.0.9.tgz";
         sha1 = "6541184cc90aeea6c6e7b35e2659082443c66198";
@@ -39958,6 +44272,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "socks"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/socks/-/socks-2.6.1.tgz";
         sha512 = "kLQ9N5ucj8uIcxrDwjm0Jsqk06xdpBjGNQtpXy4Q8/QY2k+fY7nZH8CARy+hkbG+SGAovmzzuauCpBlb8FrnBA==";
@@ -39985,6 +44302,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "socks-proxy-agent"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/socks-proxy-agent/-/socks-proxy-agent-5.0.1.tgz";
         sha512 = "vZdmnjb9a2Tz6WEQVIurybSwElwPxMZaIc7PzqbJTrezcKNznv6giT7J7tZDZ1BojVaa1jvO/UiUdhDVB0ACoQ==";
@@ -40012,6 +44332,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "source-map"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/source-map/-/source-map-0.5.7.tgz";
         sha1 = "8a039d2d1021d22d1ea14c80d8ea468ba2ef3fcc";
@@ -40039,6 +44362,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "source-map"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/source-map/-/source-map-0.6.1.tgz";
         sha512 = "UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==";
@@ -40066,6 +44392,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "source-map"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/source-map/-/source-map-0.7.3.tgz";
         sha512 = "CkCj6giN3S+n9qrYiBTX5gystlENnRW5jZeNLHpe6aue+SrHcG5VYwujhW9s4dY31mEGsxBDrHR6oI69fTXsaQ==";
@@ -40093,6 +44422,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "source-map-resolve"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/source-map-resolve/-/source-map-resolve-0.5.3.tgz";
         sha512 = "Htz+RnsXWk5+P2slx5Jh3Q66vhQj1Cllm0zvnaY98+NFx+Dv2CF/f5O/t8x+KaNdrdIAsruNzoh/KpialbqAnw==";
@@ -40120,6 +44452,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "source-map-resolve"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/source-map-resolve/-/source-map-resolve-0.6.0.tgz";
         sha512 = "KXBr9d/fO/bWo97NXsPIAW1bFSBOuCnjbNTBMO7N59hsv5i9yzRDfcYwwt0l04+VqnKC+EwzvJZIP/qkuMgR/w==";
@@ -40147,6 +44482,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "source-map-support"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/source-map-support/-/source-map-support-0.5.19.tgz";
         sha512 = "Wonm7zOCIJzBGQdB+thsPar0kYuCIzYvxZwlBa87yi/Mdjv7Tip2cyVbLj5o0cFPN4EVkuTwb3GDDyUx2DGnGw==";
@@ -40174,6 +44512,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "source-map-url"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/source-map-url/-/source-map-url-0.4.1.tgz";
         sha512 = "cPiFOTLUKvJFIg4SKVScy4ilPPW6rFgMgfuZJPNoDuMs3nC1HbMUycBoJw77xFIp6z1UJQJOfx6C9GMH80DiTw==";
@@ -40201,6 +44542,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "sourcemap-codec"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/sourcemap-codec/-/sourcemap-codec-1.4.8.tgz";
         sha512 = "9NykojV5Uih4lgo5So5dtw+f0JgJX30KCNI8gwhz2J9A15wD0Ml6tjHKwf6fTSa6fAdVBdZeNOs9eJ71qCk8vA==";
@@ -40228,6 +44572,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "spawn-wrap"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/spawn-wrap/-/spawn-wrap-1.4.3.tgz";
         sha512 = "IgB8md0QW/+tWqcavuFgKYR/qIRvJkRLPJDFaoXtLLUaVcCDK0+HeFTkmQHj3eprcYhc+gOl0aEA1w7qZlYezw==";
@@ -40255,6 +44602,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "spawn-wrap"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/spawn-wrap/-/spawn-wrap-2.0.0.tgz";
         sha512 = "EeajNjfN9zMnULLwhZZQU3GWBoFNkbngTUPfaawT4RkMiviTxcX0qfhVbGey39mfctfDHkWtuecgQ8NJcyQWHg==";
@@ -40282,6 +44632,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "spdx-correct"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/spdx-correct/-/spdx-correct-3.1.1.tgz";
         sha512 = "cOYcUWwhCuHCXi49RhFRCyJEK3iPj1Ziz9DpViV3tbZOwXD49QzIN3MpOLJNxh2qwq2lJJZaKMVw9qNi4jTC0w==";
@@ -40309,6 +44662,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "spdx-exceptions"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/spdx-exceptions/-/spdx-exceptions-2.3.0.tgz";
         sha512 = "/tTrYOC7PPI1nUAgx34hUpqXuyJG+DTHJTnIULG4rDygi4xu/tfgmq1e1cIRwRzwZgo4NLySi+ricLkZkw4i5A==";
@@ -40336,6 +44692,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "spdx-expression-parse"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/spdx-expression-parse/-/spdx-expression-parse-3.0.1.tgz";
         sha512 = "cbqHunsQWnJNE6KhVSMsMeH5H/L9EpymbzqTQ3uLwNCLZ1Q481oWaofqH7nO6V07xlXwY6PhQdQ2IedWx/ZK4Q==";
@@ -40363,6 +44722,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "spdx-license-ids"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/spdx-license-ids/-/spdx-license-ids-3.0.9.tgz";
         sha512 = "Ki212dKK4ogX+xDo4CtOZBVIwhsKBEfsEEcwmJfLQzirgc2jIWdzg40Unxz/HzEUqM1WFzVlQSMF9kZZ2HboLQ==";
@@ -40390,6 +44752,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "split"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/split/-/split-0.2.10.tgz";
         sha1 = "67097c601d697ce1368f418f06cd201cf0521a57";
@@ -40417,6 +44782,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "split-on-first"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/split-on-first/-/split-on-first-1.1.0.tgz";
         sha512 = "43ZssAJaMusuKWL8sKUBQXHWOpq8d6CfN/u1p4gUzfJkM05C8rxTmYrkIPTXapZpORA6LkkzcUulJ8FqA7Uudw==";
@@ -40444,6 +44812,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "split-string"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/split-string/-/split-string-3.1.0.tgz";
         sha512 = "NzNVhJDYpwceVVii8/Hu6DKfD2G+NrQHlS/V/qgv763EYudVwEcMQNxd2lh+0VrUByXN/oJkl5grOhYWvQUYiw==";
@@ -40471,6 +44842,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "sprintf-js"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/sprintf-js/-/sprintf-js-1.0.3.tgz";
         sha1 = "04e6926f662895354f3dd015203633b857297e2c";
@@ -40498,6 +44872,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "sshpk"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/sshpk/-/sshpk-1.16.1.tgz";
         sha512 = "HXXqVUq7+pcKeLqqZj6mHFUMvXtOJt1uoUx09pFW6011inTMxqI8BA8PM95myrIyyKwdnzjdFjLiE6KBPVtJIg==";
@@ -40525,6 +44902,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ssri"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ssri/-/ssri-5.3.0.tgz";
         sha512 = "XRSIPqLij52MtgoQavH/x/dU1qVKtWUAAZeOHsR9c2Ddi4XerFy3mc1alf+dLJKl9EUIm/Ht+EowFkTUOA6GAQ==";
@@ -40552,6 +44932,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ssri"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ssri/-/ssri-8.0.1.tgz";
         sha512 = "97qShzy1AiyxvPNIkLWoGua7xoQzzPjQ0HAH4B0rWKo7SZ6USuPcrUiAFrws0UH8RrbWmgq3LMTObhPIHbbBeQ==";
@@ -40579,6 +44962,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "stack-utils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/stack-utils/-/stack-utils-0.4.0.tgz";
         sha1 = "940cb82fccfa84e8ff2f3fdf293fe78016beccd1";
@@ -40606,6 +44992,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "stack-utils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/stack-utils/-/stack-utils-1.0.5.tgz";
         sha512 = "KZiTzuV3CnSnSvgMRrARVCj+Ht7rMbauGDK0LdVFRGyenwdylpajAp4Q0i6SX8rEmbTpMMf6ryq2gb8pPq2WgQ==";
@@ -40633,6 +45022,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "stack-utils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/stack-utils/-/stack-utils-2.0.3.tgz";
         sha512 = "gL//fkxfWUsIlFL2Tl42Cl6+HFALEaB1FU76I/Fy+oZjRreP7OPMXFlGbxM7NQsI0ZpUfw76sHnv0WNYuTb7Iw==";
@@ -40660,6 +45052,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "standard"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/standard/-/standard-14.3.4.tgz";
         sha512 = "+lpOkFssMkljJ6eaILmqxHQ2n4csuEABmcubLTb9almFi1ElDzXb1819fjf/5ygSyePCq4kU2wMdb2fBfb9P9Q==";
@@ -40687,6 +45082,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "standard"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/standard/-/standard-16.0.3.tgz";
         sha512 = "70F7NH0hSkNXosXRltjSv6KpTAOkUkSfyu3ynyM5dtRUiLtR+yX9EGZ7RKwuGUqCJiX/cnkceVM6HTZ4JpaqDg==";
@@ -40714,6 +45112,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "standard"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/standard/-/standard-7.1.2.tgz";
         sha1 = "40166eeec2405065d1a4f0e3f15babc6e274607e";
@@ -40741,6 +45142,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "standard-engine"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/standard-engine/-/standard-engine-12.1.0.tgz";
         sha512 = "DVJnWM1CGkag4ucFLGdiYWa5/kJURPONmMmk17p8FT5NE4UnPZB1vxWnXnRo2sPSL78pWJG8xEM+1Tu19z0deg==";
@@ -40768,6 +45172,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "standard-engine"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/standard-engine/-/standard-engine-14.0.1.tgz";
         sha512 = "7FEzDwmHDOGva7r9ifOzD3BGdTbA7ujJ50afLVdW/tK14zQEptJjbFuUfn50irqdHDcTbNh0DTIoMPynMCXb0Q==";
@@ -40795,6 +45202,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "standard-engine"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/standard-engine/-/standard-engine-4.1.3.tgz";
         sha1 = "7a31aad54f03d9f39355f43389ce0694f4094155";
@@ -40822,6 +45232,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "static-extend"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/static-extend/-/static-extend-0.1.2.tgz";
         sha1 = "60809c39cbff55337226fd5e0b520f341f1fb5c6";
@@ -40849,6 +45262,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "stats-median"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/stats-median/-/stats-median-1.0.1.tgz";
         sha512 = "IYsheLg6dasD3zT/w9+8Iq9tcIQqqu91ZIpJOnIEM25C3X/g4Tl8mhXwW2ZQpbrsJISr9+wizEYgsibN5/b32Q==";
@@ -40876,6 +45292,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "stream-browserify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/stream-browserify/-/stream-browserify-2.0.2.tgz";
         sha512 = "nX6hmklHs/gr2FuxYDltq8fJA1GDlxKQCz8O/IM4atRqBH8OORmBNgfvW5gG10GT/qQ9u0CzIvr2X5Pkt6ntqg==";
@@ -40903,6 +45322,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "stream-combiner"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/stream-combiner/-/stream-combiner-0.0.4.tgz";
         sha1 = "4d5e433c185261dde623ca3f44c586bcf5c4ad14";
@@ -40930,6 +45352,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "stream-combiner2"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/stream-combiner2/-/stream-combiner2-1.1.1.tgz";
         sha1 = "fb4d8a1420ea362764e21ad4780397bebcb41cbe";
@@ -40957,6 +45382,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "stream-http"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/stream-http/-/stream-http-3.2.0.tgz";
         sha512 = "Oq1bLqisTyK3TSCXpPbT4sdeYNdmyZJv1LxpEm2vu1ZhK89kSE5YXwZc3cWk0MagGaKriBh9mCFbVGtO+vY29A==";
@@ -40984,6 +45412,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "stream-splicer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/stream-splicer/-/stream-splicer-2.0.1.tgz";
         sha512 = "Xizh4/NPuYSyAXyT7g8IvdJ9HJpxIGL9PjyhtywCZvvP0OPIdqyrr4dMikeuvY8xahpdKEBlBTySe583totajg==";
@@ -41011,6 +45442,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strict-uri-encode"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/strict-uri-encode/-/strict-uri-encode-2.0.0.tgz";
         sha1 = "b9c7330c7042862f6b142dc274bbcc5866ce3546";
@@ -41038,6 +45472,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string-fn"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/string-fn/-/string-fn-3.1.0.tgz";
         sha512 = "LFje5UeJH6t0XILNbwjUWctL5aU9yDKz8ILPzKVHDgw6ZGR8ebulvRD0zjUVEGKzCNxi1IzJK63/HR+7Q9HQQQ==";
@@ -41065,6 +45502,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string-length"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/string-length/-/string-length-4.0.2.tgz";
         sha512 = "+l6rNN5fYHNhZZy41RXsYptCjA2Igmq4EG7kZAYFQI1E1VTXarr6ZPXBg6eq7Y6eK4FEhY6AJlyuFIb/v/S0VQ==";
@@ -41092,6 +45532,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string-width"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/string-width/-/string-width-1.0.2.tgz";
         sha1 = "118bdf5b8cdc51a2a7e70d211e07e2b0b9b107d3";
@@ -41119,6 +45562,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string-width"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/string-width/-/string-width-2.1.1.tgz";
         sha512 = "nOqH59deCq9SRHlxq1Aw85Jnt4w6KvLKqWVik6oA9ZklXLNIOlqg4F2yrT1MVaTjAqvVwdfeZ7w7aCvJD7ugkw==";
@@ -41146,6 +45592,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string-width"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/string-width/-/string-width-3.1.0.tgz";
         sha512 = "vafcv6KjVZKSgz06oM/H6GDBrAtz8vdhQakGjFIvNrHA6y3HCF1CInLy+QLq8dTJPQ1b+KDUqDFctkdRW44e1w==";
@@ -41173,6 +45622,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string-width"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/string-width/-/string-width-4.2.2.tgz";
         sha512 = "XBJbT3N4JhVumXE0eoLU9DCjcaF92KLNqTmFCnG1pf8duUxFGwtP6AD6nkjw9a3IdiRtL3E2w3JDiE/xi3vOeA==";
@@ -41200,6 +45652,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string.prototype.matchall"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/string.prototype.matchall/-/string.prototype.matchall-4.0.5.tgz";
         sha512 = "Z5ZaXO0svs0M2xd/6By3qpeKpLKd9mO4v4q3oMEQrk8Ck4xOD5d5XeBOOjGrmVZZ/AHB1S0CgG4N5r1G9N3E2Q==";
@@ -41227,6 +45682,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string.prototype.trim"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/string.prototype.trim/-/string.prototype.trim-1.2.4.tgz";
         sha512 = "hWCk/iqf7lp0/AgTF7/ddO1IWtSNPASjlzCicV5irAVdE1grjsneK26YG6xACMBEdCvO8fUST0UzDMh/2Qy+9Q==";
@@ -41254,6 +45712,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string.prototype.trimend"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/string.prototype.trimend/-/string.prototype.trimend-1.0.4.tgz";
         sha512 = "y9xCjw1P23Awk8EvTpcyL2NIr1j7wJ39f+k6lvRnSMz+mz9CGz9NYPelDk42kOz6+ql8xjfK8oYzy3jAP5QU5A==";
@@ -41281,6 +45742,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string.prototype.trimstart"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/string.prototype.trimstart/-/string.prototype.trimstart-1.0.4.tgz";
         sha512 = "jh6e984OBfvxS50tdY2nRZnoC5/mLFKOREQfw8t5yytkoUsJRNxvI/E39qu1sD0OtWI3OC0XgKSmcWwziwYuZw==";
@@ -41308,6 +45772,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string_decoder"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/string_decoder/-/string_decoder-0.10.31.tgz";
         sha1 = "62e203bc41766c6c28c9fc84301dab1c5310fa94";
@@ -41335,6 +45802,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string_decoder"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/string_decoder/-/string_decoder-1.1.1.tgz";
         sha512 = "n/ShnvDi6FHbbVfviro+WojiFzv+s8MPMHBczVePfUpDJLwoLT0ht1l4YwBCbi8pJAveEEdnkHyPyTP/mzRfwg==";
@@ -41362,6 +45832,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "string_decoder"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/string_decoder/-/string_decoder-1.3.0.tgz";
         sha512 = "hkRX8U1WjJFd8LsDJ2yQ/wWWxaopEsABU1XfkM8A+j0+85JAGppt16cr1Whg6KIbb4okU6Mql6BOj+uup/wKeA==";
@@ -41389,6 +45862,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "stringify-object"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/stringify-object/-/stringify-object-3.3.0.tgz";
         sha512 = "rHqiFh1elqCQ9WPLIC8I0Q/g/wj5J1eMkyoiD6eoQApWHP0FtlK7rqnhmabL5VUY9JQCcqwwvlOaSuutekgyrw==";
@@ -41416,6 +45892,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "stringstream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/stringstream/-/stringstream-0.0.6.tgz";
         sha512 = "87GEBAkegbBcweToUrdzf3eLhWNg06FJTebl4BVJz/JgWy8CvEr9dRtX5qWphiynMSQlxxi+QqN0z5T32SLlhA==";
@@ -41443,6 +45922,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-ansi"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/strip-ansi/-/strip-ansi-3.0.1.tgz";
         sha1 = "6a385fb8853d952d5ff05d0e8aaf94278dc63dcf";
@@ -41470,6 +45952,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-ansi"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/strip-ansi/-/strip-ansi-4.0.0.tgz";
         sha1 = "a8479022eb1ac368a871389b635262c505ee368f";
@@ -41497,6 +45982,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-ansi"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/strip-ansi/-/strip-ansi-5.2.0.tgz";
         sha512 = "DuRs1gKbBqsMKIZlrffwlug8MHkcnpjs5VPmL1PAh+mA30U0DTotfDZ0d2UUsXpPmPmMMJ6W773MaA3J+lbiWA==";
@@ -41524,6 +46012,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-ansi"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/strip-ansi/-/strip-ansi-6.0.0.tgz";
         sha512 = "AuvKTrTfQNYNIctbR1K/YGTR1756GycPsg7b9bdV9Duqur4gv6aKqHXah67Z8ImS7WEz5QVcOtlfW2rZEugt6w==";
@@ -41551,6 +46042,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-bom"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/strip-bom/-/strip-bom-2.0.0.tgz";
         sha1 = "6219a85616520491f35788bdbf1447a99c7e6b0e";
@@ -41578,6 +46072,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-bom"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/strip-bom/-/strip-bom-3.0.0.tgz";
         sha1 = "2334c18e9c759f7bdd56fdef7e9ae3d588e68ed3";
@@ -41605,6 +46102,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-bom"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/strip-bom/-/strip-bom-4.0.0.tgz";
         sha512 = "3xurFv5tEgii33Zi8Jtp55wEIILR9eh34FAW00PZf+JnSsTmV/ioewSgQl97JHvgjoRGwPShsWm+IdrxB35d0w==";
@@ -41632,6 +46132,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-eof"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/strip-eof/-/strip-eof-1.0.0.tgz";
         sha1 = "bb43ff5598a6eb05d89b59fcd129c983313606bf";
@@ -41659,6 +46162,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-final-newline"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/strip-final-newline/-/strip-final-newline-2.0.0.tgz";
         sha512 = "BrpvfNAE3dcvq7ll3xVumzjKjZQ5tI1sEUIKr3Uoks0XUl45St3FlatVqef9prk4jRDzhW6WZg+3bk93y6pLjA==";
@@ -41686,6 +46192,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-indent"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/strip-indent/-/strip-indent-1.0.1.tgz";
         sha1 = "0c7962a6adefa7bbd4ac366460a638552ae1a0a2";
@@ -41713,6 +46222,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-indent"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/strip-indent/-/strip-indent-3.0.0.tgz";
         sha512 = "laJTa3Jb+VQpaC6DseHhF7dXVqHTfJPCRDaEbid/drOhgitgYku/letMUqOXFoWV0zIIUbjpdH2t+tYj4bQMRQ==";
@@ -41740,6 +46252,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-json-comments"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/strip-json-comments/-/strip-json-comments-1.0.4.tgz";
         sha1 = "1e15fbcac97d3ee99bf2d73b4c656b082bbafb91";
@@ -41767,6 +46282,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-json-comments"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/strip-json-comments/-/strip-json-comments-2.0.1.tgz";
         sha1 = "3c531942e908c2697c0ec344858c286c7ca0a60a";
@@ -41794,6 +46312,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "strip-json-comments"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/strip-json-comments/-/strip-json-comments-3.1.1.tgz";
         sha512 = "6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==";
@@ -41821,6 +46342,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "subarg"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/subarg/-/subarg-1.0.0.tgz";
         sha1 = "f62cf17581e996b48fc965699f54c06ae268b8d2";
@@ -41848,6 +46372,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "supports-color"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/supports-color/-/supports-color-1.3.1.tgz";
         sha1 = "15758df09d8ff3b4acc307539fabe27095e1042d";
@@ -41875,6 +46402,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "supports-color"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/supports-color/-/supports-color-2.0.0.tgz";
         sha1 = "535d045ce6b6363fa40117084629995e9df324c7";
@@ -41902,6 +46432,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "supports-color"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/supports-color/-/supports-color-3.2.3.tgz";
         sha1 = "65ac0504b3954171d8a64946b2ae3cbb8a5f54f6";
@@ -41929,6 +46462,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "supports-color"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/supports-color/-/supports-color-5.4.0.tgz";
         sha512 = "zjaXglF5nnWpsq470jSv6P9DwPvgLkuapYmfDm3JWOm0vkNTVF2tI4UrN2r6jH1qM/uc/WtxYY1hYoA2dOKj5w==";
@@ -41956,6 +46492,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "supports-color"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/supports-color/-/supports-color-5.5.0.tgz";
         sha512 = "QjVjwdXIt408MIiAqCX4oUKsgU2EqAGzs2Ppkm4aQYbjm+ZEWEcW4SfFNTr4uMNZma0ey4f5lgLrkB0aX0QMow==";
@@ -41983,6 +46522,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "supports-color"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/supports-color/-/supports-color-6.0.0.tgz";
         sha512 = "on9Kwidc1IUQo+bQdhi8+Tijpo0e1SS6RoGo2guUwn5vdaxw8RXOF9Vb2ws+ihWOmh4JnCJOvaziZWP1VABaLg==";
@@ -42010,6 +46552,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "supports-color"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/supports-color/-/supports-color-6.1.0.tgz";
         sha512 = "qe1jfm1Mg7Nq/NSh6XE24gPXROEVsWHxC1LIx//XNlD9iw7YZQGjZNjYN7xGaEG6iKdA8EtNFW6R0gjnVXp+wQ==";
@@ -42037,6 +46582,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "supports-color"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/supports-color/-/supports-color-7.2.0.tgz";
         sha512 = "qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==";
@@ -42064,6 +46612,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "supports-color"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/supports-color/-/supports-color-8.1.1.tgz";
         sha512 = "MpUEN2OodtUzxvKQl72cUF7RQ5EiHsGvSsVG0ia9c5RbWGL2CI4C7EpPS8UTBIplnlzZiNuV56w+FuNxy3ty2Q==";
@@ -42091,6 +46642,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "supports-hyperlinks"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/supports-hyperlinks/-/supports-hyperlinks-2.2.0.tgz";
         sha512 = "6sXEzV5+I5j8Bmq9/vUphGRM/RJNT9SCURJLjwfOg51heRtguGWDzcaBlgAzKhQa0EVNpPEKzQuBwZ8S8WaCeQ==";
@@ -42118,6 +46672,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "symbol-tree"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/symbol-tree/-/symbol-tree-3.2.4.tgz";
         sha512 = "9QNk5KwDF+Bvz+PyObkmSYjI5ksVUYtjW7AU22r2NKcfLJcXp96hkDWU3+XndOsUb+AQ9QhfzfCT2O+CNWT5Tw==";
@@ -42145,6 +46702,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "syntax-error"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/syntax-error/-/syntax-error-1.4.0.tgz";
         sha512 = "YPPlu67mdnHGTup2A8ff7BC2Pjq0e0Yp/IyTFN03zWO0RcK07uLcbi7C2KpGR2FvWbaB0+bfE27a+sBKebSo7w==";
@@ -42172,6 +46732,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "table"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/table/-/table-3.8.3.tgz";
         sha1 = "2bbc542f0fda9861a755d3947fefd8b3f513855f";
@@ -42199,6 +46762,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "table"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/table/-/table-5.4.6.tgz";
         sha512 = "wmEc8m4fjnob4gt5riFRtTu/6+4rSe12TpAELNSqHMfF3IqnA+CH37USM6/YR3qRZv7e56kAEAtd6nKZaxe0Ug==";
@@ -42226,6 +46792,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "table"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/table/-/table-6.7.1.tgz";
         sha512 = "ZGum47Yi6KOOFDE8m223td53ath2enHcYLgOCjGr5ngu8bdIARQk6mN/wRMv4yMRcHnCSnHbCEha4sobQx5yWg==";
@@ -42253,6 +46822,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "taffydb"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/taffydb/-/taffydb-2.6.2.tgz";
         sha1 = "7cbcb64b5a141b6a2efc2c5d2c67b4e150b2a268";
@@ -42280,6 +46852,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tap"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tap/-/tap-0.4.13.tgz";
         sha1 = "3986134d6759727fc2223e61126eeb87243accbc";
@@ -42307,6 +46882,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tap"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tap/-/tap-1.4.1.tgz";
         sha1 = "1fef098ecbfbea68128b9efd8efd9dd267608b43";
@@ -42334,6 +46912,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tap"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tap/-/tap-14.11.0.tgz";
         sha512 = "z8qnNFVyIjLh/bNoTLFRkEk09XZUDAZbCkz/BjvHHly3ao5H+y60gPnedALfheEjA6dA4tpp/mrKq2NWlMuq0A==";
@@ -42361,6 +46942,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tap"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tap/-/tap-15.0.9.tgz";
         sha512 = "bqY5SxEqYKRd37PIUfKBf9HMs/hklyl/fGXkuStr9rYTIGa0/icpSLsm6IVOmx2qT0/TliPNJ6OvS5kddJYHdg==";
@@ -42388,6 +46972,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tap"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tap/-/tap-5.7.3.tgz";
         sha1 = "f275511f8fb07350cd38d2640e373d3f46541674";
@@ -42415,6 +47002,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tap-mocha-reporter"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tap-mocha-reporter/-/tap-mocha-reporter-0.0.27.tgz";
         sha1 = "b2f72f3e1e8ba780ee02918fcdeb3a40da8018f7";
@@ -42442,6 +47032,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tap-mocha-reporter"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tap-mocha-reporter/-/tap-mocha-reporter-5.0.1.tgz";
         sha512 = "1knFWOwd4khx/7uSEnUeaP9IPW3w+sqTgJMhrwah6t46nZ8P25atOKAjSvVDsT67lOPu0nfdOqUwoyKn+3E5pA==";
@@ -42469,6 +47062,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tap-parser"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tap-parser/-/tap-parser-1.3.2.tgz";
         sha1 = "120c5089c88c3c8a793ef288867de321e18f8c22";
@@ -42496,6 +47092,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tap-parser"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tap-parser/-/tap-parser-10.1.0.tgz";
         sha512 = "FujQeciDaOiOvaIVGS1Rpb0v4R6XkOjvWCWowlz5oKuhPkEJ8U6pxgqt38xuzYhPt8dWEnfHn2jqpZdJEkW7pA==";
@@ -42523,6 +47122,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tap-yaml"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tap-yaml/-/tap-yaml-1.0.0.tgz";
         sha512 = "Rxbx4EnrWkYk0/ztcm5u3/VznbyFJpyXO12dDBHKWiDVxy7O2Qw6MRrwO5H6Ww0U5YhRY/4C/VzWmFPhBQc4qQ==";
@@ -42550,6 +47152,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tape"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tape/-/tape-2.3.0.tgz";
         sha1 = "0dfeec709227fbcc9170abe7f046962b271431db";
@@ -42577,6 +47182,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tape"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tape/-/tape-4.13.3.tgz";
         sha512 = "0/Y20PwRIUkQcTCSi4AASs+OANZZwqPKaipGCEwp10dQMipVvSZwUUCi01Y/OklIGyHKFhIcjock+DKnBfLAFw==";
@@ -42604,6 +47212,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tar"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tar/-/tar-2.2.2.tgz";
         sha512 = "FCEhQ/4rE1zYv9rYXJw/msRqsnmlje5jHP6huWeBZ704jUTy02c5AZyWujpMR1ax6mVw9NyJMfuK2CMDWVIfgA==";
@@ -42631,6 +47242,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tar"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tar/-/tar-6.1.0.tgz";
         sha512 = "DUCttfhsnLCjwoDoFcI+B2iJgYa93vBnDUATYEeRx6sntCTdN01VnqsIuTlALXla/LWooNg0yEGeB+Y8WdFxGA==";
@@ -42658,6 +47272,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tar-fs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tar-fs/-/tar-fs-1.16.3.tgz";
         sha512 = "NvCeXpYx7OsmOh8zIOP/ebG55zZmxLE0etfWRbWok+q2Qo8x/vOR/IJT1taADXPe+jsiu9axDb3X4B+iIgNlKw==";
@@ -42685,6 +47302,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tar-stream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tar-stream/-/tar-stream-1.6.2.tgz";
         sha512 = "rzS0heiNf8Xn7/mpdSVVSMAWAoy9bfb1WOTYC78Z0UQKeKa/CWS8FOq0lKGNa8DWKAn9gxjCvMLYc5PGXYlK2A==";
@@ -42712,6 +47332,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tar-stream"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tar-stream/-/tar-stream-2.2.0.tgz";
         sha512 = "ujeqbceABgwMZxEJnk2HDY2DlnUZ+9oEcb1KzTVfYHio0UE6dG71n60d8D2I4qNvleWrrXpmjpt7vZeF1LnMZQ==";
@@ -42739,6 +47362,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tcompare"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tcompare/-/tcompare-3.0.5.tgz";
         sha512 = "+tmloQj1buaShBX+LP1i1NF5riJm110Yr0flIJAEoKf01tFVoMZvW2jq1JLqaW8fspOUVPm5NKKW5qLwT0ETDQ==";
@@ -42766,6 +47392,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tcompare"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tcompare/-/tcompare-5.0.6.tgz";
         sha512 = "OvO7omN/wkdsKzmOqr3sQFfLbghs/2X5mwSkcfgRiXZshfPnTsAs3IRf1RixR/Pff26qG/r9ogcZMpV0YdeGXg==";
@@ -42793,6 +47422,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "terminal-link"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/terminal-link/-/terminal-link-2.1.1.tgz";
         sha512 = "un0FmiRUQNr5PJqy9kP7c40F5BOfpGlYTrxonDChEZB7pzZxRNp/bt+ymiy9/npwXya9KH99nJ/GXFIiUkYGFQ==";
@@ -42820,6 +47452,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "terser"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/terser/-/terser-3.17.0.tgz";
         sha512 = "/FQzzPJmCpjAH9Xvk2paiWrFq+5M6aVOf+2KRbwhByISDX/EujxsK+BAvrhb6H+2rtrLCHK9N01wO014vrIwVQ==";
@@ -42847,6 +47482,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "test-exclude"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/test-exclude/-/test-exclude-5.2.3.tgz";
         sha512 = "M+oxtseCFO3EDtAaGH7iiej3CBkzXqFMbzqYAACdzKui4eZA+pq3tZEwChvOdNfa7xxy8BfbmgJSIr43cC/+2g==";
@@ -42874,6 +47512,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "test-exclude"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/test-exclude/-/test-exclude-6.0.0.tgz";
         sha512 = "cAGWPIyOHU6zlmg88jwm7VRyXnMN7iV68OGAbYDk/Mh/xC/pzVPlQtY6ngoIH/5/tciuhGfvESU8GrHrcxD56w==";
@@ -42901,6 +47542,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tester"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tester/-/tester-1.4.5.tgz";
         sha512 = "u1yemL+9y5Hi84XNunjadJ+oxYo0y3FE1FWG621HWFwM2J4lGktxG++ptyno9wQyp8z7a7gfzHhqivK32YED+w==";
@@ -42928,6 +47572,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "text-table"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/text-table/-/text-table-0.2.0.tgz";
         sha1 = "7f5ee823ae805207c00af2df4a84ec3fcfa570b4";
@@ -42955,6 +47602,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "throat"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/throat/-/throat-5.0.0.tgz";
         sha512 = "fcwX4mndzpLQKBS1DVYhGAcYaYt7vsHNIvQV+WXMvnow5cgjPphq5CaayLaGsjRdSCKZFNGt7/GYAuXaNOiYCA==";
@@ -42982,6 +47632,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "throat"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/throat/-/throat-6.0.1.tgz";
         sha512 = "8hmiGIJMDlwjg7dlJ4yKGLK8EsYqKgPWbG3b4wjJddKNwc7N7Dpn08Df4szr/sZdMVeOstrdYSsqzX6BYbcB+w==";
@@ -43009,6 +47662,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "through"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/through/-/through-2.3.8.tgz";
         sha1 = "0dd4c9ffaabc357960b1b724115d7e0e86a2e1f5";
@@ -43036,6 +47692,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "through2"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/through2/-/through2-2.0.5.tgz";
         sha512 = "/mrRod8xqpA+IHSLyGCQ2s8SPHiCDEeQJSep1jqLYeEUClOFG2Qsh+4FU6G9VeqpZnGW/Su8LQGc4YKni5rYSQ==";
@@ -43063,6 +47722,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "timers-browserify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/timers-browserify/-/timers-browserify-1.4.2.tgz";
         sha1 = "c9c58b575be8407375cb5e2462dacee74359f41d";
@@ -43090,6 +47752,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tinycolor2"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tinycolor2/-/tinycolor2-1.4.2.tgz";
         sha512 = "vJhccZPs965sV/L2sU4oRQVAos0pQXwsvTLkWYdqJ+a8Q5kPFzJTuOFwy7UniPli44NKQGAglksjvOcpo95aZA==";
@@ -43117,6 +47782,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tinygradient"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tinygradient/-/tinygradient-0.4.3.tgz";
         sha512 = "tBPYQSs6eWukzzAITBSmqcOwZCKACvRa/XjPPh1mj4mnx4G3Drm51HxyCTU/TKnY8kG4hmTe5QlOh9O82aNtJQ==";
@@ -43144,6 +47812,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tmatch"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tmatch/-/tmatch-2.0.1.tgz";
         sha1 = "0c56246f33f30da1b8d3d72895abaf16660f38cf";
@@ -43171,6 +47842,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tmp"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tmp/-/tmp-0.0.33.tgz";
         sha512 = "jRCJlojKnZ3addtTOjdIqoRuPEKBvNXcGYqzO6zWZX8KfKEpnGY5jfggJQ3EjKuu8D4bJRr0y+cYJFmYbImXGw==";
@@ -43198,6 +47872,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tmp"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tmp/-/tmp-0.2.1.tgz";
         sha512 = "76SUhtfqR2Ijn+xllcI5P1oyannHNHByD80W1q447gU3mp9G9PSpGdWmjUOHRDPiHYacIk66W7ubDTuPF3BEtQ==";
@@ -43225,6 +47902,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tmpl"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tmpl/-/tmpl-1.0.4.tgz";
         sha1 = "23640dd7b42d00433911140820e5cf440e521dd1";
@@ -43252,6 +47932,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "to-buffer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/to-buffer/-/to-buffer-1.1.1.tgz";
         sha512 = "lx9B5iv7msuFYE3dytT+KE5tap+rNYw+K4jVkb9R/asAb+pbBSM17jtunHplhBe6RRJdZx3Pn2Jph24O32mOVg==";
@@ -43279,6 +47962,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "to-fast-properties"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/to-fast-properties/-/to-fast-properties-2.0.0.tgz";
         sha1 = "dc5e698cbd079265bc73e0377681a4e4e83f616e";
@@ -43306,6 +47992,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "to-object-path"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/to-object-path/-/to-object-path-0.3.0.tgz";
         sha1 = "297588b7b0e7e0ac08e04e672f85c1f4999e17af";
@@ -43333,6 +48022,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "to-regex"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/to-regex/-/to-regex-3.0.2.tgz";
         sha512 = "FWtleNAtZ/Ki2qtqej2CXTOayOH9bHDQF+Q48VpWyDXjbYxA4Yz8iDB31zXOBUlOHHKidDbqGVrTUvQMPmBGBw==";
@@ -43360,6 +48052,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "to-regex-range"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/to-regex-range/-/to-regex-range-2.1.1.tgz";
         sha1 = "7c80c17b9dfebe599e27367e0d4dd5590141db38";
@@ -43387,6 +48082,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "to-regex-range"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/to-regex-range/-/to-regex-range-5.0.1.tgz";
         sha512 = "65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==";
@@ -43414,6 +48112,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tough-cookie"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tough-cookie/-/tough-cookie-2.3.4.tgz";
         sha512 = "TZ6TTfI5NtZnuyy/Kecv+CnoROnyXn2DN97LontgQpCwsX2XyLYCC0ENhYkehSOwAp8rTQKc/NUIF7BkQ5rKLA==";
@@ -43441,6 +48142,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tough-cookie"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tough-cookie/-/tough-cookie-2.5.0.tgz";
         sha512 = "nlLsUzgm1kfLXSXfRZMc1KLAugd4hqJHDTvc2hDIwS3mZAfMEuMbc03SujMF+GEcpaX/qboeycw6iO8JwVv2+g==";
@@ -43468,6 +48172,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tough-cookie"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tough-cookie/-/tough-cookie-4.0.0.tgz";
         sha512 = "tHdtEpQCMrc1YLrMaqXXcj6AxhYi/xgit6mZu1+EDWUn+qhUf8wMQoFIy9NXuq23zAwtcB0t/MjACGR18pcRbg==";
@@ -43495,6 +48202,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tr46"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tr46/-/tr46-2.1.0.tgz";
         sha512 = "15Ih7phfcdP5YxqiB+iDtLoaTz4Nd35+IiAv0kQ5FNKHzXgdWqPoTIqEDDJmXceQt4JZk6lVPT8lnDlPpGDppw==";
@@ -43522,6 +48232,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "traverse"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/traverse/-/traverse-0.5.2.tgz";
         sha1 = "e203c58d5f7f0e37db6e74c0acb929bb09b61d85";
@@ -43549,6 +48262,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "traverse"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/traverse/-/traverse-0.6.6.tgz";
         sha1 = "cbdf560fd7b9af632502fed40f918c157ea97137";
@@ -43576,6 +48292,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "trim-newlines"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/trim-newlines/-/trim-newlines-3.0.1.tgz";
         sha512 = "c1PTsA3tYrIsLGkJkzHF+w9F2EyxfXGo4UyJc4pFL++FMjnq0HJS69T3M7d//gKrFKwy429bouPescbjecU+Zw==";
@@ -43603,6 +48322,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "trivial-deferred"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/trivial-deferred/-/trivial-deferred-1.0.1.tgz";
         sha1 = "376d4d29d951d6368a6f7a0ae85c2f4d5e0658f3";
@@ -43630,6 +48352,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "try-async"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/try-async/-/try-async-1.1.10.tgz";
         sha512 = "R//xexQ218FCzb29ch2t//yi3LeW1+ihI7fkWSAkGNWKEmAEZwWweIp4y/2/x+sgeF97rG47LfMHMLq4apiM8g==";
@@ -43657,6 +48382,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ts-jest"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ts-jest/-/ts-jest-27.0.3.tgz";
         sha512 = "U5rdMjnYam9Ucw+h0QvtNDbc5+88nxt7tbIvqaZUhFrfG4+SkWhMXjejCLVGcpILTPuV+H3W/GZDZrnZFpPeXw==";
@@ -43684,6 +48412,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ts-node"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ts-node/-/ts-node-8.10.2.tgz";
         sha512 = "ISJJGgkIpDdBhWVu3jufsWpK3Rzo7bdiIXJjQc0ynKxVOVcg2oIrf2H2cejminGrptVc6q6/uynAHNCuWGbpVA==";
@@ -43711,6 +48442,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ts-toolbelt"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ts-toolbelt/-/ts-toolbelt-6.15.5.tgz";
         sha512 = "FZIXf1ksVyLcfr7M317jbB67XFJhOO1YqdTcuGaq9q5jLUoTikukZ+98TPjKiP2jC5CgmYdWWYs0s2nLSU0/1A==";
@@ -43738,6 +48472,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tsconfig-paths"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tsconfig-paths/-/tsconfig-paths-3.10.1.tgz";
         sha512 = "rETidPDgCpltxF7MjBZlAFPUHv5aHH2MymyPvh+vEyWAED4Eb/WeMbsnD/JDr4OKPOA1TssDHgIcpTN5Kh0p6Q==";
@@ -43765,6 +48502,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tsd"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tsd/-/tsd-0.17.0.tgz";
         sha512 = "+HUwya2NgoP/g9t2gRCC3I8VtGu65NgG9Lv75vNzMaxjMFo+0VXF9c4sj3remSzJYeBHLNKzWMbFOinPqrL20Q==";
@@ -43792,6 +48532,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tslib"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tslib/-/tslib-1.14.1.tgz";
         sha512 = "Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==";
@@ -43819,6 +48562,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tslint"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tslint/-/tslint-5.14.0.tgz";
         sha512 = "IUla/ieHVnB8Le7LdQFRGlVJid2T/gaJe5VkjzRVSRR6pA2ODYrnfR1hmxi+5+au9l50jBwpbBL34txgv4NnTQ==";
@@ -43846,6 +48592,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tsutils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tsutils/-/tsutils-2.29.0.tgz";
         sha512 = "g5JVHCIJwzfISaXpXE1qvNalca5Jwob6FjI4AoPlqMusJ6ftFE7IkkFoMhVLRgK+4Kx3gkzb8UZK5t5yTTvEmA==";
@@ -43873,6 +48622,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tsutils"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tsutils/-/tsutils-3.21.0.tgz";
         sha512 = "mHKK3iUXL+3UF6xL5k0PEhKRUBKPBCv/+RkEOpjRWxxx27KKRBmmA60A9pgOUvMi8GKhRMPEmjBRPzs2W7O1OA==";
@@ -43900,6 +48652,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tty-browserify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tty-browserify/-/tty-browserify-0.0.1.tgz";
         sha512 = "C3TaO7K81YvjCgQH9Q1S3R3P3BtN3RIM8n+OvX4il1K1zgE8ZhI0op7kClgkxtutIE8hQrcrHBXvIheqKUUCxw==";
@@ -43927,6 +48682,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tunnel-agent"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tunnel-agent/-/tunnel-agent-0.4.3.tgz";
         sha1 = "6373db76909fe570e08d73583365ed828a74eeeb";
@@ -43954,6 +48712,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tunnel-agent"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tunnel-agent/-/tunnel-agent-0.6.0.tgz";
         sha1 = "27a5dea06b36b04a0a9966774b290868f0fc40fd";
@@ -43981,6 +48742,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "tweetnacl"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/tweetnacl/-/tweetnacl-0.14.5.tgz";
         sha1 = "5ae68177f192d4456269d108afa93ff8743f4f64";
@@ -44008,6 +48772,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "type"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/type/-/type-1.2.0.tgz";
         sha512 = "+5nt5AAniqsCnu2cEQQdpzCAh33kVx8n0VoFidKpB1dVVLAN/F+bgVOqOJqOnEnrhp222clB5p3vUlD+1QAnfg==";
@@ -44035,6 +48802,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "type"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/type/-/type-2.5.0.tgz";
         sha512 = "180WMDQaIMm3+7hGXWf12GtdniDEy7nYcyFMKJn/eZz/6tSLXrUN9V0wKSbMjej0I1WHWbpREDEKHtqPQa9NNw==";
@@ -44062,6 +48832,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "type-check"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/type-check/-/type-check-0.3.2.tgz";
         sha1 = "5884cab512cf1d355e3fb784f30804b2b520db72";
@@ -44089,6 +48862,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "type-check"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/type-check/-/type-check-0.4.0.tgz";
         sha512 = "XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==";
@@ -44116,6 +48892,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "type-detect"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/type-detect/-/type-detect-4.0.8.tgz";
         sha512 = "0fr/mIH1dlO+x7TlcMy+bIDqKPsw/70tVyeHW787goQjhmqaZe10uwLujubK9q9Lg6Fiho1KUKDYz0Z7k7g5/g==";
@@ -44143,6 +48922,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "type-fest"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/type-fest/-/type-fest-0.18.1.tgz";
         sha512 = "OIAYXk8+ISY+qTOwkHtKqzAuxchoMiD9Udx+FSGQDuiRR+PJKJHc2NJAXlbhkGwTt/4/nKZxELY1w3ReWOL8mw==";
@@ -44170,6 +48952,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "type-fest"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/type-fest/-/type-fest-0.20.2.tgz";
         sha512 = "Ne+eE4r0/iWnpAxD852z3A+N0Bt5RN//NjJwRd2VFHEmrywxf5vsZlh4R6lixl6B+wz/8d+maTSAkN1FIkI3LQ==";
@@ -44197,6 +48982,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "type-fest"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/type-fest/-/type-fest-0.21.3.tgz";
         sha512 = "t0rzBq87m3fVcduHDUFhKmyyX+9eo6WQjZvf51Ea/M0Q7+T374Jp1aUiyUl0GKxp8M/OETVHSDvmkyPgvX+X2w==";
@@ -44224,6 +49012,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "type-fest"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/type-fest/-/type-fest-0.3.1.tgz";
         sha512 = "cUGJnCdr4STbePCgqNFbpVNCepa+kAVohJs1sLhxzdH+gnEoOd8VhbYa7pD3zZYGiURWM2xzEII3fQcRizDkYQ==";
@@ -44251,6 +49042,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "type-fest"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/type-fest/-/type-fest-0.6.0.tgz";
         sha512 = "q+MB8nYR1KDLrgr4G5yemftpMC7/QLqVndBmEEdqzmNj5dcFOO4Oo8qlwZE3ULT3+Zim1F8Kq4cBnikNhlCMlg==";
@@ -44278,6 +49072,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "type-fest"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/type-fest/-/type-fest-0.8.1.tgz";
         sha512 = "4dbzIzqvjtgiM5rw1k5rEHtBANKmdudhGyBEajN01fEyhaAIhsoKNy6y7+IN93IfpFtwY9iqi7kD+xwKhQsNJA==";
@@ -44305,6 +49102,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "typedarray"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/typedarray/-/typedarray-0.0.6.tgz";
         sha1 = "867ac74e3864187b1d3d47d996a78ec5c8830777";
@@ -44332,6 +49132,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "typedarray-to-buffer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/typedarray-to-buffer/-/typedarray-to-buffer-3.1.5.tgz";
         sha512 = "zdu8XMNEDepKKR+XYOXAVPtWui0ly0NtohUscw+UmaHiAWT8hrV1rr//H6V+0DvJ3OQ19S979M0laLfX8rm82Q==";
@@ -44359,6 +49162,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "typescript"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/typescript/-/typescript-3.9.10.tgz";
         sha512 = "w6fIxVE/H1PkLKcCPsFqKE7Kv7QUwhU8qQY2MueZXWx5cPZdwFupLgKK3vntcK98BtNHZtAF4LA/yl2a7k8R6Q==";
@@ -44386,6 +49192,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "typescript"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/typescript/-/typescript-4.1.5.tgz";
         sha512 = "6OSu9PTIzmn9TCDiovULTnET6BgXtDYL4Gg4szY+cGsc3JP1dQL8qvE8kShTRx1NIw4Q9IBHlwODjkjWEtMUyA==";
@@ -44413,6 +49222,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "typescript"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/typescript/-/typescript-4.3.5.tgz";
         sha512 = "DqQgihaQ9cUrskJo9kIyW/+g0Vxsk8cDtZ52a3NGh0YNTfpUSArXSohyUGnvbPazEPLu398C0UxmKSOrPumUzA==";
@@ -44440,6 +49252,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "typpy"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/typpy/-/typpy-2.3.13.tgz";
         sha512 = "vOxIcQz9sxHi+rT09SJ5aDgVgrPppQjwnnayTrMye1ODaU8gIZTDM19t9TxmEElbMihx2Nq/0/b/MtyKfayRqA==";
@@ -44467,6 +49282,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "uc-first-array"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/uc-first-array/-/uc-first-array-1.1.10.tgz";
         sha512 = "tX2PJLrqtexTxVN9hTTY+K5gPnF2gyj7SfjPF4Q2Xhbi1fSNiO12I/G+AoMzxJLwr9R50CmVn8iAhWCvZlJm3A==";
@@ -44494,6 +49312,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "uc.micro"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/uc.micro/-/uc.micro-1.0.6.tgz";
         sha512 = "8Y75pvTYkLJW2hWQHXxoqRgV7qb9B+9vFEtidML+7koHUFapnVJAZ6cKs+Qjz5Aw3aZWHMC6u0wJE3At+nSGwA==";
@@ -44521,6 +49342,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ucfirst"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ucfirst/-/ucfirst-1.0.0.tgz";
         sha1 = "4e105b6448d05e264ecec435e0b919363c5f2f2f";
@@ -44548,6 +49372,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "uglify-js"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/uglify-js/-/uglify-js-1.1.1.tgz";
         sha1 = "ee71a97c4cefd06a1a9b20437f34118982aa035b";
@@ -44575,6 +49402,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "uglify-js"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/uglify-js/-/uglify-js-3.13.10.tgz";
         sha512 = "57H3ACYFXeo1IaZ1w02sfA71wI60MGco/IQFjOqK+WtKoprh7Go2/yvd2HPtoJILO2Or84ncLccI4xoHMTSbGg==";
@@ -44602,6 +49432,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "uid-number"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/uid-number/-/uid-number-0.0.5.tgz";
         sha1 = "5a3db23ef5dbd55b81fce0ec9a2ac6fccdebb81e";
@@ -44629,6 +49462,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ul"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ul/-/ul-5.2.15.tgz";
         sha512 = "svLEUy8xSCip5IWnsRa0UOg+2zP0Wsj4qlbjTmX6GJSmvKMHADBuHOm1dpNkWqWPIGuVSqzUkV3Cris5JrlTRQ==";
@@ -44656,6 +49492,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "umd"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/umd/-/umd-3.0.3.tgz";
         sha512 = "4IcGSufhFshvLNcMCV80UnQVlZ5pMOC8mvNPForqwA4+lzYQuetTESLDQkeLmihq8bRcnpbQa48Wb8Lh16/xow==";
@@ -44683,6 +49522,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "unbox-primitive"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/unbox-primitive/-/unbox-primitive-1.0.1.tgz";
         sha512 = "tZU/3NqK3dA5gpE1KtyiJUrEB0lxnGkMFHptJ7q6ewdZ8s12QrODwNbhIJStmJkd1QDXa1NRA8aF2A1zk/Ypyw==";
@@ -44710,6 +49552,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "undeclared-identifiers"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/undeclared-identifiers/-/undeclared-identifiers-1.1.3.tgz";
         sha512 = "pJOW4nxjlmfwKApE4zvxLScM/njmwj/DiUBv7EabwE4O8kRUy+HIwxQtZLBPll/jx1LJyBcqNfB3/cpv9EZwOw==";
@@ -44737,6 +49582,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "underscore"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/underscore/-/underscore-1.13.1.tgz";
         sha512 = "hzSoAVtJF+3ZtiFX0VgfFPHEDRm7Y/QPjGyNo4TVdnDTdft3tr8hEkD25a1jC+TjTuE7tkHGKkhwCgs9dgBB2g==";
@@ -44764,6 +49612,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "unicode-canonical-property-names-ecmascript"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/unicode-canonical-property-names-ecmascript/-/unicode-canonical-property-names-ecmascript-1.0.4.tgz";
         sha512 = "jDrNnXWHd4oHiTZnx/ZG7gtUTVp+gCcTTKr8L0HjlwphROEW3+Him+IpvC+xcJEFegapiMZyZe02CyuOnRmbnQ==";
@@ -44791,6 +49642,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "unicode-length"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/unicode-length/-/unicode-length-1.0.3.tgz";
         sha1 = "5ada7a7fed51841a418a328cf149478ac8358abb";
@@ -44818,6 +49672,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "unicode-length"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/unicode-length/-/unicode-length-2.0.2.tgz";
         sha512 = "Ph/j1VbS3/r77nhoY2WU0GWGjVYOHL3xpKp0y/Eq2e5r0mT/6b649vm7KFO6RdAdrZkYLdxphYVgvODxPB+Ebg==";
@@ -44845,6 +49702,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "unicode-match-property-ecmascript"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/unicode-match-property-ecmascript/-/unicode-match-property-ecmascript-1.0.4.tgz";
         sha512 = "L4Qoh15vTfntsn4P1zqnHulG0LdXgjSO035fEpdtp6YxXhMT51Q6vgM5lYdG/5X3MjS+k/Y9Xw4SFCY9IkR0rg==";
@@ -44872,6 +49732,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "unicode-match-property-value-ecmascript"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/unicode-match-property-value-ecmascript/-/unicode-match-property-value-ecmascript-1.2.0.tgz";
         sha512 = "wjuQHGQVofmSJv1uVISKLE5zO2rNGzM/KCYZch/QQvez7C1hUhBIuZ701fYXExuufJFMPhv2SyL8CyoIfMLbIQ==";
@@ -44899,6 +49762,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "unicode-property-aliases-ecmascript"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/unicode-property-aliases-ecmascript/-/unicode-property-aliases-ecmascript-1.1.0.tgz";
         sha512 = "PqSoPh/pWetQ2phoj5RLiaqIk4kCNwoV3CI+LfGmWLKI3rE3kl1h59XpX2BjgDrmbxD9ARtQobPGU1SguCYuQg==";
@@ -44926,6 +49792,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "union-value"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/union-value/-/union-value-1.0.1.tgz";
         sha512 = "tJfXmxMeWYnczCVs7XAEvIV7ieppALdyepWMkHkwciRpZraG/xwT+s2JN8+pr1+8jCRf80FFzvr+MpQeeoF4Xg==";
@@ -44953,6 +49822,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "uniq"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/uniq/-/uniq-1.0.1.tgz";
         sha1 = "b31c5ae8254844a3a8281541ce2b04b865a734ff";
@@ -44980,6 +49852,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "unique-filename"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/unique-filename/-/unique-filename-1.1.1.tgz";
         sha512 = "Vmp0jIp2ln35UTXuryvjzkjGdRyf9b2lTXuSYUiPmzRcl3FDtYqAwOnTJkAngD9SWhnoJzDbTKwaOrZ+STtxNQ==";
@@ -45007,6 +49882,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "unique-slug"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/unique-slug/-/unique-slug-2.0.2.tgz";
         sha512 = "zoWr9ObaxALD3DOPfjPSqxt4fnZiWblxHIgeWqW8x7UqDzEtHEQLzji2cuJYQFCU6KmoJikOYAZlrTHHebjx2w==";
@@ -45034,6 +49912,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "universalify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/universalify/-/universalify-0.1.2.tgz";
         sha512 = "rBJeI5CXAlmy1pV+617WB9J63U6XcazHHF2f2dbJix4XzpUF0RS3Zbj0FGIOCAva5P/d/GBOYaACQ1w+0azUkg==";
@@ -45061,6 +49942,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "universalify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/universalify/-/universalify-2.0.0.tgz";
         sha512 = "hAZsKq7Yy11Zu1DE0OzWjw7nnLZmJZYTDZZyEFHZdUhV8FkH5MCfoU1XMaxXovpyW5nq5scPqq0ZDP9Zyl04oQ==";
@@ -45088,6 +49972,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "unset-value"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/unset-value/-/unset-value-1.0.0.tgz";
         sha1 = "8376873f7d2335179ffb1e6fc3a8ed0dfc8ab559";
@@ -45115,6 +50002,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "uri-js"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/uri-js/-/uri-js-4.4.1.tgz";
         sha512 = "7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==";
@@ -45142,6 +50032,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "urix"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/urix/-/urix-0.1.0.tgz";
         sha1 = "da937f7a62e21fec1fd18d49b35c2935067a6c72";
@@ -45169,6 +50062,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "url"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/url/-/url-0.11.0.tgz";
         sha1 = "3838e97cfc60521eb73c525a8e55bfdd9e2e28f1";
@@ -45196,6 +50092,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "urlgrey"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/urlgrey/-/urlgrey-0.4.0.tgz";
         sha1 = "f065357040fb35c3b311d4e5dc36484d96dbea06";
@@ -45223,6 +50122,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "use"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/use/-/use-3.1.1.tgz";
         sha512 = "cwESVXlO3url9YWlFW/TA9cshCEhtu7IKJ/p5soJ/gGpj7vbvFrAY/eIioQ6Dw23KjZhYgiIo8HOs1nQ2vr/oQ==";
@@ -45250,6 +50152,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "user-home"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/user-home/-/user-home-2.0.0.tgz";
         sha1 = "9c70bfd8169bc1dcbf48604e0f04b8b49cde9e9f";
@@ -45277,6 +50182,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "util"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/util/-/util-0.10.3.tgz";
         sha1 = "7afb1afe50805246489e3db7fe0ed379336ac0f9";
@@ -45304,6 +50212,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "util"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/util/-/util-0.10.4.tgz";
         sha512 = "0Pm9hTQ3se5ll1XihRic3FDIku70C+iHUdT/W926rSgHV5QgXsYbKZN8MSC3tJtSkhuROzvsQjAaFENRXr+19A==";
@@ -45331,6 +50242,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "util-deprecate"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/util-deprecate/-/util-deprecate-1.0.2.tgz";
         sha1 = "450d4dc9fa70de732762fbd2d4a28981419a0ccf";
@@ -45358,6 +50272,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "util.promisify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/util.promisify/-/util.promisify-1.1.1.tgz";
         sha512 = "/s3UsZUrIfa6xDhr7zZhnE9SLQ5RIXyYfiVnMMyMDzOc8WhWN4Nbh36H842OyurKbCDAesZOJaVyvmSl6fhGQw==";
@@ -45385,6 +50302,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "uuid"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/uuid/-/uuid-3.4.0.tgz";
         sha512 = "HjSDRw6gZE5JMggctHBcjVak08+KEVhSIiDzFnT9S9aegmp85S/bReBVTb4QTFaRNptJ9kuYaNhnbNEOkbKb/A==";
@@ -45412,6 +50332,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "v8-compile-cache"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/v8-compile-cache/-/v8-compile-cache-2.3.0.tgz";
         sha512 = "l8lCEmLcLYZh4nbunNZvQCJc5pv7+RCwa8q/LdUx8u7lsWvPDKmpodJAJNwkAhJC//dFY48KuIEmjtd4RViDrA==";
@@ -45439,6 +50362,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "v8-to-istanbul"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/v8-to-istanbul/-/v8-to-istanbul-7.1.2.tgz";
         sha512 = "TxNb7YEUwkLXCQYeudi6lgQ/SZrzNO4kMdlqVxaZPUIUjCv6iSSypUQX70kNBSERpQ8fk48+d61FXk+tgqcWow==";
@@ -45466,6 +50392,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "v8-to-istanbul"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/v8-to-istanbul/-/v8-to-istanbul-8.0.0.tgz";
         sha512 = "LkmXi8UUNxnCC+JlH7/fsfsKr5AU110l+SYGJimWNkWhxbN5EyeOtm1MJ0hhvqMMOhGwBj1Fp70Yv9i+hX0QAg==";
@@ -45493,6 +50422,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "validate-glob-opts"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/validate-glob-opts/-/validate-glob-opts-1.0.2.tgz";
         sha512 = "3PKjRQq/R514lUcG9OEiW0u9f7D4fP09A07kmk1JbNn2tfeQdAHhlT+A4dqERXKu2br2rrxSM3FzagaEeq9w+A==";
@@ -45520,6 +50452,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "validate-npm-package-license"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/validate-npm-package-license/-/validate-npm-package-license-3.0.4.tgz";
         sha512 = "DpKm2Ui/xN7/HQKCtpZxoRWBhZ9Z0kqtygG8XCgNQ8ZlDnxuQmWhj566j8fN4Cu3/JmbhsDo7fcAJq4s9h27Ew==";
@@ -45547,6 +50482,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "validate-npm-package-name"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/validate-npm-package-name/-/validate-npm-package-name-3.0.0.tgz";
         sha1 = "5fa912d81eb7d0c74afc140de7317f0ca7df437e";
@@ -45574,6 +50512,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "verror"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/verror/-/verror-1.10.0.tgz";
         sha1 = "3a105ca17053af55d6e270c1f8288682e18da400";
@@ -45601,6 +50542,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "vlq"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/vlq/-/vlq-0.2.3.tgz";
         sha512 = "DRibZL6DsNhIgYQ+wNdWDL2SL3bKPlVrRiBqV5yuMm++op8W4kGFtaQfCs4KEJn0wBZcHVHJ3eoywX8983k1ow==";
@@ -45628,6 +50572,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "vm-browserify"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/vm-browserify/-/vm-browserify-1.1.2.tgz";
         sha512 = "2ham8XPWTONajOR0ohOKOHXkm3+gaBmGut3SRuu75xLd/RRaY6vqgh8NBYYk7+RW3u5AtzPQZG8F10LHkl0lAQ==";
@@ -45655,6 +50602,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "w3c-hr-time"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/w3c-hr-time/-/w3c-hr-time-1.0.2.tgz";
         sha512 = "z8P5DvDNjKDoFIHK7q8r8lackT6l+jo/Ye3HOle7l9nICP9lf1Ci25fy9vHd0JOWewkIFzXIEig3TdKT7JQ5fQ==";
@@ -45682,6 +50632,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "w3c-xmlserializer"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/w3c-xmlserializer/-/w3c-xmlserializer-2.0.0.tgz";
         sha512 = "4tzD0mF8iSiMiNs30BiLO3EpfGLZUT2MSX/G+o7ZywDzliWQ3OPtTZ0PTC3B3ca1UAf4cJMHB+2Bf56EriJuRA==";
@@ -45709,6 +50662,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "walker"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/walker/-/walker-1.0.7.tgz";
         sha1 = "2f7f9b8fd10d677262b18a884e28d19618e028fb";
@@ -45736,6 +50692,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "webidl-conversions"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/webidl-conversions/-/webidl-conversions-5.0.0.tgz";
         sha512 = "VlZwKPCkYKxQgeSbH5EyngOmRp7Ww7I9rQLERETtf5ofd9pGeswWiOtogpEO850jziPRarreGxn5QIiTqpb2wA==";
@@ -45763,6 +50722,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "webidl-conversions"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/webidl-conversions/-/webidl-conversions-6.1.0.tgz";
         sha512 = "qBIvFLGiBpLjfwmYAaHPXsn+ho5xZnGvyGvsarywGNc8VyQJUMHJ8OBKGGrPER0okBeMDaan4mNBlgBROxuI8w==";
@@ -45790,6 +50752,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "whatwg-encoding"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/whatwg-encoding/-/whatwg-encoding-1.0.5.tgz";
         sha512 = "b5lim54JOPN9HtzvK9HFXvBma/rnfFeqsic0hSpjtDbVxR3dJKLc+KB4V6GgiGOvl7CY/KNh8rxSo9DKQrnUEw==";
@@ -45817,6 +50782,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "whatwg-mimetype"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/whatwg-mimetype/-/whatwg-mimetype-2.3.0.tgz";
         sha512 = "M4yMwr6mAnQz76TbJm914+gPpB/nCwvZbJU28cUD6dR004SAxDLOOSUaB1JDRqLtaOV/vi0IC5lEAGFgrjGv/g==";
@@ -45844,6 +50812,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "whatwg-url"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/whatwg-url/-/whatwg-url-8.7.0.tgz";
         sha512 = "gAojqb/m9Q8a5IV96E3fHJM70AzCkgt4uXYX2O7EmuyOnLrViCQlsEBmF9UQIu3/aeAIp2U17rtbpZWNntQqdg==";
@@ -45871,6 +50842,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "which"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/which/-/which-1.3.1.tgz";
         sha512 = "HxJdYWq1MTIQbJ3nw0cqssHoTNU267KlrDuGZ1WYlxDStUtKUhOaJmh112/TZmHxxUfuJqPXSOm7tDyas0OSIQ==";
@@ -45898,6 +50872,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "which"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/which/-/which-2.0.2.tgz";
         sha512 = "BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==";
@@ -45925,6 +50902,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "which-boxed-primitive"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/which-boxed-primitive/-/which-boxed-primitive-1.0.2.tgz";
         sha512 = "bwZdv0AKLpplFY2KZRX6TvyuN7ojjr7lwkg6ml0roIy9YeuSr7JS372qlNW18UQYzgYK9ziGcerWqZOmEn9VNg==";
@@ -45952,6 +50932,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "which-builtin-type"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/which-builtin-type/-/which-builtin-type-1.1.0.tgz";
         sha512 = "KOX/VAdpOLOahMo64rn+tPK8IHc8TY12r2iCM/Lvlgk6JMzShmxz751C5HEHP55zBAQe2eJeltmfyGbe3ggw4Q==";
@@ -45979,6 +50962,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "which-collection"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/which-collection/-/which-collection-1.0.1.tgz";
         sha512 = "W8xeTUwaln8i3K/cY1nGXzdnVZlidBcagyNFtBdD5kxnb4TvGKR7FfSIS3mYpwWS1QUCutfKz8IY8RjftB0+1A==";
@@ -46006,6 +50992,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "which-module"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/which-module/-/which-module-2.0.0.tgz";
         sha1 = "d9ef07dce77b9902b8a3a8fa4b31c3e3f7e6e87a";
@@ -46033,6 +51022,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "which-typed-array"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/which-typed-array/-/which-typed-array-1.1.4.tgz";
         sha512 = "49E0SpUe90cjpoc7BOJwyPHRqSAd12c10Qm2amdEZrJPCY2NDxaW01zHITrem+rnETY3dwrbH3UUrUwagfCYDA==";
@@ -46060,6 +51052,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "wide-align"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/wide-align/-/wide-align-1.1.3.tgz";
         sha512 = "QGkOQc8XL6Bt5PwnsExKBPuMKBxnGxWWW3fU55Xt4feHozMUhdUMaBCk290qpm/wG5u/RSKzwdAC4i51YigihA==";
@@ -46087,6 +51082,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "widest-line"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/widest-line/-/widest-line-3.1.0.tgz";
         sha512 = "NsmoXalsWVDMGupxZ5R08ka9flZjjiLvHVAWYOKtiKM8ujtZWr9cRffak+uSE48+Ob8ObalXpwyeUiyDD6QFgg==";
@@ -46114,6 +51112,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "win-user-installed-npm-cli-path"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/win-user-installed-npm-cli-path/-/win-user-installed-npm-cli-path-2.0.4.tgz";
         sha512 = "i+fSInL3Li47P9gGcJabtgvl2+hLmZwMsh4664WWuI1F/pQPtv4XerrOyg8poxvDv4o/QwB60f20MKtIX/CCxQ==";
@@ -46141,6 +51142,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "window-size"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/window-size/-/window-size-0.1.4.tgz";
         sha1 = "f8e1aa1ee5a53ec5bf151ffa09742a6ad7697876";
@@ -46168,6 +51172,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "window-size"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/window-size/-/window-size-1.1.1.tgz";
         sha512 = "5D/9vujkmVQ7pSmc0SCBmHXbkv6eaHwXEx65MywhmUMsI8sGqJ972APq1lotfcwMKPFLuCFfL8xGHLIp7jaBmA==";
@@ -46195,6 +51202,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "word-wrap"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/word-wrap/-/word-wrap-1.2.3.tgz";
         sha512 = "Hz/mrNwitNRh/HUAtM/VT/5VH+ygD6DV7mYKZAtHOrbs8U7lvPS6xf7EJKMF0uW1KJCl0H701g3ZGus+muE5vQ==";
@@ -46222,6 +51232,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "wordwrap"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/wordwrap/-/wordwrap-0.0.3.tgz";
         sha1 = "a3d5da6cd5c0bc0008d37234bbaf1bed63059107";
@@ -46249,6 +51262,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "wordwrap"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/wordwrap/-/wordwrap-1.0.0.tgz";
         sha1 = "27584810891456a4171c8d0226441ade90cbcaeb";
@@ -46276,6 +51292,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "workerpool"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/workerpool/-/workerpool-6.1.0.tgz";
         sha512 = "toV7q9rWNYha963Pl/qyeZ6wG+3nnsyvolaNUS8+R5Wtw6qJPTxIlOP1ZSvcGhEJw+l3HMMmtiNo9Gl61G4GVg==";
@@ -46303,6 +51322,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "wrap-ansi"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/wrap-ansi/-/wrap-ansi-2.1.0.tgz";
         sha1 = "d8fc3d284dd05794fe84973caecdd1cf824fdd85";
@@ -46330,6 +51352,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "wrap-ansi"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/wrap-ansi/-/wrap-ansi-5.1.0.tgz";
         sha512 = "QC1/iN/2/RPVJ5jYK8BGttj5z83LmSKmvbvrXPNCLZSEb32KKVDJDl/MOt2N01qU2H/FkzEa9PKto1BqDjtd7Q==";
@@ -46357,6 +51382,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "wrap-ansi"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/wrap-ansi/-/wrap-ansi-6.2.0.tgz";
         sha512 = "r6lPcBGxZXlIcymEu7InxDMhdW0KDxpLgoFLcguasxCaJ/SOIZwINatK9KY/tf+ZrlywOKU0UDj3ATXUBfxJXA==";
@@ -46384,6 +51412,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "wrap-ansi"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/wrap-ansi/-/wrap-ansi-7.0.0.tgz";
         sha512 = "YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==";
@@ -46411,6 +51442,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "wrappy"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/wrappy/-/wrappy-1.0.2.tgz";
         sha1 = "b5243d8f3ec1aa35f1364605bc0d1036e30ab69f";
@@ -46438,6 +51472,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "write"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/write/-/write-0.2.1.tgz";
         sha1 = "5fc03828e264cea3fe91455476f7a3c566cb0757";
@@ -46465,6 +51502,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "write"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/write/-/write-1.0.3.tgz";
         sha512 = "/lg70HAjtkUgWPVZhZcm+T4hkL8Zbtp1nFNOn3lRrxnlv50SRBv7cR7RqR+GMsd3hUXy9hWBo4CHTbFTcOYwig==";
@@ -46492,6 +51532,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "write-file-atomic"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/write-file-atomic/-/write-file-atomic-2.4.3.tgz";
         sha512 = "GaETH5wwsX+GcnzhPgKcKjJ6M2Cq3/iZp1WyY/X1CSqrW+jVNM9Y7D8EC2sM4ZG/V8wZlSniJnCKWPmBYAucRQ==";
@@ -46519,6 +51562,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "write-file-atomic"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/write-file-atomic/-/write-file-atomic-3.0.3.tgz";
         sha512 = "AvHcyZ5JnSfq3ioSyjrBkH9yW4m7Ayk8/9My/DD9onKeu/94fwrMocemO2QAJFAlnnDN+ZDS+ZjAR5ua1/PV/Q==";
@@ -46546,6 +51592,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "ws"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/ws/-/ws-7.5.3.tgz";
         sha512 = "kQ/dHIzuLrS6Je9+uv81ueZomEwH0qVYstcAQ4/Z93K8zeko9gtAbttJWzoC5ukqXY1PpoouV3+VSOqEAFt5wg==";
@@ -46573,6 +51622,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "xdg-basedir"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/xdg-basedir/-/xdg-basedir-4.0.0.tgz";
         sha512 = "PSNhEJDejZYV7h50BohL09Er9VaIefr2LMAf3OEmpCkjOi34eYyQYAXUTjEQtZJTKcF0E2UKTh+osDLsgNim9Q==";
@@ -46600,6 +51652,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "xml-name-validator"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/xml-name-validator/-/xml-name-validator-3.0.0.tgz";
         sha512 = "A5CUptxDsvxKJEU3yO6DuWBSJz/qizqzJKOMIfUJHETbBw/sFaDxgd6fxm1ewUaM0jZ444Fc5vC5ROYurg/4Pw==";
@@ -46627,6 +51682,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "xmlchars"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/xmlchars/-/xmlchars-2.2.0.tgz";
         sha512 = "JZnDKK8B0RCDw84FNdDAIpZK+JuJw+s7Lz8nksI7SIuU3UXJJslUthsi+uWBUYOwPFwW7W7PRLRfUKpxjtjFCw==";
@@ -46654,6 +51712,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "xmlcreate"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/xmlcreate/-/xmlcreate-2.0.3.tgz";
         sha512 = "HgS+X6zAztGa9zIK3Y3LXuJes33Lz9x+YyTxgrkIdabu2vqcGOWwdfCpf1hWLRrd553wd4QCDf6BBO6FfdsRiQ==";
@@ -46681,6 +51742,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "xtend"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/xtend/-/xtend-4.0.2.tgz";
         sha512 = "LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==";
@@ -46708,6 +51772,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "y18n"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/y18n/-/y18n-3.2.2.tgz";
         sha512 = "uGZHXkHnhF0XeeAPgnKfPv1bgKAYyVvmNL1xlKsPYZPaIHxGti2hHqvOCQv71XMsLxu1QjergkqogUnms5D3YQ==";
@@ -46735,6 +51802,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "y18n"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/y18n/-/y18n-4.0.3.tgz";
         sha512 = "JKhqTOwSrqNA1NY5lSztJ1GrBiUodLMmIZuLiDaMRJ+itFd+ABVE8XBjOvIWL+rSqNDC74LCSFmlb/U4UZ4hJQ==";
@@ -46762,6 +51832,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "y18n"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/y18n/-/y18n-5.0.8.tgz";
         sha512 = "0pfFzegeDWJHJIAmTLRP2DwHjdF5s7jo9tuztdQxAhINCdvS+3nGINqPd00AphqJR/0LhANUS6/+7SCb98YOfA==";
@@ -46789,6 +51862,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yallist"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/yallist/-/yallist-2.1.2.tgz";
         sha1 = "1c11f9218f076089a47dd512f93c6699a6a81d52";
@@ -46816,6 +51892,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yallist"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/yallist/-/yallist-4.0.0.tgz";
         sha512 = "3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==";
@@ -46843,6 +51922,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yaml"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/yaml/-/yaml-1.10.2.tgz";
         sha512 = "r3vXyErRCYJ7wg28yvBY5VSoAF8ZvlcW9/BwUzEtUsjvX/DKs24dIkuwjtuprwJJHsbyUbLApepYTR1BN4uHrg==";
@@ -46870,6 +51952,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yamlish"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/yamlish/-/yamlish-0.0.7.tgz";
         sha1 = "b4af9a1dcc63618873c3d6e451ec3213c39a57fb";
@@ -46897,6 +51982,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yapool"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/yapool/-/yapool-1.0.0.tgz";
         sha1 = "f693f29a315b50d9a9da2646a7a6645c96985b6a";
@@ -46924,6 +52012,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yargs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/yargs/-/yargs-13.3.2.tgz";
         sha512 = "AX3Zw5iPruN5ie6xGRIDgqkT+ZhnRlZMLMHAs8tg7nRruy2Nb+i5o9bwghAogtM08q1dpr2LVoS8KSTMYpWXUw==";
@@ -46951,6 +52042,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yargs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/yargs/-/yargs-15.4.1.tgz";
         sha512 = "aePbxDmcYW++PaqBsJ+HYUFwCdv4LVvdnhBy78E57PIor8/OVvhMrADFFEDh8DHDFRv/O9i3lPhsENjO7QX0+A==";
@@ -46978,6 +52072,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yargs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/yargs/-/yargs-16.2.0.tgz";
         sha512 = "D1mvvtDG0L5ft/jGWkLpG1+m0eQxOfaBvTNELraWj22wSVUMWxZUvYgJYcKh6jGGIkJFhH4IZPQhR4TKpc8mBw==";
@@ -47005,6 +52102,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yargs"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/yargs/-/yargs-3.32.0.tgz";
         sha1 = "03088e9ebf9e756b69751611d2a5ef591482c995";
@@ -47032,6 +52132,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yargs-parser"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/yargs-parser/-/yargs-parser-10.1.0.tgz";
         sha512 = "VCIyR1wJoEBZUqk5PA+oOBF6ypbwh5aNB3I50guxAL/quggdfs4TtNHQrSazFA3fYZ+tEqfs0zIGlv0c/rgjbQ==";
@@ -47059,6 +52162,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yargs-parser"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/yargs-parser/-/yargs-parser-13.1.2.tgz";
         sha512 = "3lbsNRf/j+A4QuSZfDRA7HRSfWrzO0YjqTJd5kjAq37Zep1CEgaYmrH9Q3GwPiB9cHyd1Y1UwggGhJGoxipbzg==";
@@ -47086,6 +52192,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yargs-parser"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/yargs-parser/-/yargs-parser-18.1.3.tgz";
         sha512 = "o50j0JeToy/4K6OZcaQmW6lyXXKhq7csREXcDwk2omFPJEwUNOVtJKvmDr9EI1fAJZUyZcRF7kxGBWmRXudrCQ==";
@@ -47113,6 +52222,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yargs-parser"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/yargs-parser/-/yargs-parser-20.2.4.tgz";
         sha512 = "WOkpgNhPTlE73h4VFAFsOnomJVaovO8VqLDzy5saChRBFQFBoMYirowyW+Q9HB4HFF4Z7VZTiG3iSzJJA29yRA==";
@@ -47140,6 +52252,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yargs-parser"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/yargs-parser/-/yargs-parser-20.2.9.tgz";
         sha512 = "y11nGElTIV+CT3Zv9t7VKl+Q3hTQoT9a1Qzezhhl6Rp21gJ/IVTW7Z3y9EWXhuUBC2Shnf+DX0antecpAwSP8w==";
@@ -47167,6 +52282,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yargs-unparser"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/yargs-unparser/-/yargs-unparser-1.6.0.tgz";
         sha512 = "W9tKgmSn0DpSatfri0nx52Joq5hVXgeLiqR/5G0sZNDoLZFOr/xjBUDcShCOGNsBnEMNo1KAMBkTej1Hm62HTw==";
@@ -47194,6 +52312,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yargs-unparser"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/yargs-unparser/-/yargs-unparser-2.0.0.tgz";
         sha512 = "7pRTIA9Qc1caZ0bZ6RYRGbHJthJWuakf+WmHK0rVeLkNrrGhfoabBNdue6kdINI6r4if7ocq9aD/n7xwKOdzOA==";
@@ -47221,6 +52342,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yn"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/yn/-/yn-3.1.1.tgz";
         sha512 = "Ux4ygGWsu2c7isFWe8Yu1YluJmqVhxqK2cLXNQA5AcC3QfbGNpM7fu0Y8b/z16pXLnFxZYvWhd3fhBY9DLmC6Q==";
@@ -47248,6 +52372,9 @@ let
       configurePhase = "true";
       buildPhase = "true";
       installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "yocto-queue"; };
+      doCheck = false;
+      dontStrip = true;
+      dontFixup = true;
       src = fetchurl {
         url = "https://registry.npmjs.org/yocto-queue/-/yocto-queue-0.1.0.tgz";
         sha512 = "rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==";
@@ -48578,7 +53705,7 @@ let
         url = "https://registry.npmjs.org/base64-js/-/base64-js-1.5.1.tgz";
         sha512 = "AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==";
       };
-      buildInputs = [ nodejs python3 makeWrapper perl jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "base64-js"; });
       dontStrip = true;
@@ -48615,6 +53742,8 @@ let
       postInstall = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postInstall"; pkgName = "base64-js"; });
       preBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "preBuild"; pkgName = "base64-js"; });
       postBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postBuild"; pkgName = "base64-js"; });
+      doInstallCheck = true;
+      installCheckPhase = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "installCheckPhase"; pkgName = "base64-js"; });
       meta = {
         description = "Base64 encoding/decoding in pure JS";
         license = "MIT";
@@ -49418,7 +54547,7 @@ let
         url = "https://registry.npmjs.org/cachedir/-/cachedir-2.3.0.tgz";
         sha512 = "A+Fezp4zxnit6FanDmv9EqXNAi3vt9DWp51/71UEhXukb7QUuvtv9344h91dyAxuTLoSYJFU299qzR3tzwPAhw==";
       };
-      buildInputs = [ nodejs python3 makeWrapper perl jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "cachedir"; });
       dontStrip = true;
@@ -49455,6 +54584,8 @@ let
       postInstall = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postInstall"; pkgName = "cachedir"; });
       preBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "preBuild"; pkgName = "cachedir"; });
       postBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postBuild"; pkgName = "cachedir"; });
+      doInstallCheck = true;
+      installCheckPhase = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "installCheckPhase"; pkgName = "cachedir"; });
       meta = {
         description = "Provides a directory where the OS wants you to store cached files.";
         license = "MIT";
@@ -51637,7 +56768,7 @@ let
         url = "https://registry.npmjs.org/commander/-/commander-8.0.0.tgz";
         sha512 = "Xvf85aAtu6v22+E5hfVoLHqyul/jyxh91zvqk/ioJTQuJR7Z78n7H558vMPKanPSRgIEeZemT92I2g9Y8LPbSQ==";
       };
-      buildInputs = [ nodejs python3 makeWrapper perl jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "commander"; });
       dontStrip = true;
@@ -51674,6 +56805,8 @@ let
       postInstall = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postInstall"; pkgName = "commander"; });
       preBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "preBuild"; pkgName = "commander"; });
       postBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postBuild"; pkgName = "commander"; });
+      doInstallCheck = true;
+      installCheckPhase = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "installCheckPhase"; pkgName = "commander"; });
       meta = {
         description = "the complete solution for node.js command-line programs";
         license = "MIT";
@@ -51764,7 +56897,7 @@ let
         url = "https://registry.npmjs.org/findit/-/findit-2.0.0.tgz";
         sha1 = "6509f0126af4c178551cfa99394e032e13a4d56e";
       };
-      buildInputs = [ nodejs python3 makeWrapper perl jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "findit"; });
       dontStrip = true;
@@ -51801,6 +56934,8 @@ let
       postInstall = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postInstall"; pkgName = "findit"; });
       preBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "preBuild"; pkgName = "findit"; });
       postBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postBuild"; pkgName = "findit"; });
+      doInstallCheck = true;
+      installCheckPhase = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "installCheckPhase"; pkgName = "findit"; });
       meta = {
         description = "walk a directory tree recursively with events";
         license = "MIT";
@@ -53130,7 +58265,7 @@ let
         url = "https://registry.npmjs.org/fs-extra/-/fs-extra-10.0.0.tgz";
         sha512 = "C5owb14u9eJwizKGdchcDUQeFtlSHHthBk8pbX9Vc1PFZrLombudjDnNns88aYslCyF6IY5SUw3Roz6xShcEIQ==";
       };
-      buildInputs = [ nodejs python3 makeWrapper perl jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "fs-extra"; });
       dontStrip = true;
@@ -53167,6 +58302,8 @@ let
       postInstall = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postInstall"; pkgName = "fs-extra"; });
       preBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "preBuild"; pkgName = "fs-extra"; });
       postBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postBuild"; pkgName = "fs-extra"; });
+      doInstallCheck = true;
+      installCheckPhase = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "installCheckPhase"; pkgName = "fs-extra"; });
       meta = {
         description = "fs-extra contains methods that aren't included in the vanilla Node.js fs package. Such as recursive mkdir, copy, and remove.";
         license = "MIT";
@@ -53775,7 +58912,7 @@ let
         url = "https://registry.npmjs.org/git-url-parse/-/git-url-parse-11.5.0.tgz";
         sha512 = "TZYSMDeM37r71Lqg1mbnMlOqlHd7BSij9qN7XwTkRqSAYFMihGLGhfHwgqQob3GUhEneKnV4nskN9rbQw2KGxA==";
       };
-      buildInputs = [ nodejs python3 makeWrapper perl jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "git-url-parse"; });
       dontStrip = true;
@@ -53812,6 +58949,8 @@ let
       postInstall = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postInstall"; pkgName = "git-url-parse"; });
       preBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "preBuild"; pkgName = "git-url-parse"; });
       postBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postBuild"; pkgName = "git-url-parse"; });
+      doInstallCheck = true;
+      installCheckPhase = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "installCheckPhase"; pkgName = "git-url-parse"; });
       meta = {
         description = "A high level git url parser for common git providers.";
         license = "MIT";
@@ -53913,7 +59052,7 @@ let
         url = "https://registry.npmjs.org/nijs/-/nijs-0.0.25.tgz";
         sha1 = "04b035cb530d46859d1018839a518c029133f676";
       };
-      buildInputs = [ nodejs python3 makeWrapper perl jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "nijs"; });
       dontStrip = true;
@@ -53950,6 +59089,8 @@ let
       postInstall = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postInstall"; pkgName = "nijs"; });
       preBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "preBuild"; pkgName = "nijs"; });
       postBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postBuild"; pkgName = "nijs"; });
+      doInstallCheck = true;
+      installCheckPhase = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "installCheckPhase"; pkgName = "nijs"; });
       meta = {
         description = "An internal DSL for the Nix package manager in JavaScript";
         license = "MIT";
@@ -54995,7 +60136,7 @@ let
         url = "https://registry.npmjs.org/npm-registry-fetch/-/npm-registry-fetch-11.0.0.tgz";
         sha512 = "jmlgSxoDNuhAtxUIG6pVwwtz840i994dL14FoNVZisrmZW5kWd63IUTNv1m/hyRSGSqWjCUp/YZlS1BJyNp9XA==";
       };
-      buildInputs = [ nodejs python3 makeWrapper perl jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "npm-registry-fetch"; });
       dontStrip = true;
@@ -55032,6 +60173,8 @@ let
       postInstall = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postInstall"; pkgName = "npm-registry-fetch"; });
       preBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "preBuild"; pkgName = "npm-registry-fetch"; });
       postBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postBuild"; pkgName = "npm-registry-fetch"; });
+      doInstallCheck = true;
+      installCheckPhase = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "installCheckPhase"; pkgName = "npm-registry-fetch"; });
       meta = {
         description = "Fetch-based http client for use with npm registry APIs";
         license = "ISC";
@@ -55594,7 +60737,7 @@ let
         url = "https://registry.npmjs.org/npmconf/-/npmconf-2.1.3.tgz";
         sha512 = "iTK+HI68GceCoGOHAQiJ/ik1iDfI7S+cgyG8A+PP18IU3X83kRhQIRhAUNj4Bp2JMx6Zrt5kCiozYa9uGWTjhA==";
       };
-      buildInputs = [ nodejs python3 makeWrapper perl jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "npmconf"; });
       dontStrip = true;
@@ -55631,6 +60774,8 @@ let
       postInstall = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postInstall"; pkgName = "npmconf"; });
       preBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "preBuild"; pkgName = "npmconf"; });
       postBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postBuild"; pkgName = "npmconf"; });
+      doInstallCheck = true;
+      installCheckPhase = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "installCheckPhase"; pkgName = "npmconf"; });
       meta = {
         description = "The config module for npm circa npm@1 and npm@2";
         license = "ISC";
@@ -56440,7 +61585,7 @@ let
         url = "https://registry.npmjs.org/npmlog/-/npmlog-4.1.2.tgz";
         sha512 = "2uUqazuKlTaSI/dC8AzicUck7+IrEaOnN/e0jd3Xtt1KcGpwx30v50mL7oPyr/h9bL3E4aZccVwpwP+5W9Vjkg==";
       };
-      buildInputs = [ nodejs python3 makeWrapper perl jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "npmlog"; });
       dontStrip = true;
@@ -56477,6 +61622,8 @@ let
       postInstall = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postInstall"; pkgName = "npmlog"; });
       preBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "preBuild"; pkgName = "npmlog"; });
       postBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postBuild"; pkgName = "npmlog"; });
+      doInstallCheck = true;
+      installCheckPhase = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "installCheckPhase"; pkgName = "npmlog"; });
       meta = {
         description = "logger for npm";
         license = "ISC";
@@ -56499,7 +61646,7 @@ let
         url = "https://registry.npmjs.org/optparse/-/optparse-1.0.5.tgz";
         sha1 = "75e75a96506611eb1c65ba89018ff08a981e2c16";
       };
-      buildInputs = [ nodejs python3 makeWrapper perl jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "optparse"; });
       dontStrip = true;
@@ -56536,6 +61683,8 @@ let
       postInstall = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postInstall"; pkgName = "optparse"; });
       preBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "preBuild"; pkgName = "optparse"; });
       postBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postBuild"; pkgName = "optparse"; });
+      doInstallCheck = true;
+      installCheckPhase = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "installCheckPhase"; pkgName = "optparse"; });
       meta = {
         description = "Command-line option parser";
         homepage = "";
@@ -59531,7 +64680,7 @@ let
         url = "https://registry.npmjs.org/rambda/-/rambda-6.7.0.tgz";
         sha512 = "qg2atEwhAS4ipYoNfggkIP7qBUbY2OqdW17n25VqZIz5YC1MIwSpIToQ7XacvqSCZz16efM8Y8QKLx+Js1Sybg==";
       };
-      buildInputs = [ nodejs python3 makeWrapper perl jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "rambda"; });
       dontStrip = true;
@@ -59568,6 +64717,8 @@ let
       postInstall = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postInstall"; pkgName = "rambda"; });
       preBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "preBuild"; pkgName = "rambda"; });
       postBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postBuild"; pkgName = "rambda"; });
+      doInstallCheck = true;
+      installCheckPhase = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "installCheckPhase"; pkgName = "rambda"; });
       meta = {
         description = "Lightweight and faster alternative to Ramda";
         license = "MIT";
@@ -60423,7 +65574,7 @@ let
         url = "https://registry.npmjs.org/semver/-/semver-7.3.5.tgz";
         sha512 = "PoeGJYh8HK4BTO/a9Tf6ZG3veo/A7ZVsYrSA6J8ny9nb3B1VrpkuN+z9OE5wfE5p6H4LchYZsegiQgbJD94ZFQ==";
       };
-      buildInputs = [ nodejs python3 makeWrapper perl jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "semver"; });
       dontStrip = true;
@@ -60460,6 +65611,8 @@ let
       postInstall = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postInstall"; pkgName = "semver"; });
       preBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "preBuild"; pkgName = "semver"; });
       postBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postBuild"; pkgName = "semver"; });
+      doInstallCheck = true;
+      installCheckPhase = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "installCheckPhase"; pkgName = "semver"; });
       meta = {
         description = "The semantic version parser used by npm.";
         license = "ISC";
@@ -61132,7 +66285,7 @@ let
         url = "https://registry.npmjs.org/spdx-license-ids/-/spdx-license-ids-3.0.9.tgz";
         sha512 = "Ki212dKK4ogX+xDo4CtOZBVIwhsKBEfsEEcwmJfLQzirgc2jIWdzg40Unxz/HzEUqM1WFzVlQSMF9kZZ2HboLQ==";
       };
-      buildInputs = [ nodejs python3 makeWrapper perl jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "spdx-license-ids"; });
       dontStrip = true;
@@ -61169,6 +66322,8 @@ let
       postInstall = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postInstall"; pkgName = "spdx-license-ids"; });
       preBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "preBuild"; pkgName = "spdx-license-ids"; });
       postBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postBuild"; pkgName = "spdx-license-ids"; });
+      doInstallCheck = true;
+      installCheckPhase = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "installCheckPhase"; pkgName = "spdx-license-ids"; });
       meta = {
         description = "A list of SPDX license identifiers";
         license = "CC0-1.0";
@@ -62574,7 +67729,7 @@ let
         url = "https://registry.npmjs.org/tar/-/tar-6.1.0.tgz";
         sha512 = "DUCttfhsnLCjwoDoFcI+B2iJgYa93vBnDUATYEeRx6sntCTdN01VnqsIuTlALXla/LWooNg0yEGeB+Y8WdFxGA==";
       };
-      buildInputs = [ nodejs python3 makeWrapper perl jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "tar"; });
       dontStrip = true;
@@ -62611,6 +67766,8 @@ let
       postInstall = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postInstall"; pkgName = "tar"; });
       preBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "preBuild"; pkgName = "tar"; });
       postBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postBuild"; pkgName = "tar"; });
+      doInstallCheck = true;
+      installCheckPhase = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "installCheckPhase"; pkgName = "tar"; });
       meta = {
         description = "tar for node";
         license = "ISC";
@@ -62984,7 +68141,7 @@ let
         url = "https://registry.npmjs.org/web-tree-sitter/-/web-tree-sitter-0.19.4.tgz";
         sha512 = "8G0xBj05hqZybCqBtW7RPZ/hWEtP3DiLTauQzGJZuZYfVRgw7qj7iaZ+8djNqJ4VPrdOO+pS2dR1JsTbsLxdYg==";
       };
-      buildInputs = [ nodejs python3 makeWrapper perl jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "web-tree-sitter"; });
       dontStrip = true;
@@ -63021,6 +68178,8 @@ let
       postInstall = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postInstall"; pkgName = "web-tree-sitter"; });
       preBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "preBuild"; pkgName = "web-tree-sitter"; });
       postBuild = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postBuild"; pkgName = "web-tree-sitter"; });
+      doInstallCheck = true;
+      installCheckPhase = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "installCheckPhase"; pkgName = "web-tree-sitter"; });
       meta = {
         description = "Tree-sitter bindings for the web";
         license = "MIT";

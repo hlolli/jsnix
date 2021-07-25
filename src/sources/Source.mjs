@@ -170,6 +170,9 @@ export class Source extends nijs.NixASTNode {
               installPhase: new nijs.NixValue(
                 `transitiveDepInstallPhase { inherit dependencies; pkgName = "${this.config.name}"; }`
               ),
+              doCheck: false,
+              dontStrip: true,
+              dontFixup: true,
             },
           }),
         })
