@@ -164,10 +164,12 @@ export class Package extends nijs.NixASTNode {
     // var self = this;
     const resolvedDependencies = {};
 
-    await this.bundleDependencies(
-      resolvedDependencies,
-      this.source.config.dependencies
-    );
+    if (this.source.config && this.source.config.dependencies) {
+      await this.bundleDependencies(
+        resolvedDependencies,
+        this.source.config.dependencies
+      );
+    }
 
     if (!this.isTransitive) {
       await this.bundleDependencies(
@@ -196,7 +198,7 @@ export class Package extends nijs.NixASTNode {
       this.providedDependencies
     ).sort()) {
       const dependency = this.providedDependencies[dependencyName];
-
+      if (!dependency.source.identifier) return [];
       // For each dependency, refer to the source attribute set that defines it
       const ref = new nijs.NixFunInvocation({
         funExpr: new nijs.NixAttrReference({

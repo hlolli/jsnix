@@ -463,6 +463,11 @@ export class NixExpression extends OutputExpression {
 
   async resolveDependencies(callback) {
     for (const pkgName in this.packages) {
+      for (const srcDep in this.packages[pkgName].sourcesCache.sources) {
+        if (srcDep === "undefined") {
+          delete this.packages[pkgName].sourcesCache.sources[srcDep];
+        }
+      }
       await this.packages[pkgName].source.fetch();
       await this.packages[pkgName].resolveDependencies();
     }
