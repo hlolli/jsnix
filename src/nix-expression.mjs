@@ -150,23 +150,15 @@ const mkBuildScript = new nijs.NixValue(`{ dependencies ? [], pkgName }:
 const mkInstallScript = new nijs.NixValue(`{ pkgName }: ''
       runHook preInstall
       export packageDir="$(pwd)"
-      mkdir -p $dev/lib/node_modules/\${pkgName}
       mkdir -p $out/lib/node_modules/\${pkgName}
-      cd $dev/lib/node_modules/\${pkgName}
-      cp -rfT "$packageDir" "$(pwd)"
-      if [[ -d "$dev/lib/node_modules/\${pkgName}/bin" ]]
-      then
-         mkdir -p $dev/bin
-         ln -s "$dev/lib/node_modules/\${pkgName}/bin"/* $dev/bin
-      fi
       cd $out/lib/node_modules/\${pkgName}
       cp -rfT "$packageDir" "$(pwd)"
-      cat package.json | jq ".peerDependencies // {} | keys" | sed -n 's/.*"\\(.*\\)".*/\\1/p' | while read peerDep; do
-        rm -rf node_modules/"$peerDep"
-      done
-      cat package.json | jq ".devDependencies // {} | keys" | sed -n 's/.*"\\(.*\\)".*/\\1/p' | while read devDep; do
-        rm -rf node_modules/"$devDep"
-      done
+      if [[ -d "$out/lib/node_modules/\${pkgName}/bin" ]]
+      then
+         mkdir -p $out/bin
+         ln -s "$out/lib/node_modules/\${pkgName}/bin"/* $out/bin
+      fi
+      cd $out/lib/node_modules/\${pkgName}
       runHook postInstall
     ''`);
 
@@ -264,7 +256,8 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
                                 (p: (((lib.findSingle (px: px == p.packageName) "none" "found" skipUnpackFor) == "none") &&
                                       (lib.findSingle (px: px == p.packageName) "none" "found" copyUnpackFor) == "found"))
                                 (if (builtins.hasAttr "extraDependencies" drv) then drv.extraDependencies else []));
-         nodeModules = runCommand "\${sanitizeName packageNix.name}_node_modules" { buildInputs = [ nodejs ripgrep ]; } ''
+         buildDepDep = lib.lists.unique (lib.lists.concatMap (d: d.buildInputs) (linkDeps ++ copyDeps));
+         nodeModules = runCommandCC "\${sanitizeName packageNix.name}_node_modules" { buildInputs = buildDepDep; } ''
            echo 'unpack, dedupe and flatten dependencies...'
            mkdir -p $out/lib/node_modules
            cd $out/lib
@@ -284,6 +277,9 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
            }}
            chmod -R +rw node_modules
            \${flattenScript}
+           HOME=$TMPDIR NODE_PATH="$(pwd)/node_modules:$NODE_PATH" \\
+             npm --offline --no-bin-links --nodedir=\${nodeSources} \\
+               "--production" "--preserve-symlinks" rebuild
         '';
     in stdenv.mkDerivation (drv // {
       inherit nodeModules;
@@ -360,8 +356,8 @@ class OutputExpression extends nijs.NixASTNode {
         jq: undefined,
         makeWrapper: undefined,
         python3: undefined,
-        ripgrep: undefined,
         runCommand: undefined,
+        runCommandCC: undefined,
         xcodebuild: undefined,
         "... ": undefined,
         // nodeEnv: undefined,

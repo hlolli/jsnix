@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import semver from "semver";
 import nijs from "nijs";
+import * as GypDepsCompat from "../compat/gyp-deps.mjs";
 import { Source } from "./sources/Source.mjs";
 import { GitSource } from "./sources/GitSource.mjs";
 import { HTTPSource } from "./sources/HTTPSource.mjs";
@@ -171,16 +172,21 @@ export class Package extends nijs.NixASTNode {
       );
     }
 
-    if (!this.isTransitive) {
-      await this.bundleDependencies(
-        resolvedDependencies,
-        this.source.config.devDependencies
-      );
-      await this.bundleDependencies(
-        resolvedDependencies,
-        this.source.config.peerDependencies
-      );
-    }
+    await this.bundleDependencies(
+      resolvedDependencies,
+      this.source.config.peerDependencies
+    );
+
+    // if (!this.isTransitive) {
+    //   await this.bundleDependencies(
+    //     resolvedDependencies,
+    //     this.source.config.devDependencies
+    //   );
+    //   await this.bundleDependencies(
+    //     resolvedDependencies,
+    //     this.source.config.peerDependencies
+    //   );
+    // }
 
     for (const dependencyName in resolvedDependencies) {
       const dependency = resolvedDependencies[dependencyName];
@@ -237,12 +243,14 @@ export class Package extends nijs.NixASTNode {
     }
 
     const ast = this.source.toNixAST();
-
+    const gypBuildDeps = GypDepsCompat.resolveExtraGypInputs(
+      Object.keys(this.providedDependencies || {})
+    );
     ast.dependencies = new nijs.NixInherit();
     ast.extraDependencies = new nijs.NixInherit();
     ast.buildInputs = new nijs.NixValue(
-      `[ nodejs python3 makeWrapper ripgrep jq ] ++
-         (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
+      `[ nodejs python3 makeWrapper jq ${gypBuildDeps.buildInputs} ] ++
+         (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ${gypBuildDeps.darwinBuildInputs}]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "${this.source.config.name}"; })`
     );
     ast.dontStrip = new nijs.NixValue("true"); // it's just too slow atm with node_modules

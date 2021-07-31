@@ -63,7 +63,8 @@ func semverFits(pkgJson1 string, pkgJson2 string) int {
 	v1, err1 := semver.Make(ver1)
 	v2, err2 := semver.Make(ver2)
 	res := v1.Compare(v2)
-	fmt.Println(pkgJson1 + " " + ver1, pkgJson2 + " " + ver2, res)
+	// fmt.Println(pkgJson1 + " " + ver1, pkgJson2 + " " + ver2, res)
+
 	return res
 }
 
