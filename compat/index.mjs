@@ -5,7 +5,7 @@ import * as R from "rambda";
 
 const mkCompatabilityPkgsNames = (kvPkgs) =>
   R.reduce(
-    (acc, val) => R.assoc(val.split(/@|#/)[0], val)(acc),
+    (acc, val) => R.assoc(R.splitAt(val.lastIndexOf("@"), val)[0], val)(acc),
     {}
   )(R.keys(kvPkgs));
 
@@ -28,6 +28,7 @@ export const resolveCompat = ({
     preCompatabilityPkgsNames,
   ]);
   if (allCompatabilityPkgsNames[name]) {
+    // console.log(name);
     const maybeCompat = allCompatabilityPkgsNames[name];
     const badCompatVer = maybeCompat.substring(
       maybeCompat.lastIndexOf("@") + 1
@@ -42,26 +43,10 @@ export const resolveCompat = ({
     //     true
     //   )
     // );
+    const compat = allCompatabilityPkgs[maybeCompat];
 
-    if (
-      badCompatVer === "*" ||
-      badCompatVer === versionSpec ||
-      semver.satisfies(
-        (versionSpec || "").replace(/^\^/, ""),
-        badCompatVer,
-        true
-      )
-    ) {
-      const compat = allCompatabilityPkgs[maybeCompat];
-
-      const [compatName, compatVer] = R.splitAt(
-        compat.lastIndexOf("@"),
-        compat
-      );
-      return { versionSpec: compatVer.replace("@", ""), name: compatName };
-    } else {
-      return { versionSpec, name };
-    }
+    const [compatName, compatVer] = R.splitAt(compat.lastIndexOf("@"), compat);
+    return { versionSpec: compatVer.replace("@", ""), name: compatName };
   } else {
     return { versionSpec, name };
   }

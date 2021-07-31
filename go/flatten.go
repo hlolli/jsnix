@@ -1,6 +1,7 @@
 package main
 
 import "fmt"
+import "io"
 import "io/ioutil"
 import "io/fs"
 import "log"
@@ -10,9 +11,61 @@ import "regexp"
 import "strings"
 import "syscall"
 import "github.com/otiai10/copy"
+import "github.com/goccy/go-json"
+import "github.com/blang/semver"
 
 var scopedModuleRe,_ = regexp.Compile(`node_modules/@([^/])*/([^/])*$`)
-var stdModuleRe,_ = regexp.Compile(`node_modules/[^\.^@^/.]*$`)
+var stdModuleRe,_ = regexp.Compile(`node_modules/[^@^/]*$`)
+
+func semverFits(pkgJson1 string, pkgJson2 string) int {
+	pkgJsonBytes1, err1 := ioutil.ReadFile(pkgJson1)
+
+	if err1 != nil {
+		fmt.Print(err1)
+	}
+
+	pkgJsonBytes2, err2 := ioutil.ReadFile(pkgJson2)
+
+	if err2 != nil {
+		fmt.Print(err2)
+	}
+
+	type PackageJson struct {
+		version string
+	}
+
+	dec1 := json.NewDecoder(strings.NewReader(string(pkgJsonBytes1)))
+	var ver1 = "0.0.0"
+	for {
+		var pkg1 PackageJson
+		if err := dec1.Decode(&pkg1); err == io.EOF {
+			break
+		} else if err != nil {
+			log.Fatal(err)
+		}
+
+		ver1 = pkg1.version
+	}
+
+	dec2 := json.NewDecoder(strings.NewReader(string(pkgJsonBytes2)))
+	var ver2 = "0.0.0"
+	for {
+		var pkg2 PackageJson
+		if err := dec2.Decode(&pkg2); err == io.EOF {
+			break
+		} else if err != nil {
+			log.Fatal(err)
+		}
+
+		ver2 = pkg2.version
+	}
+
+	v1, err1 := semver.Make(ver1)
+	v2, err2 := semver.Make(ver2)
+	res := v1.Compare(v2)
+	fmt.Println(pkgJson1 + " " + ver1, pkgJson2 + " " + ver2, res)
+	return res
+}
 
 func IsSyml(fi fs.FileInfo) bool {
 	if fi != nil && fi.Mode() & os.ModeSymlink != 0 {
@@ -143,7 +196,8 @@ func main() {
 			dirName := path.Base(stdFile)
 			if _, err := os.Stat(path.Join("./node_modules", dirName)); err == nil {
 				// path exists
-				if stringInSlice(dirName, topLevelDeps) {
+				existingPath := path.Join("./node_modules", dirName)
+				if semverFits(path.Join(stdFile, "package.json"), path.Join(existingPath, "package.json")) != -1 {
 					os.RemoveAll(stdFile)
 				}
 
@@ -185,7 +239,9 @@ func main() {
 			os.MkdirAll(path.Join("./node_modules", scopeName), 0755)
 			if _, err := os.Stat(path.Join("./node_modules", pName)); err == nil {
 				// path exists
-				if stringInSlice(pName, topLevelDeps) {
+				existingPath := path.Join("./node_modules", pName)
+				if semverFits(path.Join(scopedFile, "package.json"), path.Join(existingPath, "package.json")) != -1 {
+
 					os.RemoveAll(scopedFile)
 				}
 
