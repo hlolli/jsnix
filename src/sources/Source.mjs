@@ -3,6 +3,7 @@ import gitUrlParse from "git-url-parse";
 import url from "url";
 import semver from "semver";
 import nijs from "nijs";
+import * as GypDepsCompat from "../../compat/gyp-deps.mjs";
 
 // needed for '' multiline comments
 nijs.NixValue.prototype.toNixExpr = function () {
@@ -125,6 +126,8 @@ export class Source extends nijs.NixASTNode {
   }
 
   toNixAST() {
+    const gypPatches = GypDepsCompat.resolveSubstitutes(this.config.name);
+    const gypExtraUnpack = GypDepsCompat.resolveExtraUnpack(this.config.name);
     const pkgName = this.config.name
       .replace("@", "_at_")
       .replace("/", "_slash_");
@@ -144,13 +147,13 @@ export class Source extends nijs.NixASTNode {
               ],
               NODE_OPTIONS: new nijs.NixValue('"--preserve-symlinks"'),
               unpackPhase: new nijs.NixValue(
-                `transitiveDepUnpackPhase { inherit dependencies; pkgName = "${this.config.name}"; }`
+                `transitiveDepUnpackPhase { inherit dependencies; pkgName = "${this.config.name}"; } + ''${gypExtraUnpack}''`
               ),
 
               patchPhase: new nijs.NixValue(`''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
-                fi
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
+                fi${gypPatches}
                 ${
                   this.config.name.startsWith("node-gyp")
                     ? `if [ -f "bin/node-gyp.js" ]; then

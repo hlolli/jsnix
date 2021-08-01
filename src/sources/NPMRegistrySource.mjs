@@ -86,7 +86,7 @@ export class NPMRegistrySource extends Source {
       npmFetchOpts.offline = true;
     }
 
-    npmFetchOpts.cache = process.env["jsnix"] || cachedir("node2nix");
+    npmFetchOpts.cache = process.env["jsnix"] || cachedir("jsnix");
 
     let data;
     try {

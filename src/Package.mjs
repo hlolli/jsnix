@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import semver from "semver";
 import nijs from "nijs";
+import * as R from "rambda";
 import * as GypDepsCompat from "../compat/gyp-deps.mjs";
 import { Source } from "./sources/Source.mjs";
 import { GitSource } from "./sources/GitSource.mjs";
@@ -244,8 +245,18 @@ export class Package extends nijs.NixASTNode {
 
     const ast = this.source.toNixAST();
     const gypBuildDeps = GypDepsCompat.resolveExtraGypInputs(
-      Object.keys(this.providedDependencies || {})
+      R.append(
+        this.source.config.name,
+        Object.keys(this.providedDependencies || {})
+      )
     );
+    const gypPatches = GypDepsCompat.resolveSubstitutes(
+      this.source.config.name
+    );
+    const gypExtraUnpack = GypDepsCompat.resolveExtraUnpack(
+      this.source.config.name
+    );
+
     ast.dependencies = new nijs.NixInherit();
     ast.extraDependencies = new nijs.NixInherit();
     ast.buildInputs = new nijs.NixValue(
@@ -265,9 +276,8 @@ export class Package extends nijs.NixASTNode {
     ast.passAsFile = new nijs.NixValue(
       `[ "unpackScript" "configureScript" "buildScript" "installScript" ]`
     );
-    ast.outputs = new nijs.NixValue(`["out" "dev"]`);
     ast.unpackScript = new nijs.NixValue(
-      `mkUnpackScript { inherit dependencies extraDependencies;
+      `mkUnpackScript { dependencies = dependencies ++ extraDependencies;
          pkgName = "${this.source.config.name}"; }`
     );
     ast.configureScript = new nijs.NixValue(`mkConfigureScript {}`);
@@ -276,7 +286,7 @@ export class Package extends nijs.NixASTNode {
     );
 
     ast.buildPhase = new nijs.NixValue(`''
-      source $unpackScriptPath
+      source $unpackScriptPath ${gypExtraUnpack}
       source $configureScriptPath
       runHook preBuild
       if [ -z "$preBuild" ]; then
@@ -287,6 +297,17 @@ export class Package extends nijs.NixASTNode {
         runHook postBuild
       fi
     ''`);
+
+    ast.patchPhase = new nijs.NixValue(`''
+      if [ -z "$prePatch" ]; then
+        runHook prePatch
+      fi
+      ${gypPatches}
+      if [ -z "$postPatch" ]; then
+        runHook postPatch
+      fi
+    ''`);
+
     ast.installScript = new nijs.NixValue(
       `mkInstallScript { pkgName = "${this.source.config.name}"; }`
     );

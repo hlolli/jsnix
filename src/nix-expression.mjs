@@ -41,7 +41,7 @@ const linkNodeModulesExpr = `{dependencies ? [], extraDependencies ? []}:
      '')))
      "" dependencies)`;
 
-const copyNodeModulesExpr = `{dependencies ? [], extraDependencies ? []}:
+const copyNodeModulesExpr = `{dependencies ? [], extraDependencies ? [], stripScripts ? false }:
     (lib.lists.foldr (dep: acc:
       let pkgName = if (builtins.hasAttr "packageName" dep)
                     then dep.packageName else dep.name;
@@ -56,8 +56,9 @@ const copyNodeModulesExpr = `{dependencies ? [], extraDependencies ? []}:
        mkdir -p "node_modules/\${pkgName}"
        cp -rLT "\${dep}/lib/node_modules/\${pkgName}" "node_modules/\${pkgName}"
        chmod -R +rw "node_modules/\${pkgName}"
+       \${lib.optionalString stripScripts "cat <<< $(jq 'del(.scripts,.bin)' \\"node_modules/\${pkgName}/package.json\\") > \\"node_modules/\${pkgName}/package.json\\""}
        \${lib.optionalString (builtins.hasAttr "dependencies" dep)
-         "(cd node_modules/\${dep.packageName}; \${linkNodeModules { inherit (dep) dependencies; inherit extraDependencies; }})"}
+         "(cd node_modules/\${dep.packageName}; \${linkNodeModules { inherit (dep) dependencies; inherit extraDependencies stripScripts; }})"}
      fi
      '')))
      "" dependencies)`;
@@ -75,7 +76,7 @@ const transitiveDepInstallPhase = `{dependencies ? [], pkgName}: ''
     mkdir -p $out/lib/node_modules/\${pkgName}
     cd $out/lib/node_modules/\${pkgName}
     cp -rfT "$packageDir" "$(pwd)"
-    mkdir -p node_modules
+    mkdir -p node_modules/.bin
     \${linkNodeModules { inherit dependencies; }} ''`;
 
 const mkPhaseBan = new nijs.NixValue(`phaseName: usrDrv:
@@ -140,10 +141,12 @@ const mkBuildScript = new nijs.NixValue(`{ dependencies ? [], pkgName }:
     in ''
       runHook preBuild
       export HOME=$TMPDIR
+      npm --offline config set node_gyp \${nodejs}/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js
+      npm --offline config set omit dev
       NODE_PATH="$(pwd)/node_modules:$NODE_PATH" \\
-      npm --offline --no-bin-links --nodedir=\${nodeSources} \\
+      npm --offline --nodedir=\${nodeSources} --location="$(pwd)" \\
           \${extraNpmFlags} "--production" "--preserve-symlinks" \\
-          rebuild
+          rebuild --build-from-source
       runHook postBuild
     ''`);
 
@@ -167,37 +170,37 @@ const nodeSources = new nijs.NixValue(`runCommand "node-sources" {} ''
     mv node-* $out
   ''`);
 
-// const goFlatten = new nijs.NixValue(`pkgs.buildGoModule {
-//   pname = "flatten";
-//   version = "0.0.0";
-//   vendorSha256 = null;
-//   src = pkgs.fetchFromGitHub {
-//     owner = "hlolli";
-//     repo = "jsnix";
-//     rev = "a79fa8510106b692a07d79d58f65077eccc74e6c";
-//     sha256 = "sha256-gEe06QXUAnCsUu0wgGZpw8oCcMPhwbBzTdxJp50yODI=";
-//   };
-//   preBuild = ''
-//     cd go
-//   '';
-// }`);
-
 const goFlatten = new nijs.NixValue(`pkgs.buildGoModule {
   pname = "flatten";
   version = "0.0.0";
   vendorSha256 = null;
-  src = /Users/hlodversigurdsson/forks/jsnix/go;
+  src = pkgs.fetchFromGitHub {
+    owner = "hlolli";
+    repo = "jsnix";
+    rev = "0c04c09759f4f34689db025cdde6d6d44bcc3c74";
+    sha256 = "JPYOxtbX7wEO19PFsVYmMxW/ZzjnaLvd/cbpK2hskkk=";
+  };
   preBuild = ''
-    ls
-    mkdir -p go
-    mv flatten* go
-    chmod -R +rw .
-    mv vendor go
-    mv go.mod go
-    mkdir -p .git
     cd go
   '';
 }`);
+
+// const goFlatten = new nijs.NixValue(`pkgs.buildGoModule {
+//   pname = "flatten";
+//   version = "0.0.0";
+//   vendorSha256 = null;
+//   src = /Users/hlodversigurdsson/forks/jsnix/go;
+//   preBuild = ''
+//     ls
+//     mkdir -p go
+//     mv flatten* go
+//     chmod -R +rw .
+//     mv vendor go
+//     mv go.mod go
+//     mkdir -p .git
+//     cd go
+//   '';
+// }`);
 
 const sanitizeName = new nijs.NixValue(`nm: lib.strings.sanitizeDerivationName
     (builtins.replaceStrings [ "@" "/" ] [ "_at_" "_" ] nm)`);
@@ -262,12 +265,6 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
            mkdir -p $out/lib/node_modules
            cd $out/lib
            \${linkNodeModules {
-                dependencies = extraLinkDeps;
-           }}
-           \${copyNodeModules {
-                dependencies = extraCopyDeps;
-           }}
-           \${linkNodeModules {
                 dependencies = linkDeps;
                 extraDependencies = (lib.optionals (builtins.hasAttr "extraDependencies" drv) drv.extraDependencies);
            }}
@@ -275,9 +272,19 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
                 dependencies = copyDeps;
                 extraDependencies = (lib.optionals (builtins.hasAttr "extraDependencies" drv) drv.extraDependencies);
            }}
+           \${copyNodeModules {
+                dependencies = extraCopyDeps;
+                stripScripts = true;
+           }}
+           \${linkNodeModules {
+                dependencies = extraLinkDeps;
+           }}
            chmod -R +rw node_modules
            \${flattenScript}
-           HOME=$TMPDIR NODE_PATH="$(pwd)/node_modules:$NODE_PATH" \\
+           export HOME=$TMPDIR
+           npm --offline config set node_gyp \${nodejs}/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js
+           npm --offline config set global_style true
+           NODE_PATH="$(pwd)/node_modules:$NODE_PATH" \\
              npm --offline --no-bin-links --nodedir=\${nodeSources} \\
                "--production" "--preserve-symlinks" rebuild
         '';
@@ -296,13 +303,13 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
       dontStrip = true;
       doUnpack = true;
       NODE_OPTIONS = "--preserve-symlinks";
-      buildInputs = [ nodejs ] ++ lib.optionals (builtins.hasAttr "buildInputs" drv) drv.buildInputs;
+      buildInputs = [ nodejs jq ] ++ lib.optionals (builtins.hasAttr "buildInputs" drv) drv.buildInputs;
       passAsFile = [ "unpackFlattenDedupe" ];
 
       unpackFlattenDedupe = ''
         mkdir -p node_modules
         chmod -R +rw node_modules
-        cp -rfT \${nodeModules}/lib/node_modules node_modules
+        cp -arfT \${nodeModules}/lib/node_modules node_modules
         export NODE_PATH="$(pwd)/node_modules:$NODE_PATH"
         export NODE_OPTIONS="--preserve-symlinks"
         echo \${toPackageJson { inherit jsnixDeps; }} > package.json
@@ -327,7 +334,23 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
             mkdir $out/bin
             ln -s ./bin/* $out/bin
           fi
-          mkdir -p $out/lib/node_modules/\${packageNix.name}
+          if [[ -d "./node_modules" ]]
+          then
+            find ./node_modules -maxdepth 2 -name '*package.json' ! -name "*@*" | while read d; do
+              chmod +rw "$(dirname $d)"
+              chmod +rw "$d" 2>/dev/null || true
+              if [ -w "$d" ]
+              then
+                cat <<< $(jq 'del(.scripts,.bin)' "$d") > "$d"
+              else
+                orig="$(readlink $(echo $d))"
+                rm -f "$d"
+                cp -f "$orig" "$d" && chmod 0666 "$d" 2>/dev/null || true
+                cat <<< $(jq 'del(.scripts,.bin)' "$d") > "$d"
+              fi
+            done
+          fi
+           mkdir -p $out/lib/node_modules/\${packageNix.name}
           cp -rfL ./ $out/lib/node_modules/\${packageNix.name}
           runHook postInstall
        '';
