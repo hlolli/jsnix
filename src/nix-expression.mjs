@@ -292,6 +292,7 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
       inherit nodeModules;
       version = packageNix.version;
       name = sanitizeName packageNix.name;
+      packageJson = "\${builtins.placeholder "out"}/lib/node_modules/\${packageNix.name}";
       preUnpackBan_ = mkPhaseBan "preUnpack" drv;
       unpackBan_ = mkPhaseBan "unpackPhase" drv;
       postUnpackBan_ = mkPhaseBan "postUnpack" drv;
@@ -313,6 +314,7 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
         export NODE_PATH="$(pwd)/node_modules:$NODE_PATH"
         export NODE_OPTIONS="--preserve-symlinks"
         echo \${toPackageJson { inherit jsnixDeps; }} > package.json
+        cat <<< $(jq "package.json") > "package.json"
       '';
       configurePhase = ''
         source $unpackFlattenDedupePath
