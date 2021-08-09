@@ -314,7 +314,7 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
         export NODE_PATH="$(pwd)/node_modules:$NODE_PATH"
         export NODE_OPTIONS="--preserve-symlinks"
         echo \${toPackageJson { inherit jsnixDeps; }} > package.json
-        cat <<< $(jq "package.json") > "package.json"
+        cat <<< $(cat package.json | jq) > "package.json"
       '';
       configurePhase = ''
         source $unpackFlattenDedupePath
