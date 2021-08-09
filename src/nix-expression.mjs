@@ -292,7 +292,7 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
       inherit nodeModules;
       version = packageNix.version;
       name = sanitizeName packageNix.name;
-      packageJson = "\${builtins.placeholder "out"}/lib/node_modules/\${packageNix.name}";
+      packageJson = "lib/node_modules/\${packageNix.name}/package.json";
       preUnpackBan_ = mkPhaseBan "preUnpack" drv;
       unpackBan_ = mkPhaseBan "unpackPhase" drv;
       postUnpackBan_ = mkPhaseBan "postUnpack" drv;

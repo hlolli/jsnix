@@ -139,7 +139,7 @@ let
       inherit nodeModules;
       version = packageNix.version;
       name = sanitizeName packageNix.name;
-      packageJson = "${builtins.placeholder "out"}/lib/node_modules/${packageNix.name}";
+      packageJson = "lib/node_modules/${packageNix.name}/package.json";
       preUnpackBan_ = mkPhaseBan "preUnpack" drv;
       unpackBan_ = mkPhaseBan "unpackPhase" drv;
       postUnpackBan_ = mkPhaseBan "postUnpack" drv;
@@ -161,7 +161,7 @@ let
         export NODE_PATH="$(pwd)/node_modules:$NODE_PATH"
         export NODE_OPTIONS="--preserve-symlinks"
         echo ${toPackageJson { inherit jsnixDeps; }} > package.json
-        cat <<< $(jq "package.json") > "package.json"
+        cat <<< $(cat package.json | jq) > "package.json"
       '';
       configurePhase = ''
         source $unpackFlattenDedupePath
