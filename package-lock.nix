@@ -1,4 +1,4 @@
-{pkgs, stdenv, lib, nodejs, fetchurl, fetchgit, fetchFromGitHub, jq, makeWrapper, python3, ripgrep, runCommand, xcodebuild, ... }:
+{pkgs, stdenv, lib, nodejs, fetchurl, fetchgit, fetchFromGitHub, jq, makeWrapper, python3, runCommand, runCommandCC, xcodebuild, ... }:
 
 let
   packageNix = import ./package.nix;
@@ -24,7 +24,7 @@ let
      fi
      '')))
      "" dependencies);
-  copyNodeModules = {dependencies ? [], extraDependencies ? []}:
+  copyNodeModules = {dependencies ? [], extraDependencies ? [], stripScripts ? false }:
     (lib.lists.foldr (dep: acc:
       let pkgName = if (builtins.hasAttr "packageName" dep)
                     then dep.packageName else dep.name;
@@ -39,8 +39,9 @@ let
        mkdir -p "node_modules/${pkgName}"
        cp -rLT "${dep}/lib/node_modules/${pkgName}" "node_modules/${pkgName}"
        chmod -R +rw "node_modules/${pkgName}"
+       ${lib.optionalString stripScripts "cat <<< $(jq 'del(.scripts,.bin)' \"node_modules/${pkgName}/package.json\") > \"node_modules/${pkgName}/package.json\""}
        ${lib.optionalString (builtins.hasAttr "dependencies" dep)
-         "(cd node_modules/${dep.packageName}; ${linkNodeModules { inherit (dep) dependencies; inherit extraDependencies; }})"}
+         "(cd node_modules/${dep.packageName}; ${linkNodeModules { inherit (dep) dependencies; inherit extraDependencies stripScripts; }})"}
      fi
      '')))
      "" dependencies);
@@ -56,7 +57,7 @@ let
     mkdir -p $out/lib/node_modules/${pkgName}
     cd $out/lib/node_modules/${pkgName}
     cp -rfT "$packageDir" "$(pwd)"
-    mkdir -p node_modules
+    mkdir -p node_modules/.bin
     ${linkNodeModules { inherit dependencies; }} '';
   transitiveDepUnpackPhase = {dependencies ? [], pkgName}: ''
      unpackFile "$src";
@@ -105,16 +106,11 @@ let
                                 (p: (((lib.findSingle (px: px == p.packageName) "none" "found" skipUnpackFor) == "none") &&
                                       (lib.findSingle (px: px == p.packageName) "none" "found" copyUnpackFor) == "found"))
                                 (if (builtins.hasAttr "extraDependencies" drv) then drv.extraDependencies else []));
-         nodeModules = runCommand "${sanitizeName packageNix.name}_node_modules" { buildInputs = [ nodejs ripgrep ]; } ''
+         buildDepDep = lib.lists.unique (lib.lists.concatMap (d: d.buildInputs) (linkDeps ++ copyDeps));
+         nodeModules = runCommandCC "${sanitizeName packageNix.name}_node_modules" { buildInputs = buildDepDep; } ''
            echo 'unpack, dedupe and flatten dependencies...'
            mkdir -p $out/lib/node_modules
            cd $out/lib
-           ${linkNodeModules {
-                dependencies = extraLinkDeps;
-           }}
-           ${copyNodeModules {
-                dependencies = extraCopyDeps;
-           }}
            ${linkNodeModules {
                 dependencies = linkDeps;
                 extraDependencies = (lib.optionals (builtins.hasAttr "extraDependencies" drv) drv.extraDependencies);
@@ -123,13 +119,27 @@ let
                 dependencies = copyDeps;
                 extraDependencies = (lib.optionals (builtins.hasAttr "extraDependencies" drv) drv.extraDependencies);
            }}
+           ${copyNodeModules {
+                dependencies = extraCopyDeps;
+                stripScripts = true;
+           }}
+           ${linkNodeModules {
+                dependencies = extraLinkDeps;
+           }}
            chmod -R +rw node_modules
            ${flattenScript}
+           export HOME=$TMPDIR
+           npm --offline config set node_gyp ${nodejs}/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js
+           npm --offline config set global_style true
+           NODE_PATH="$(pwd)/node_modules:$NODE_PATH" \
+             npm --offline --no-bin-links --nodedir=${nodeSources} \
+               "--production" "--preserve-symlinks" rebuild
         '';
     in stdenv.mkDerivation (drv // {
       inherit nodeModules;
       version = packageNix.version;
       name = sanitizeName packageNix.name;
+      packageJson = "${builtins.placeholder "out"}/lib/node_modules/${packageNix.name}";
       preUnpackBan_ = mkPhaseBan "preUnpack" drv;
       unpackBan_ = mkPhaseBan "unpackPhase" drv;
       postUnpackBan_ = mkPhaseBan "postUnpack" drv;
@@ -141,16 +151,17 @@ let
       dontStrip = true;
       doUnpack = true;
       NODE_OPTIONS = "--preserve-symlinks";
-      buildInputs = [ nodejs ] ++ lib.optionals (builtins.hasAttr "buildInputs" drv) drv.buildInputs;
+      buildInputs = [ nodejs jq ] ++ lib.optionals (builtins.hasAttr "buildInputs" drv) drv.buildInputs;
       passAsFile = [ "unpackFlattenDedupe" ];
 
       unpackFlattenDedupe = ''
         mkdir -p node_modules
         chmod -R +rw node_modules
-        cp -rfT ${nodeModules}/lib/node_modules node_modules
+        cp -arfT ${nodeModules}/lib/node_modules node_modules
         export NODE_PATH="$(pwd)/node_modules:$NODE_PATH"
         export NODE_OPTIONS="--preserve-symlinks"
         echo ${toPackageJson { inherit jsnixDeps; }} > package.json
+        cat <<< $(jq "package.json") > "package.json"
       '';
       configurePhase = ''
         source $unpackFlattenDedupePath
@@ -172,7 +183,23 @@ let
             mkdir $out/bin
             ln -s ./bin/* $out/bin
           fi
-          mkdir -p $out/lib/node_modules/${packageNix.name}
+          if [[ -d "./node_modules" ]]
+          then
+            find ./node_modules -maxdepth 2 -name '*package.json' ! -name "*@*" | while read d; do
+              chmod +rw "$(dirname $d)"
+              chmod +rw "$d" 2>/dev/null || true
+              if [ -w "$d" ]
+              then
+                cat <<< $(jq 'del(.scripts,.bin)' "$d") > "$d"
+              else
+                orig="$(readlink $(echo $d))"
+                rm -f "$d"
+                cp -f "$orig" "$d" && chmod 0666 "$d" 2>/dev/null || true
+                cat <<< $(jq 'del(.scripts,.bin)' "$d") > "$d"
+              fi
+            done
+          fi
+           mkdir -p $out/lib/node_modules/${packageNix.name}
           cp -rfL ./ $out/lib/node_modules/${packageNix.name}
           runHook postInstall
        '';
@@ -257,34 +284,39 @@ let
     in ''
       runHook preBuild
       export HOME=$TMPDIR
+      npm --offline config set node_gyp ${nodejs}/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js
+      npm --offline config set omit dev
       NODE_PATH="$(pwd)/node_modules:$NODE_PATH" \
-      npm --offline --no-bin-links --nodedir=${nodeSources} \
+      npm --offline --nodedir=${nodeSources} --location="$(pwd)" \
           ${extraNpmFlags} "--production" "--preserve-symlinks" \
-          rebuild
+          rebuild --build-from-source
       runHook postBuild
     '';
   mkInstallScript = { pkgName }: ''
       runHook preInstall
       export packageDir="$(pwd)"
       mkdir -p $out/lib/node_modules/${pkgName}
-      cp -rfT "$packageDir" "$(pwd)"
       cd $out/lib/node_modules/${pkgName}
       cp -rfT "$packageDir" "$(pwd)"
+      if [[ -d "$out/lib/node_modules/${pkgName}/bin" ]]
+      then
+         mkdir -p $out/bin
+         ln -s "$out/lib/node_modules/${pkgName}/bin"/* $out/bin
+      fi
+      cd $out/lib/node_modules/${pkgName}
       runHook postInstall
     '';
   goFlatten = pkgs.buildGoModule {
   pname = "flatten";
   version = "0.0.0";
   vendorSha256 = null;
-  src = /Users/hlodversigurdsson/forks/jsnix/go;
+  src = pkgs.fetchFromGitHub {
+    owner = "hlolli";
+    repo = "jsnix";
+    rev = "0c04c09759f4f34689db025cdde6d6d44bcc3c74";
+    sha256 = "JPYOxtbX7wEO19PFsVYmMxW/ZzjnaLvd/cbpK2hskkk=";
+  };
   preBuild = ''
-    ls
-    mkdir -p go
-    mv flatten* go
-    chmod -R +rw .
-    mv vendor go
-    mv go.mod go
-    mkdir -p .git
     cd go
   '';
 };
@@ -301,10 +333,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "@npmcli/move-file"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "@npmcli/move-file"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -331,10 +363,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "@tootallnate/once"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "@tootallnate/once"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -361,10 +393,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "abbrev"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "abbrev"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -391,10 +423,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "agent-base"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "agent-base"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -421,10 +453,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "agentkeepalive"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "agentkeepalive"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -451,10 +483,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "aggregate-error"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "aggregate-error"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -481,10 +513,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "ansi-regex"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "ansi-regex"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -511,10 +543,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "aproba"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "aproba"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -541,10 +573,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "are-we-there-yet"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "are-we-there-yet"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -571,10 +603,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "balanced-match"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "balanced-match"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -601,10 +633,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "brace-expansion"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "brace-expansion"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -631,10 +663,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "builtins"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "builtins"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -661,10 +693,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "cacache"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "cacache"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -691,10 +723,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "call-bind"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "call-bind"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -721,10 +753,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "chownr"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "chownr"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -751,10 +783,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "clean-stack"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "clean-stack"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -781,10 +813,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "code-point-at"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "code-point-at"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -811,10 +843,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "concat-map"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "concat-map"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -841,10 +873,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "config-chain"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "config-chain"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -871,10 +903,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "console-control-strings"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "console-control-strings"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -901,10 +933,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "core-util-is"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "core-util-is"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -931,10 +963,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "debug"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "debug"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -961,10 +993,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "decode-uri-component"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "decode-uri-component"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -991,10 +1023,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "delegates"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "delegates"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1021,10 +1053,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "depd"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "depd"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1051,10 +1083,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "err-code"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "err-code"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1081,10 +1113,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "filter-obj"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "filter-obj"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1111,10 +1143,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "fs-minipass"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "fs-minipass"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1141,10 +1173,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "fs.realpath"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "fs.realpath"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1171,10 +1203,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "function-bind"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "function-bind"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1201,10 +1233,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "gauge"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "gauge"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1231,10 +1263,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "get-intrinsic"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "get-intrinsic"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1261,10 +1293,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "git-up"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "git-up"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1291,10 +1323,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "glob"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "glob"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1321,10 +1353,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "graceful-fs"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "graceful-fs"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1351,10 +1383,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "has"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "has"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1381,10 +1413,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "has-symbols"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "has-symbols"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1411,10 +1443,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "has-unicode"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "has-unicode"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1441,10 +1473,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "hosted-git-info"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "hosted-git-info"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1471,10 +1503,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "http-cache-semantics"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "http-cache-semantics"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1501,10 +1533,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "http-proxy-agent"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "http-proxy-agent"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1531,10 +1563,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "https-proxy-agent"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "https-proxy-agent"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1561,10 +1593,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "humanize-ms"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "humanize-ms"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1591,10 +1623,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "imurmurhash"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "imurmurhash"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1621,10 +1653,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "indent-string"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "indent-string"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1651,10 +1683,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "infer-owner"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "infer-owner"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1681,10 +1713,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "inflight"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "inflight"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1711,10 +1743,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "inherits"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "inherits"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1741,10 +1773,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "ini"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "ini"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1771,10 +1803,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "ip"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "ip"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1801,10 +1833,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "is-fullwidth-code-point"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "is-fullwidth-code-point"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1831,10 +1863,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "is-lambda"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "is-lambda"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1861,10 +1893,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "is-ssh"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "is-ssh"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1891,10 +1923,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "isarray"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "isarray"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1921,10 +1953,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "jsonfile"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "jsonfile"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1951,10 +1983,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "jsonparse"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "jsonparse"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1981,10 +2013,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "lru-cache"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "lru-cache"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -1999,22 +2031,22 @@ let
         sha512 = "Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==";
       };
     };
-    "make-fetch-happen-9.0.3" = {dependencies ? []}:
+    "make-fetch-happen-9.0.4" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "make-fetch-happen";
       packageName = "make-fetch-happen";
-      version = "9.0.3";
+      version = "9.0.4";
       extraDependencies = [];
       buildInputs = [
         jq
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "make-fetch-happen"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "make-fetch-happen"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2025,8 +2057,8 @@ let
       dontStrip = true;
       dontFixup = true;
       src = fetchurl {
-        url = "https://registry.npmjs.org/make-fetch-happen/-/make-fetch-happen-9.0.3.tgz";
-        sha512 = "uZ/9Cf2vKqsSWZyXhZ9wHHyckBrkntgbnqV68Bfe8zZenlf7D6yuGMXvHZQ+jSnzPkjosuNP1HGasj1J4h8OlQ==";
+        url = "https://registry.npmjs.org/make-fetch-happen/-/make-fetch-happen-9.0.4.tgz";
+        sha512 = "sQWNKMYqSmbAGXqJg2jZ+PmHh5JAybvwu0xM8mZR/bsTjGiTASj3ldXJV7KFHy1k/IJIBkjxQFoWIVsv9+PQMg==";
       };
     };
     "minimatch-3.0.4" = {dependencies ? []}:
@@ -2041,10 +2073,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "minimatch"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "minimatch"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2071,10 +2103,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "minimist"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "minimist"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2101,10 +2133,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "minipass"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "minipass"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2131,10 +2163,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "minipass-collect"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "minipass-collect"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2149,22 +2181,22 @@ let
         sha512 = "6T6lH0H8OG9kITm/Jm6tdooIbogG9e0tLgpY6mphXSm/A9u8Nq1ryBG+Qspiub9LjWlBPsPS3tWQ/Botq4FdxA==";
       };
     };
-    "minipass-fetch-1.3.3" = {dependencies ? []}:
+    "minipass-fetch-1.3.4" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "minipass-fetch";
       packageName = "minipass-fetch";
-      version = "1.3.3";
+      version = "1.3.4";
       extraDependencies = [];
       buildInputs = [
         jq
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "minipass-fetch"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "minipass-fetch"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2175,8 +2207,8 @@ let
       dontStrip = true;
       dontFixup = true;
       src = fetchurl {
-        url = "https://registry.npmjs.org/minipass-fetch/-/minipass-fetch-1.3.3.tgz";
-        sha512 = "akCrLDWfbdAWkMLBxJEeWTdNsjML+dt5YgOI4gJ53vuO0vrmYQkUPxa6j6V65s9CcePIr2SSWqjT2EcrNseryQ==";
+        url = "https://registry.npmjs.org/minipass-fetch/-/minipass-fetch-1.3.4.tgz";
+        sha512 = "TielGogIzbUEtd1LsjZFs47RWuHHfhl6TiCx1InVxApBAmQ8bL0dL5ilkLGcRvuyW/A9nE+Lvn855Ewz8S0PnQ==";
       };
     };
     "minipass-flush-1.0.5" = {dependencies ? []}:
@@ -2191,10 +2223,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "minipass-flush"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "minipass-flush"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2221,10 +2253,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "minipass-json-stream"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "minipass-json-stream"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2251,10 +2283,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "minipass-pipeline"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "minipass-pipeline"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2281,10 +2313,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "minipass-sized"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "minipass-sized"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2311,10 +2343,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "minizlib"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "minizlib"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2341,10 +2373,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "mkdirp"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "mkdirp"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2371,10 +2403,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "mkdirp"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "mkdirp"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2401,10 +2433,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "ms"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "ms"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2431,10 +2463,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "negotiator"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "negotiator"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2461,10 +2493,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "nopt"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "nopt"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2491,10 +2523,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "normalize-url"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "normalize-url"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2521,10 +2553,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "npm-package-arg"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "npm-package-arg"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2551,10 +2583,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "number-is-nan"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "number-is-nan"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2581,10 +2613,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "object-assign"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "object-assign"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2599,22 +2631,22 @@ let
         sha1 = "2109adc7965887cfc05cbbd442cac8bfbb360863";
       };
     };
-    "object-inspect-1.10.3" = {dependencies ? []}:
+    "object-inspect-1.11.0" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "object-inspect";
       packageName = "object-inspect";
-      version = "1.10.3";
+      version = "1.11.0";
       extraDependencies = [];
       buildInputs = [
         jq
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "object-inspect"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "object-inspect"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2625,8 +2657,8 @@ let
       dontStrip = true;
       dontFixup = true;
       src = fetchurl {
-        url = "https://registry.npmjs.org/object-inspect/-/object-inspect-1.10.3.tgz";
-        sha512 = "e5mCJlSH7poANfC8z8S9s9S2IN5/4Zb3aZ33f5s8YqoazCFzNLloLU8r5VCG+G7WoqLvAAZoVMcy3tp/3X0Plw==";
+        url = "https://registry.npmjs.org/object-inspect/-/object-inspect-1.11.0.tgz";
+        sha512 = "jp7ikS6Sd3GxQfZJPyH3cjcbJF6GZPClgdV+EFygjFLQ5FmW/dRUnTd9PQ9k0JhoNDabWFbpF1yCdSWCC6gexg==";
       };
     };
     "once-1.3.3" = {dependencies ? []}:
@@ -2641,10 +2673,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "once"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "once"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2671,10 +2703,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "once"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "once"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2701,10 +2733,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "optparse"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "optparse"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2731,10 +2763,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "os-homedir"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "os-homedir"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2761,10 +2793,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "os-tmpdir"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "os-tmpdir"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2791,10 +2823,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "osenv"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "osenv"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2821,10 +2853,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "p-map"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "p-map"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2851,10 +2883,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "parse-path"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "parse-path"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2881,10 +2913,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "parse-url"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "parse-url"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2911,10 +2943,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "path-is-absolute"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "path-is-absolute"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2941,10 +2973,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "process-nextick-args"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "process-nextick-args"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -2971,10 +3003,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "promise-inflight"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "promise-inflight"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3001,10 +3033,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "promise-retry"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "promise-retry"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3031,10 +3063,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "proto-list"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "proto-list"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3061,10 +3093,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "protocols"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "protocols"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3091,10 +3123,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "qs"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "qs"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3121,10 +3153,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "query-string"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "query-string"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3151,10 +3183,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "readable-stream"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "readable-stream"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3181,10 +3213,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "retry"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "retry"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3211,10 +3243,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "rimraf"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "rimraf"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3241,10 +3273,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "safe-buffer"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "safe-buffer"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3271,10 +3303,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "safe-buffer"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "safe-buffer"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3301,10 +3333,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "semver"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "semver"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3331,10 +3363,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "semver"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "semver"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3361,10 +3393,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "set-blocking"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "set-blocking"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3391,10 +3423,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "side-channel"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "side-channel"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3421,10 +3453,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "signal-exit"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "signal-exit"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3451,10 +3483,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "slasp"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "slasp"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3469,22 +3501,22 @@ let
         sha1 = "9adc26ee729a0f95095851a5489f87a5258d57a9";
       };
     };
-    "smart-buffer-4.1.0" = {dependencies ? []}:
+    "smart-buffer-4.2.0" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "smart-buffer";
       packageName = "smart-buffer";
-      version = "4.1.0";
+      version = "4.2.0";
       extraDependencies = [];
       buildInputs = [
         jq
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "smart-buffer"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "smart-buffer"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3495,8 +3527,8 @@ let
       dontStrip = true;
       dontFixup = true;
       src = fetchurl {
-        url = "https://registry.npmjs.org/smart-buffer/-/smart-buffer-4.1.0.tgz";
-        sha512 = "iVICrxOzCynf/SNaBQCw34eM9jROU/s5rzIhpOvzhzuYHfJR/DhZfDkXiZSgKXfgv26HT3Yni3AV/DGw0cGnnw==";
+        url = "https://registry.npmjs.org/smart-buffer/-/smart-buffer-4.2.0.tgz";
+        sha512 = "94hK0Hh8rPqQl2xXc3HsaBoOXKV20MToPkcXvwbISWLEs+64sBq5kFgn2kJDHb1Pry9yrP0dxrCI9RRci7RXKg==";
       };
     };
     "socks-2.6.1" = {dependencies ? []}:
@@ -3511,10 +3543,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "socks"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "socks"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3541,10 +3573,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "socks-proxy-agent"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "socks-proxy-agent"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3571,10 +3603,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "split-on-first"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "split-on-first"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3601,10 +3633,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "ssri"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "ssri"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3631,10 +3663,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "strict-uri-encode"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "strict-uri-encode"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3661,10 +3693,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "string-width"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "string-width"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3691,10 +3723,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "string_decoder"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "string_decoder"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3721,10 +3753,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "strip-ansi"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "strip-ansi"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3739,22 +3771,22 @@ let
         sha1 = "6a385fb8853d952d5ff05d0e8aaf94278dc63dcf";
       };
     };
-    "tar-6.1.0" = {dependencies ? []}:
+    "tar-6.1.2" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "tar";
       packageName = "tar";
-      version = "6.1.0";
+      version = "6.1.2";
       extraDependencies = [];
       buildInputs = [
         jq
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "tar"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "tar"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3765,8 +3797,8 @@ let
       dontStrip = true;
       dontFixup = true;
       src = fetchurl {
-        url = "https://registry.npmjs.org/tar/-/tar-6.1.0.tgz";
-        sha512 = "DUCttfhsnLCjwoDoFcI+B2iJgYa93vBnDUATYEeRx6sntCTdN01VnqsIuTlALXla/LWooNg0yEGeB+Y8WdFxGA==";
+        url = "https://registry.npmjs.org/tar/-/tar-6.1.2.tgz";
+        sha512 = "EwKEgqJ7nJoS+s8QfLYVGMDmAsj+StbI2AM/RTHeUSsOw6Z8bwNBRv5z3CY0m7laC5qUAqruLX5AhMuc5deY3Q==";
       };
     };
     "uid-number-0.0.5" = {dependencies ? []}:
@@ -3781,10 +3813,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "uid-number"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "uid-number"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3811,10 +3843,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "unique-filename"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "unique-filename"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3841,10 +3873,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "unique-slug"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "unique-slug"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3871,10 +3903,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "universalify"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "universalify"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3901,10 +3933,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "util-deprecate"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "util-deprecate"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3931,10 +3963,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "validate-npm-package-name"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "validate-npm-package-name"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3961,10 +3993,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "wide-align"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "wide-align"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -3991,10 +4023,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "wrappy"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "wrappy"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -4021,10 +4053,10 @@ let
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "yallist"; };
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "yallist"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
                 fi
                 
               '';
@@ -4057,19 +4089,18 @@ let
         url = "https://registry.npmjs.org/base64-js/-/base64-js-1.5.1.tgz";
         sha512 = "AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==";
       };
-      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper jq  ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "base64-js"; });
       dontStrip = true;
       NODE_OPTIONS = "--preserve-symlinks";
       passAsFile = [ "unpackScript" "configureScript" "buildScript" "installScript" ];
-      outputs = ["out" "dev"];
-      unpackScript = mkUnpackScript { inherit dependencies extraDependencies;
+      unpackScript = mkUnpackScript { dependencies = dependencies ++ extraDependencies;
          pkgName = "base64-js"; };
       configureScript = mkConfigureScript {};
       buildScript = mkBuildScript { inherit dependencies; pkgName = "base64-js"; };
       buildPhase = ''
-      source $unpackScriptPath
+      source $unpackScriptPath 
       source $configureScriptPath
       runHook preBuild
       if [ -z "$preBuild" ]; then
@@ -4078,6 +4109,15 @@ let
       source $buildScriptPath
       if [ -z "$postBuild" ]; then
         runHook postBuild
+      fi
+    '';
+      patchPhase = ''
+      if [ -z "$prePatch" ]; then
+        runHook prePatch
+      fi
+      
+      if [ -z "$postPatch" ]; then
+        runHook postPatch
       fi
     '';
       installScript = mkInstallScript { pkgName = "base64-js"; };
@@ -4118,19 +4158,18 @@ let
         url = "https://registry.npmjs.org/cachedir/-/cachedir-2.3.0.tgz";
         sha512 = "A+Fezp4zxnit6FanDmv9EqXNAi3vt9DWp51/71UEhXukb7QUuvtv9344h91dyAxuTLoSYJFU299qzR3tzwPAhw==";
       };
-      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper jq  ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "cachedir"; });
       dontStrip = true;
       NODE_OPTIONS = "--preserve-symlinks";
       passAsFile = [ "unpackScript" "configureScript" "buildScript" "installScript" ];
-      outputs = ["out" "dev"];
-      unpackScript = mkUnpackScript { inherit dependencies extraDependencies;
+      unpackScript = mkUnpackScript { dependencies = dependencies ++ extraDependencies;
          pkgName = "cachedir"; };
       configureScript = mkConfigureScript {};
       buildScript = mkBuildScript { inherit dependencies; pkgName = "cachedir"; };
       buildPhase = ''
-      source $unpackScriptPath
+      source $unpackScriptPath 
       source $configureScriptPath
       runHook preBuild
       if [ -z "$preBuild" ]; then
@@ -4139,6 +4178,15 @@ let
       source $buildScriptPath
       if [ -z "$postBuild" ]; then
         runHook postBuild
+      fi
+    '';
+      patchPhase = ''
+      if [ -z "$prePatch" ]; then
+        runHook prePatch
+      fi
+      
+      if [ -z "$postPatch" ]; then
+        runHook postPatch
       fi
     '';
       installScript = mkInstallScript { pkgName = "cachedir"; };
@@ -4174,24 +4222,23 @@ let
       inherit dependencies extraDependencies;
       name = "commander";
       packageName = "commander";
-      version = "8.0.0";
+      version = "8.1.0";
       src = fetchurl {
-        url = "https://registry.npmjs.org/commander/-/commander-8.0.0.tgz";
-        sha512 = "Xvf85aAtu6v22+E5hfVoLHqyul/jyxh91zvqk/ioJTQuJR7Z78n7H558vMPKanPSRgIEeZemT92I2g9Y8LPbSQ==";
+        url = "https://registry.npmjs.org/commander/-/commander-8.1.0.tgz";
+        sha512 = "mf45ldcuHSYShkplHHGKWb4TrmwQadxOn7v4WuhDJy0ZVoY5JFajaRDKD0PNe5qXzBX0rhovjTnP6Kz9LETcuA==";
       };
-      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper jq  ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "commander"; });
       dontStrip = true;
       NODE_OPTIONS = "--preserve-symlinks";
       passAsFile = [ "unpackScript" "configureScript" "buildScript" "installScript" ];
-      outputs = ["out" "dev"];
-      unpackScript = mkUnpackScript { inherit dependencies extraDependencies;
+      unpackScript = mkUnpackScript { dependencies = dependencies ++ extraDependencies;
          pkgName = "commander"; };
       configureScript = mkConfigureScript {};
       buildScript = mkBuildScript { inherit dependencies; pkgName = "commander"; };
       buildPhase = ''
-      source $unpackScriptPath
+      source $unpackScriptPath 
       source $configureScriptPath
       runHook preBuild
       if [ -z "$preBuild" ]; then
@@ -4200,6 +4247,15 @@ let
       source $buildScriptPath
       if [ -z "$postBuild" ]; then
         runHook postBuild
+      fi
+    '';
+      patchPhase = ''
+      if [ -z "$prePatch" ]; then
+        runHook prePatch
+      fi
+      
+      if [ -z "$postPatch" ]; then
+        runHook postPatch
       fi
     '';
       installScript = mkInstallScript { pkgName = "commander"; };
@@ -4240,19 +4296,18 @@ let
         url = "https://registry.npmjs.org/findit/-/findit-2.0.0.tgz";
         sha1 = "6509f0126af4c178551cfa99394e032e13a4d56e";
       };
-      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper jq  ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "findit"; });
       dontStrip = true;
       NODE_OPTIONS = "--preserve-symlinks";
       passAsFile = [ "unpackScript" "configureScript" "buildScript" "installScript" ];
-      outputs = ["out" "dev"];
-      unpackScript = mkUnpackScript { inherit dependencies extraDependencies;
+      unpackScript = mkUnpackScript { dependencies = dependencies ++ extraDependencies;
          pkgName = "findit"; };
       configureScript = mkConfigureScript {};
       buildScript = mkBuildScript { inherit dependencies; pkgName = "findit"; };
       buildPhase = ''
-      source $unpackScriptPath
+      source $unpackScriptPath 
       source $configureScriptPath
       runHook preBuild
       if [ -z "$preBuild" ]; then
@@ -4261,6 +4316,15 @@ let
       source $buildScriptPath
       if [ -z "$postBuild" ]; then
         runHook postBuild
+      fi
+    '';
+      patchPhase = ''
+      if [ -z "$prePatch" ]; then
+        runHook prePatch
+      fi
+      
+      if [ -z "$postPatch" ]; then
+        runHook postPatch
       fi
     '';
       installScript = mkInstallScript { pkgName = "findit"; };
@@ -4311,19 +4375,18 @@ let
         url = "https://registry.npmjs.org/fs-extra/-/fs-extra-10.0.0.tgz";
         sha512 = "C5owb14u9eJwizKGdchcDUQeFtlSHHthBk8pbX9Vc1PFZrLombudjDnNns88aYslCyF6IY5SUw3Roz6xShcEIQ==";
       };
-      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper jq  ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "fs-extra"; });
       dontStrip = true;
       NODE_OPTIONS = "--preserve-symlinks";
       passAsFile = [ "unpackScript" "configureScript" "buildScript" "installScript" ];
-      outputs = ["out" "dev"];
-      unpackScript = mkUnpackScript { inherit dependencies extraDependencies;
+      unpackScript = mkUnpackScript { dependencies = dependencies ++ extraDependencies;
          pkgName = "fs-extra"; };
       configureScript = mkConfigureScript {};
       buildScript = mkBuildScript { inherit dependencies; pkgName = "fs-extra"; };
       buildPhase = ''
-      source $unpackScriptPath
+      source $unpackScriptPath 
       source $configureScriptPath
       runHook preBuild
       if [ -z "$preBuild" ]; then
@@ -4332,6 +4395,15 @@ let
       source $buildScriptPath
       if [ -z "$postBuild" ]; then
         runHook postBuild
+      fi
+    '';
+      patchPhase = ''
+      if [ -z "$prePatch" ]; then
+        runHook prePatch
+      fi
+      
+      if [ -z "$postPatch" ]; then
+        runHook postPatch
       fi
     '';
       installScript = mkInstallScript { pkgName = "fs-extra"; };
@@ -4388,7 +4460,7 @@ let
         (sources."normalize-url-6.1.0" {
           dependencies = [];
         })
-        (sources."object-inspect-1.10.3" {
+        (sources."object-inspect-1.11.0" {
           dependencies = [];
         })
         (sources."parse-path-4.0.3" {
@@ -4430,19 +4502,18 @@ let
         url = "https://registry.npmjs.org/git-url-parse/-/git-url-parse-11.5.0.tgz";
         sha512 = "TZYSMDeM37r71Lqg1mbnMlOqlHd7BSij9qN7XwTkRqSAYFMihGLGhfHwgqQob3GUhEneKnV4nskN9rbQw2KGxA==";
       };
-      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper jq  ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "git-url-parse"; });
       dontStrip = true;
       NODE_OPTIONS = "--preserve-symlinks";
       passAsFile = [ "unpackScript" "configureScript" "buildScript" "installScript" ];
-      outputs = ["out" "dev"];
-      unpackScript = mkUnpackScript { inherit dependencies extraDependencies;
+      unpackScript = mkUnpackScript { dependencies = dependencies ++ extraDependencies;
          pkgName = "git-url-parse"; };
       configureScript = mkConfigureScript {};
       buildScript = mkBuildScript { inherit dependencies; pkgName = "git-url-parse"; };
       buildPhase = ''
-      source $unpackScriptPath
+      source $unpackScriptPath 
       source $configureScriptPath
       runHook preBuild
       if [ -z "$preBuild" ]; then
@@ -4451,6 +4522,15 @@ let
       source $buildScriptPath
       if [ -z "$postBuild" ]; then
         runHook postBuild
+      fi
+    '';
+      patchPhase = ''
+      if [ -z "$prePatch" ]; then
+        runHook prePatch
+      fi
+      
+      if [ -z "$postPatch" ]; then
+        runHook postPatch
       fi
     '';
       installScript = mkInstallScript { pkgName = "git-url-parse"; };
@@ -4498,19 +4578,18 @@ let
         url = "https://registry.npmjs.org/nijs/-/nijs-0.0.25.tgz";
         sha1 = "04b035cb530d46859d1018839a518c029133f676";
       };
-      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper jq  ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "nijs"; });
       dontStrip = true;
       NODE_OPTIONS = "--preserve-symlinks";
       passAsFile = [ "unpackScript" "configureScript" "buildScript" "installScript" ];
-      outputs = ["out" "dev"];
-      unpackScript = mkUnpackScript { inherit dependencies extraDependencies;
+      unpackScript = mkUnpackScript { dependencies = dependencies ++ extraDependencies;
          pkgName = "nijs"; };
       configureScript = mkConfigureScript {};
       buildScript = mkBuildScript { inherit dependencies; pkgName = "nijs"; };
       buildPhase = ''
-      source $unpackScriptPath
+      source $unpackScriptPath 
       source $configureScriptPath
       runHook preBuild
       if [ -z "$preBuild" ]; then
@@ -4519,6 +4598,15 @@ let
       source $buildScriptPath
       if [ -z "$postBuild" ]; then
         runHook postBuild
+      fi
+    '';
+      patchPhase = ''
+      if [ -z "$prePatch" ]; then
+        runHook prePatch
+      fi
+      
+      if [ -z "$postPatch" ]; then
+        runHook postPatch
       fi
     '';
       installScript = mkInstallScript { pkgName = "nijs"; };
@@ -4641,7 +4729,7 @@ let
         (sources."lru-cache-6.0.0" {
           dependencies = [];
         })
-        (sources."make-fetch-happen-9.0.3" {
+        (sources."make-fetch-happen-9.0.4" {
           dependencies = [];
         })
         (sources."minimatch-3.0.4" {
@@ -4653,7 +4741,7 @@ let
         (sources."minipass-collect-1.0.2" {
           dependencies = [];
         })
-        (sources."minipass-fetch-1.3.3" {
+        (sources."minipass-fetch-1.3.4" {
           dependencies = [];
         })
         (sources."minipass-flush-1.0.5" {
@@ -4707,7 +4795,7 @@ let
         (sources."semver-7.3.5" {
           dependencies = [];
         })
-        (sources."smart-buffer-4.1.0" {
+        (sources."smart-buffer-4.2.0" {
           dependencies = [];
         })
         (sources."socks-2.6.1" {
@@ -4719,7 +4807,7 @@ let
         (sources."ssri-8.0.1" {
           dependencies = [];
         })
-        (sources."tar-6.1.0" {
+        (sources."tar-6.1.2" {
           dependencies = [];
         })
         (sources."unique-filename-1.1.1" {
@@ -4752,19 +4840,18 @@ let
         url = "https://registry.npmjs.org/npm-registry-fetch/-/npm-registry-fetch-11.0.0.tgz";
         sha512 = "jmlgSxoDNuhAtxUIG6pVwwtz840i994dL14FoNVZisrmZW5kWd63IUTNv1m/hyRSGSqWjCUp/YZlS1BJyNp9XA==";
       };
-      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper jq  ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "npm-registry-fetch"; });
       dontStrip = true;
       NODE_OPTIONS = "--preserve-symlinks";
       passAsFile = [ "unpackScript" "configureScript" "buildScript" "installScript" ];
-      outputs = ["out" "dev"];
-      unpackScript = mkUnpackScript { inherit dependencies extraDependencies;
+      unpackScript = mkUnpackScript { dependencies = dependencies ++ extraDependencies;
          pkgName = "npm-registry-fetch"; };
       configureScript = mkConfigureScript {};
       buildScript = mkBuildScript { inherit dependencies; pkgName = "npm-registry-fetch"; };
       buildPhase = ''
-      source $unpackScriptPath
+      source $unpackScriptPath 
       source $configureScriptPath
       runHook preBuild
       if [ -z "$preBuild" ]; then
@@ -4773,6 +4860,15 @@ let
       source $buildScriptPath
       if [ -z "$postBuild" ]; then
         runHook postBuild
+      fi
+    '';
+      patchPhase = ''
+      if [ -z "$prePatch" ]; then
+        runHook prePatch
+      fi
+      
+      if [ -z "$postPatch" ]; then
+        runHook postPatch
       fi
     '';
       installScript = mkInstallScript { pkgName = "npm-registry-fetch"; };
@@ -4862,19 +4958,18 @@ let
         url = "https://registry.npmjs.org/npmconf/-/npmconf-2.1.3.tgz";
         sha512 = "iTK+HI68GceCoGOHAQiJ/ik1iDfI7S+cgyG8A+PP18IU3X83kRhQIRhAUNj4Bp2JMx6Zrt5kCiozYa9uGWTjhA==";
       };
-      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper jq  ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "npmconf"; });
       dontStrip = true;
       NODE_OPTIONS = "--preserve-symlinks";
       passAsFile = [ "unpackScript" "configureScript" "buildScript" "installScript" ];
-      outputs = ["out" "dev"];
-      unpackScript = mkUnpackScript { inherit dependencies extraDependencies;
+      unpackScript = mkUnpackScript { dependencies = dependencies ++ extraDependencies;
          pkgName = "npmconf"; };
       configureScript = mkConfigureScript {};
       buildScript = mkBuildScript { inherit dependencies; pkgName = "npmconf"; };
       buildPhase = ''
-      source $unpackScriptPath
+      source $unpackScriptPath 
       source $configureScriptPath
       runHook preBuild
       if [ -z "$preBuild" ]; then
@@ -4883,6 +4978,15 @@ let
       source $buildScriptPath
       if [ -z "$postBuild" ]; then
         runHook postBuild
+      fi
+    '';
+      patchPhase = ''
+      if [ -z "$prePatch" ]; then
+        runHook prePatch
+      fi
+      
+      if [ -z "$postPatch" ]; then
+        runHook postPatch
       fi
     '';
       installScript = mkInstallScript { pkgName = "npmconf"; };
@@ -4996,19 +5100,18 @@ let
         url = "https://registry.npmjs.org/npmlog/-/npmlog-4.1.2.tgz";
         sha512 = "2uUqazuKlTaSI/dC8AzicUck7+IrEaOnN/e0jd3Xtt1KcGpwx30v50mL7oPyr/h9bL3E4aZccVwpwP+5W9Vjkg==";
       };
-      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper jq  ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "npmlog"; });
       dontStrip = true;
       NODE_OPTIONS = "--preserve-symlinks";
       passAsFile = [ "unpackScript" "configureScript" "buildScript" "installScript" ];
-      outputs = ["out" "dev"];
-      unpackScript = mkUnpackScript { inherit dependencies extraDependencies;
+      unpackScript = mkUnpackScript { dependencies = dependencies ++ extraDependencies;
          pkgName = "npmlog"; };
       configureScript = mkConfigureScript {};
       buildScript = mkBuildScript { inherit dependencies; pkgName = "npmlog"; };
       buildPhase = ''
-      source $unpackScriptPath
+      source $unpackScriptPath 
       source $configureScriptPath
       runHook preBuild
       if [ -z "$preBuild" ]; then
@@ -5017,6 +5120,15 @@ let
       source $buildScriptPath
       if [ -z "$postBuild" ]; then
         runHook postBuild
+      fi
+    '';
+      patchPhase = ''
+      if [ -z "$prePatch" ]; then
+        runHook prePatch
+      fi
+      
+      if [ -z "$postPatch" ]; then
+        runHook postPatch
       fi
     '';
       installScript = mkInstallScript { pkgName = "npmlog"; };
@@ -5057,19 +5169,18 @@ let
         url = "https://registry.npmjs.org/optparse/-/optparse-1.0.5.tgz";
         sha1 = "75e75a96506611eb1c65ba89018ff08a981e2c16";
       };
-      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper jq  ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "optparse"; });
       dontStrip = true;
       NODE_OPTIONS = "--preserve-symlinks";
       passAsFile = [ "unpackScript" "configureScript" "buildScript" "installScript" ];
-      outputs = ["out" "dev"];
-      unpackScript = mkUnpackScript { inherit dependencies extraDependencies;
+      unpackScript = mkUnpackScript { dependencies = dependencies ++ extraDependencies;
          pkgName = "optparse"; };
       configureScript = mkConfigureScript {};
       buildScript = mkBuildScript { inherit dependencies; pkgName = "optparse"; };
       buildPhase = ''
-      source $unpackScriptPath
+      source $unpackScriptPath 
       source $configureScriptPath
       runHook preBuild
       if [ -z "$preBuild" ]; then
@@ -5078,6 +5189,15 @@ let
       source $buildScriptPath
       if [ -z "$postBuild" ]; then
         runHook postBuild
+      fi
+    '';
+      patchPhase = ''
+      if [ -z "$prePatch" ]; then
+        runHook prePatch
+      fi
+      
+      if [ -z "$postPatch" ]; then
+        runHook postPatch
       fi
     '';
       installScript = mkInstallScript { pkgName = "optparse"; };
@@ -5112,24 +5232,23 @@ let
       inherit dependencies extraDependencies;
       name = "rambda";
       packageName = "rambda";
-      version = "6.7.0";
+      version = "6.9.0";
       src = fetchurl {
-        url = "https://registry.npmjs.org/rambda/-/rambda-6.7.0.tgz";
-        sha512 = "qg2atEwhAS4ipYoNfggkIP7qBUbY2OqdW17n25VqZIz5YC1MIwSpIToQ7XacvqSCZz16efM8Y8QKLx+Js1Sybg==";
+        url = "https://registry.npmjs.org/rambda/-/rambda-6.9.0.tgz";
+        sha512 = "yosVdGg1hNGkXPzqGiOYNEpXKjEOxzUCg2rB0l+NKdyCaSf4z+i5ojbN0IqDSezMMf71YEglI+ZUTgTffn5afw==";
       };
-      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper jq  ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "rambda"; });
       dontStrip = true;
       NODE_OPTIONS = "--preserve-symlinks";
       passAsFile = [ "unpackScript" "configureScript" "buildScript" "installScript" ];
-      outputs = ["out" "dev"];
-      unpackScript = mkUnpackScript { inherit dependencies extraDependencies;
+      unpackScript = mkUnpackScript { dependencies = dependencies ++ extraDependencies;
          pkgName = "rambda"; };
       configureScript = mkConfigureScript {};
       buildScript = mkBuildScript { inherit dependencies; pkgName = "rambda"; };
       buildPhase = ''
-      source $unpackScriptPath
+      source $unpackScriptPath 
       source $configureScriptPath
       runHook preBuild
       if [ -z "$preBuild" ]; then
@@ -5138,6 +5257,15 @@ let
       source $buildScriptPath
       if [ -z "$postBuild" ]; then
         runHook postBuild
+      fi
+    '';
+      patchPhase = ''
+      if [ -z "$prePatch" ]; then
+        runHook prePatch
+      fi
+      
+      if [ -z "$postPatch" ]; then
+        runHook postPatch
       fi
     '';
       installScript = mkInstallScript { pkgName = "rambda"; };
@@ -5157,7 +5285,7 @@ let
       doInstallCheck = true;
       installCheckPhase = (mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "installCheckPhase"; pkgName = "rambda"; });
       meta = {
-        description = "Lightweight and faster alternative to Ramda";
+        description = "Lightweight and faster alternative to Ramda with included TS definitions";
         license = "MIT";
         homepage = "https://github.com/selfrefactor/rambda#readme";
       };
@@ -5185,19 +5313,18 @@ let
         url = "https://registry.npmjs.org/semver/-/semver-7.3.5.tgz";
         sha512 = "PoeGJYh8HK4BTO/a9Tf6ZG3veo/A7ZVsYrSA6J8ny9nb3B1VrpkuN+z9OE5wfE5p6H4LchYZsegiQgbJD94ZFQ==";
       };
-      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper jq  ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "semver"; });
       dontStrip = true;
       NODE_OPTIONS = "--preserve-symlinks";
       passAsFile = [ "unpackScript" "configureScript" "buildScript" "installScript" ];
-      outputs = ["out" "dev"];
-      unpackScript = mkUnpackScript { inherit dependencies extraDependencies;
+      unpackScript = mkUnpackScript { dependencies = dependencies ++ extraDependencies;
          pkgName = "semver"; };
       configureScript = mkConfigureScript {};
       buildScript = mkBuildScript { inherit dependencies; pkgName = "semver"; };
       buildPhase = ''
-      source $unpackScriptPath
+      source $unpackScriptPath 
       source $configureScriptPath
       runHook preBuild
       if [ -z "$preBuild" ]; then
@@ -5206,6 +5333,15 @@ let
       source $buildScriptPath
       if [ -z "$postBuild" ]; then
         runHook postBuild
+      fi
+    '';
+      patchPhase = ''
+      if [ -z "$prePatch" ]; then
+        runHook prePatch
+      fi
+      
+      if [ -z "$postPatch" ]; then
+        runHook postPatch
       fi
     '';
       installScript = mkInstallScript { pkgName = "semver"; };
@@ -5246,19 +5382,18 @@ let
         url = "https://registry.npmjs.org/spdx-license-ids/-/spdx-license-ids-3.0.9.tgz";
         sha512 = "Ki212dKK4ogX+xDo4CtOZBVIwhsKBEfsEEcwmJfLQzirgc2jIWdzg40Unxz/HzEUqM1WFzVlQSMF9kZZ2HboLQ==";
       };
-      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper jq  ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "spdx-license-ids"; });
       dontStrip = true;
       NODE_OPTIONS = "--preserve-symlinks";
       passAsFile = [ "unpackScript" "configureScript" "buildScript" "installScript" ];
-      outputs = ["out" "dev"];
-      unpackScript = mkUnpackScript { inherit dependencies extraDependencies;
+      unpackScript = mkUnpackScript { dependencies = dependencies ++ extraDependencies;
          pkgName = "spdx-license-ids"; };
       configureScript = mkConfigureScript {};
       buildScript = mkBuildScript { inherit dependencies; pkgName = "spdx-license-ids"; };
       buildPhase = ''
-      source $unpackScriptPath
+      source $unpackScriptPath 
       source $configureScriptPath
       runHook preBuild
       if [ -z "$preBuild" ]; then
@@ -5267,6 +5402,15 @@ let
       source $buildScriptPath
       if [ -z "$postBuild" ]; then
         runHook postBuild
+      fi
+    '';
+      patchPhase = ''
+      if [ -z "$prePatch" ]; then
+        runHook prePatch
+      fi
+      
+      if [ -z "$postPatch" ]; then
+        runHook postPatch
       fi
     '';
       installScript = mkInstallScript { pkgName = "spdx-license-ids"; };
@@ -5321,24 +5465,23 @@ let
       inherit dependencies extraDependencies;
       name = "tar";
       packageName = "tar";
-      version = "6.1.0";
+      version = "6.1.2";
       src = fetchurl {
-        url = "https://registry.npmjs.org/tar/-/tar-6.1.0.tgz";
-        sha512 = "DUCttfhsnLCjwoDoFcI+B2iJgYa93vBnDUATYEeRx6sntCTdN01VnqsIuTlALXla/LWooNg0yEGeB+Y8WdFxGA==";
+        url = "https://registry.npmjs.org/tar/-/tar-6.1.2.tgz";
+        sha512 = "EwKEgqJ7nJoS+s8QfLYVGMDmAsj+StbI2AM/RTHeUSsOw6Z8bwNBRv5z3CY0m7laC5qUAqruLX5AhMuc5deY3Q==";
       };
-      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper jq  ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "tar"; });
       dontStrip = true;
       NODE_OPTIONS = "--preserve-symlinks";
       passAsFile = [ "unpackScript" "configureScript" "buildScript" "installScript" ];
-      outputs = ["out" "dev"];
-      unpackScript = mkUnpackScript { inherit dependencies extraDependencies;
+      unpackScript = mkUnpackScript { dependencies = dependencies ++ extraDependencies;
          pkgName = "tar"; };
       configureScript = mkConfigureScript {};
       buildScript = mkBuildScript { inherit dependencies; pkgName = "tar"; };
       buildPhase = ''
-      source $unpackScriptPath
+      source $unpackScriptPath 
       source $configureScriptPath
       runHook preBuild
       if [ -z "$preBuild" ]; then
@@ -5347,6 +5490,15 @@ let
       source $buildScriptPath
       if [ -z "$postBuild" ]; then
         runHook postBuild
+      fi
+    '';
+      patchPhase = ''
+      if [ -z "$prePatch" ]; then
+        runHook prePatch
+      fi
+      
+      if [ -z "$postPatch" ]; then
+        runHook postPatch
       fi
     '';
       installScript = mkInstallScript { pkgName = "tar"; };
@@ -5387,19 +5539,18 @@ let
         url = "https://registry.npmjs.org/web-tree-sitter/-/web-tree-sitter-0.19.4.tgz";
         sha512 = "8G0xBj05hqZybCqBtW7RPZ/hWEtP3DiLTauQzGJZuZYfVRgw7qj7iaZ+8djNqJ4VPrdOO+pS2dR1JsTbsLxdYg==";
       };
-      buildInputs = [ nodejs python3 makeWrapper ripgrep jq ] ++
+      buildInputs = [ nodejs python3 makeWrapper jq  ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "web-tree-sitter"; });
       dontStrip = true;
       NODE_OPTIONS = "--preserve-symlinks";
       passAsFile = [ "unpackScript" "configureScript" "buildScript" "installScript" ];
-      outputs = ["out" "dev"];
-      unpackScript = mkUnpackScript { inherit dependencies extraDependencies;
+      unpackScript = mkUnpackScript { dependencies = dependencies ++ extraDependencies;
          pkgName = "web-tree-sitter"; };
       configureScript = mkConfigureScript {};
       buildScript = mkBuildScript { inherit dependencies; pkgName = "web-tree-sitter"; };
       buildPhase = ''
-      source $unpackScriptPath
+      source $unpackScriptPath 
       source $configureScriptPath
       runHook preBuild
       if [ -z "$preBuild" ]; then
@@ -5408,6 +5559,15 @@ let
       source $buildScriptPath
       if [ -z "$postBuild" ]; then
         runHook postBuild
+      fi
+    '';
+      patchPhase = ''
+      if [ -z "$prePatch" ]; then
+        runHook prePatch
+      fi
+      
+      if [ -z "$postPatch" ]; then
+        runHook postPatch
       fi
     '';
       installScript = mkInstallScript { pkgName = "web-tree-sitter"; };
