@@ -285,6 +285,7 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
            }}
            chmod -R +rw node_modules
            \${flattenScript}
+           \${lib.optionalString (builtins.hasAttr "nodeModulesUnpack" drv) drv.nodeModulesUnpack}
         '';
     in stdenv.mkDerivation (drv // {
       passthru = { inherit nodeModules pkgJsonFile; };
@@ -315,7 +316,7 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
       installPhase =  ''
           runHook preInstall
           mkdir -p $out/lib/node_modules/\${packageNix.name}
-          cp -rfL ./ $out/lib/node_modules/\${packageNix.name}
+          cp -rfT ./ $out/lib/node_modules/\${packageNix.name}
           runHook postInstall
        '';
   })`);

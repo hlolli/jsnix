@@ -7,11 +7,9 @@ import "io/fs"
 import "log"
 import "os"
 import "path"
-import "path/filepath"
 import "regexp"
 import "strings"
 import "syscall"
-// import "github.com/otiai10/copy"
 import "github.com/goccy/go-json"
 import "github.com/blang/semver"
 
@@ -179,14 +177,7 @@ func main() {
 
 			} else if os.IsNotExist(err) {
 				// path does *not* exist
-				cwd, _ := os.Getwd()
-				syminfo, _ := os.Lstat(path.Join(cwd,stdFile))
-				if IsSyml(syminfo) {
-					srcPath,_ := filepath.EvalSymlinks(path.Join(cwd,stdFile))
-					os.Symlink(srcPath, path.Join("./node_modules", dirName))
-				} else {
-					os.Symlink(stdFile, path.Join("./node_modules", dirName))
-				}
+				os.Rename(stdFile, path.Join("./node_modules", dirName))
 
 			} else {
 				// strangeness
@@ -201,18 +192,9 @@ func main() {
 			os.MkdirAll(path.Join("./node_modules", scopeName), 0755)
 			if _, err := os.Stat(path.Join("./node_modules", pName)); err == nil {
 				// path exists
-
 			} else if os.IsNotExist(err) {
 				// path does *not* exist
-				cwd, _ := os.Getwd()
-				syminfo, _ := os.Lstat(path.Join(cwd,scopedFile))
-				if IsSyml(syminfo) {
-					srcPath,_ := filepath.EvalSymlinks(path.Join(cwd,scopedFile))
-					os.Symlink(srcPath, path.Join("./node_modules", dirName))
-				} else {
-					os.Symlink(scopedFile, path.Join("./node_modules", dirName))
-				}
-
+				os.Rename(scopedFile, path.Join("./node_modules", pName))
 			} else {
 				// strangeness
 				fmt.Println(err)
