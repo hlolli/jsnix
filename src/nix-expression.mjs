@@ -58,7 +58,7 @@ const copyNodeModulesExpr = `{dependencies ? [], extraDependencies ? [], stripSc
        chmod -R +rw "node_modules/\${pkgName}"
        \${lib.optionalString stripScripts "cat <<< $(jq 'del(.scripts,.bin)' \\"node_modules/\${pkgName}/package.json\\") > \\"node_modules/\${pkgName}/package.json\\""}
        \${lib.optionalString (builtins.hasAttr "dependencies" dep)
-         "(cd node_modules/\${dep.packageName}; \${linkNodeModules { inherit (dep) dependencies; inherit extraDependencies stripScripts; }})"}
+         "(cd node_modules/\${dep.packageName}; \${copyNodeModules { inherit (dep) dependencies; inherit extraDependencies stripScripts; }})"}
      fi
      '')))
      "" dependencies)`;
@@ -77,7 +77,7 @@ const transitiveDepInstallPhase = `{dependencies ? [], pkgName}: ''
     cd $out/lib/node_modules/\${pkgName}
     cp -rfT "$packageDir" "$(pwd)"
     mkdir -p node_modules/.bin
-    \${linkNodeModules { inherit dependencies; }} ''`;
+    \${copyNodeModules { inherit dependencies; }} ''`;
 
 const mkPhaseBan = new nijs.NixValue(`phaseName: usrDrv:
       if (builtins.hasAttr phaseName usrDrv) then
@@ -92,7 +92,7 @@ const mkPhase = new nijs.NixValue(`pkgs_: {phase, pkgName}:
        then
          packageNix.dependencies."\${pkgName}"."\${phase}"
        else
-         (packageNix.dependencies."\${pkgName}"."\${phase}" (pkgs_ // { inherit getNodeDep copyNodeModules linkNodeModules; })))`);
+         (packageNix.dependencies."\${pkgName}"."\${phase}" (pkgs_ // { inherit getNodeDep copyNodeModules; })))`);
 
 const mkExtraBuildInputs = new nijs.NixValue(`pkgs_: {pkgName}:
      lib.optionals ((builtins.hasAttr "\${pkgName}" packageNix.dependencies) &&
@@ -102,7 +102,7 @@ const mkExtraBuildInputs = new nijs.NixValue(`pkgs_: {pkgName}:
        then
          packageNix.dependencies."\${pkgName}"."extraBuildInputs"
        else
-         (packageNix.dependencies."\${pkgName}"."extraBuildInputs" (pkgs_ // { inherit getNodeDep copyNodeModules linkNodeModules; })))`);
+         (packageNix.dependencies."\${pkgName}"."extraBuildInputs" (pkgs_ // { inherit getNodeDep copyNodeModules; })))`);
 
 const mkExtraDependencies = new nijs.NixValue(`pkgs_: {pkgName}:
      lib.optionals ((builtins.hasAttr "\${pkgName}" packageNix.dependencies) &&
@@ -112,7 +112,7 @@ const mkExtraDependencies = new nijs.NixValue(`pkgs_: {pkgName}:
        then
          packageNix.dependencies."\${pkgName}"."extraDependencies"
        else
-         (packageNix.dependencies."\${pkgName}"."extraDependencies" (pkgs_ // { inherit getNodeDep copyNodeModules linkNodeModules; })))`);
+         (packageNix.dependencies."\${pkgName}"."extraDependencies" (pkgs_ // { inherit getNodeDep copyNodeModules; })))`);
 
 const mkUnpackScript = new nijs.NixValue(`{ dependencies ? [], extraDependencies ? [], pkgName }:
      let copyNodeDependencies =
@@ -123,13 +123,13 @@ const mkUnpackScript = new nijs.NixValue(`{ dependencies ? [], extraDependencies
            (packageNix.dependencies."\${pkgName}"."copyNodeDependencies" == true))
        then true else false;
      in ''
-      \${(if copyNodeDependencies then copyNodeModules else linkNodeModules) { inherit dependencies extraDependencies; }}
+      \${copyNodeModules { inherit dependencies extraDependencies; }}
       chmod -R +rw $(pwd)
     ''`);
 
-const mkConfigureScript = new nijs.NixValue(`{}: ''
-    \${flattenScript}
-''`);
+// const mkConfigureScript = new nijs.NixValue(`{}: ''
+//     \${flattenScript}
+// ''`);
 
 const mkBuildScript = new nijs.NixValue(`{ dependencies ? [], pkgName }:
     let extraNpmFlags =
@@ -170,37 +170,37 @@ const nodeSources = new nijs.NixValue(`runCommand "node-sources" {} ''
     mv node-* $out
   ''`);
 
-const goFlatten = new nijs.NixValue(`pkgs.buildGoModule {
-  pname = "flatten";
-  version = "0.0.0";
-  vendorSha256 = null;
-  src = pkgs.fetchFromGitHub {
-    owner = "hlolli";
-    repo = "jsnix";
-    rev = "0c04c09759f4f34689db025cdde6d6d44bcc3c74";
-    sha256 = "JPYOxtbX7wEO19PFsVYmMxW/ZzjnaLvd/cbpK2hskkk=";
-  };
-  preBuild = ''
-    cd go
-  '';
-}`);
-
 // const goFlatten = new nijs.NixValue(`pkgs.buildGoModule {
 //   pname = "flatten";
 //   version = "0.0.0";
 //   vendorSha256 = null;
-//   src = /Users/hlodversigurdsson/forks/jsnix/go;
+//   src = pkgs.fetchFromGitHub {
+//     owner = "hlolli";
+//     repo = "jsnix";
+//     rev = "0c04c09759f4f34689db025cdde6d6d44bcc3c74";
+//     sha256 = "JPYOxtbX7wEO19PFsVYmMxW/ZzjnaLvd/cbpK2hskkk=";
+//   };
 //   preBuild = ''
-//     ls
-//     mkdir -p go
-//     mv flatten* go
-//     chmod -R +rw .
-//     mv vendor go
-//     mv go.mod go
-//     mkdir -p .git
 //     cd go
 //   '';
 // }`);
+
+const goFlatten = new nijs.NixValue(`pkgs.buildGoModule {
+  pname = "flatten";
+  version = "0.0.0";
+  vendorSha256 = null;
+  src = /Users/hlodversigurdsson/forks/jsnix/go;
+  preBuild = ''
+    ls
+    mkdir -p go
+    mv flatten* go
+    chmod -R +rw .
+    mv vendor go
+    mv go.mod go
+    mkdir -p .git
+    cd go
+  '';
+}`);
 
 const sanitizeName = new nijs.NixValue(`nm: lib.strings.sanitizeDerivationName
     (builtins.replaceStrings [ "@" "/" ] [ "_at_" "_" ] nm)`);
@@ -239,6 +239,10 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
                         then drv.skipUnpackFor else [];
         copyUnpackFor = if (builtins.hasAttr "copyUnpackFor" drv)
                         then drv.copyUnpackFor else [];
+        pkgJsonFile = runCommand "package.json" { buildInputs = [jq]; } ''
+          echo \${toPackageJson { inherit jsnixDeps; }} > $out
+          cat <<< $(cat $out | jq) > $out
+        '';
         linkDeps = (builtins.filter
                                 (p: (((lib.findSingle (px: px == p.packageName) "none" "found" skipUnpackFor) == "none") &&
                                       (lib.findSingle (px: px == p.packageName) "none" "found" copyUnpackFor) == "none"))
@@ -264,7 +268,7 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
            echo 'unpack, dedupe and flatten dependencies...'
            mkdir -p $out/lib/node_modules
            cd $out/lib
-           \${linkNodeModules {
+           \${copyNodeModules {
                 dependencies = linkDeps;
                 extraDependencies = (lib.optionals (builtins.hasAttr "extraDependencies" drv) drv.extraDependencies);
            }}
@@ -276,23 +280,16 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
                 dependencies = extraCopyDeps;
                 stripScripts = true;
            }}
-           \${linkNodeModules {
+           \${copyNodeModules {
                 dependencies = extraLinkDeps;
            }}
            chmod -R +rw node_modules
            \${flattenScript}
-           export HOME=$TMPDIR
-           npm --offline config set node_gyp \${nodejs}/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js
-           npm --offline config set global_style true
-           NODE_PATH="$(pwd)/node_modules:$NODE_PATH" \\
-             npm --offline --no-bin-links --nodedir=\${nodeSources} \\
-               "--production" "--preserve-symlinks" rebuild
         '';
     in stdenv.mkDerivation (drv // {
-      inherit nodeModules;
+      passthru = { inherit nodeModules pkgJsonFile; };
       version = packageNix.version;
       name = sanitizeName packageNix.name;
-      packageJson = "lib/node_modules/\${packageNix.name}/package.json";
       preUnpackBan_ = mkPhaseBan "preUnpack" drv;
       unpackBan_ = mkPhaseBan "unpackPhase" drv;
       postUnpackBan_ = mkPhaseBan "postUnpack" drv;
@@ -303,56 +300,21 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
       packageName = packageNix.name;
       dontStrip = true;
       doUnpack = true;
-      NODE_OPTIONS = "--preserve-symlinks";
-      buildInputs = [ nodejs jq ] ++ lib.optionals (builtins.hasAttr "buildInputs" drv) drv.buildInputs;
-      passAsFile = [ "unpackFlattenDedupe" ];
+      NODE_PATH = "./node_modules";
+      buildInputs = [ nodejs ] ++ lib.optionals (builtins.hasAttr "buildInputs" drv) drv.buildInputs;
 
-      unpackFlattenDedupe = ''
-        mkdir -p node_modules
-        chmod -R +rw node_modules
-        cp -arfT \${nodeModules}/lib/node_modules node_modules
-        export NODE_PATH="$(pwd)/node_modules:$NODE_PATH"
-        export NODE_OPTIONS="--preserve-symlinks"
-        echo \${toPackageJson { inherit jsnixDeps; }} > package.json
-        cat <<< $(cat package.json | jq) > "package.json"
-      '';
       configurePhase = ''
-        source $unpackFlattenDedupePath
+        ln -s \${nodeModules}/lib/node_modules node_modules
+        cat \${pkgJsonFile} > package.json
       '';
       buildPhase = ''
         runHook preBuild
        \${lib.optionalString (builtins.hasAttr "buildPhase" drv) drv.buildPhase}
        runHook postBuild
       '';
-      installPhase = if (builtins.hasAttr "installPhase" drv) then
-        ''
+      installPhase =  ''
           runHook preInstall
-            \${drv.installPhase}
-          runHook postInstall
-        '' else ''
-          runHook preInstall
-          if [[ -d "./bin" ]]
-          then
-            mkdir $out/bin
-            ln -s ./bin/* $out/bin
-          fi
-          if [[ -d "./node_modules" ]]
-          then
-            find ./node_modules -maxdepth 2 -name '*package.json' ! -name "*@*" | while read d; do
-              chmod +rw "$(dirname $d)"
-              chmod +rw "$d" 2>/dev/null || true
-              if [ -w "$d" ]
-              then
-                cat <<< $(jq 'del(.scripts,.bin)' "$d") > "$d"
-              else
-                orig="$(readlink $(echo $d))"
-                rm -f "$d"
-                cp -f "$orig" "$d" && chmod 0666 "$d" 2>/dev/null || true
-                cat <<< $(jq 'del(.scripts,.bin)' "$d") > "$d"
-              fi
-            done
-          fi
-           mkdir -p $out/lib/node_modules/\${packageNix.name}
+          mkdir -p $out/lib/node_modules/\${packageNix.name}
           cp -rfL ./ $out/lib/node_modules/\${packageNix.name}
           runHook postInstall
        '';
@@ -412,7 +374,6 @@ class OutputExpression extends nijs.NixASTNode {
           mkExtraBuildInputs,
           mkExtraDependencies,
           mkUnpackScript,
-          mkConfigureScript,
           mkBuildScript,
           mkInstallScript,
           goFlatten,

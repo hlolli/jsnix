@@ -7,10 +7,11 @@ import "io/fs"
 import "log"
 import "os"
 import "path"
+import "path/filepath"
 import "regexp"
 import "strings"
 import "syscall"
-import "github.com/otiai10/copy"
+// import "github.com/otiai10/copy"
 import "github.com/goccy/go-json"
 import "github.com/blang/semver"
 
@@ -138,7 +139,7 @@ func NodeModuleDirs(root string, sys fs.FS) ([]string, []string, error) {
 			return err
 		}
 		// nodeModPM := nodeModP.FindAllStringIndex(path, -1)
-		if countMatches(path, nodeModP) > 1 && !strings.HasSuffix(path, "node_modules") {
+		if countMatches(path, nodeModP) > 1 && !strings.HasSuffix(path, "node_modules") && !strings.HasSuffix(path, ".bin") {
 			var scopedResult = scopedModuleRe.MatchString(path)
 			if  scopedResult {
 				scoped = append(scoped, path)
@@ -172,39 +173,20 @@ func main() {
 
 
 		for _, stdFile := range standard {
-			syminfo, _ := os.Lstat(stdFile)
-			if IsSyml(syminfo) && IsDir(syminfo) {
-				realPath, _ := os.Readlink(stdFile)
-				os.Remove(stdFile)
-				os.MkdirAll(stdFile, 0755)
-				srcCpInfo, srcCpErr := ioutil.ReadDir(realPath)
-				if srcCpErr != nil {
-					log.Fatal(srcCpErr)
-				}
-				for _, cpy := range srcCpInfo {
-					copy.Copy(
-						cpy.Name(),
-						stdFile,
-						copy.Options{
-							OnSymlink: func(src string) copy.SymlinkAction {
-								return copy.Shallow
-							},
-							AddPermission: 0755,
-						})
-				}
-
-			}
 			dirName := path.Base(stdFile)
 			if _, err := os.Stat(path.Join("./node_modules", dirName)); err == nil {
 				// path exists
-				existingPath := path.Join("./node_modules", dirName)
-				if semverFits(path.Join(stdFile, "package.json"), path.Join(existingPath, "package.json")) != -1 {
-					os.RemoveAll(stdFile)
-				}
 
 			} else if os.IsNotExist(err) {
 				// path does *not* exist
-				os.Rename(stdFile, path.Join("./node_modules", dirName))
+				cwd, _ := os.Getwd()
+				syminfo, _ := os.Lstat(path.Join(cwd,stdFile))
+				if IsSyml(syminfo) {
+					srcPath,_ := filepath.EvalSymlinks(path.Join(cwd,stdFile))
+					os.Symlink(srcPath, path.Join("./node_modules", dirName))
+				} else {
+					os.Symlink(stdFile, path.Join("./node_modules", dirName))
+				}
 
 			} else {
 				// strangeness
@@ -213,42 +195,23 @@ func main() {
 
 		}
 		for _, scopedFile := range scoped {
-			syminfo, _ := os.Lstat(scopedFile)
-			if IsSyml(syminfo) && IsDir(syminfo) {
-				realPath, _ := os.Readlink(scopedFile)
-				os.Remove(scopedFile)
-				os.MkdirAll(scopedFile, 0755)
-				srcCpInfo, srcCpErr := ioutil.ReadDir(realPath)
-				if srcCpErr != nil {
-					log.Fatal(srcCpErr)
-				}
-				for _, cpy := range srcCpInfo {
-					copy.Copy(
-						cpy.Name(),
-						scopedFile,
-						copy.Options{
-							OnSymlink: func(src string) copy.SymlinkAction {
-								return copy.Shallow
-							},
-							AddPermission: 0755,
-						})
-				}
-			}
 			dirName := path.Base(scopedFile)
 			scopeName := path.Base(path.Dir(scopedFile))
 			pName := path.Join(scopeName, dirName)
 			os.MkdirAll(path.Join("./node_modules", scopeName), 0755)
 			if _, err := os.Stat(path.Join("./node_modules", pName)); err == nil {
 				// path exists
-				existingPath := path.Join("./node_modules", pName)
-				if semverFits(path.Join(scopedFile, "package.json"), path.Join(existingPath, "package.json")) != -1 {
-
-					os.RemoveAll(scopedFile)
-				}
 
 			} else if os.IsNotExist(err) {
 				// path does *not* exist
-				os.Rename(scopedFile, path.Join("./node_modules", pName))
+				cwd, _ := os.Getwd()
+				syminfo, _ := os.Lstat(path.Join(cwd,scopedFile))
+				if IsSyml(syminfo) {
+					srcPath,_ := filepath.EvalSymlinks(path.Join(cwd,scopedFile))
+					os.Symlink(srcPath, path.Join("./node_modules", dirName))
+				} else {
+					os.Symlink(scopedFile, path.Join("./node_modules", dirName))
+				}
 
 			} else {
 				// strangeness

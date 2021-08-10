@@ -11,7 +11,7 @@ const mkCompatabilityPkgsNames = (kvPkgs) =>
 
 const preCompatabilityPkgs = R.mergeAll([archivedPackages, resolutions]);
 const preCompatabilityPkgsNames = mkCompatabilityPkgsNames(
-  R.keys(preCompatabilityPkgs)
+  preCompatabilityPkgs
 );
 
 export const resolveCompat = ({
@@ -19,6 +19,7 @@ export const resolveCompat = ({
   name,
   pkgJsonResolutions = [],
 }) => {
+  // console.log(name);
   const allCompatabilityPkgs = R.mergeAll([
     preCompatabilityPkgs,
     pkgJsonResolutions,
@@ -28,21 +29,20 @@ export const resolveCompat = ({
     preCompatabilityPkgsNames,
   ]);
   if (allCompatabilityPkgsNames[name]) {
-    // console.log(name);
+    // console.log(name, allCompatabilityPkgsNames);
     const maybeCompat = allCompatabilityPkgsNames[name];
     const badCompatVer = maybeCompat.substring(
       maybeCompat.lastIndexOf("@") + 1
     );
+
     // console.log(
     //   "SATISFI",
+    //   name,
     //   (versionSpec || "").replace(/^\^/, ""),
     //   badCompatVer,
-    //   semver.satisfies(
-    //     (versionSpec || "").replace(/^\^/, ""),
-    //     badCompatVer,
-    //     true
-    //   )
+    //   semver.satisfies((versionSpec || "").replace(/^\^/, ""), badCompatVer)
     // );
+
     const compat = allCompatabilityPkgs[maybeCompat];
 
     const [compatName, compatVer] = R.splitAt(compat.lastIndexOf("@"), compat);

@@ -3,4 +3,6 @@ export const resolutions = {
   "flat-cache@<3.0.0": "flat-cache@3.x",
   // char-regex~1.0.2 has broken chmod entries
   "char-regex@<2.0.0": "char-regex@2.x",
+  // node-sass ages very badly
+  "node-sass@<6.0.1": "node-sass@^6.0.1",
 };

@@ -118,11 +118,18 @@ export class NPMRegistrySource extends Source {
       version,
       true
     );
-    // console.log("versionIds", versionIdentifiers);
-    // console.log("versionSpec", this.versionSpec);
-    // console.log("data", data._id);
-    // console.log("version", version);
-    // console.log("resolvedVersion", resolvedVersion);
+
+    // if (data._id === "iconv-lite") {
+    //   console.log("versionIds", versionIdentifiers);
+    //   console.log("versionSpec", this.versionSpec);
+    //   console.log("data", data._id);
+    //   console.log("version", version);
+    //   console.log("resolvedVersion", resolvedVersion);
+    //   console.log("OK", Object.keys(this));
+    //   console.log("OK2", Object.keys(this.parent));
+    //   console.log("OK3", Object.keys(this.parent.source));
+    // }
+
     if (!resolvedVersion) {
       console.error(
         "Cannot resolve version: " +

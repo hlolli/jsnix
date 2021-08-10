@@ -71,9 +71,14 @@ export class Package extends nijs.NixASTNode {
         // (is not a perfect resolution, but does not result in an error)
         return null;
       } else {
+        const semverParsed = dependency.versionSpec.match(/\d\.\d\.\d/);
+        const matchingSemver = semverParsed
+          ? semverParsed[0]
+          : dependency.source.config.version;
         if (
           // If we found a dependency with the same name, see if the version fits
-          semver.satisfies(dependency.source.config.version, versionSpec, true)
+
+          semver.satisfies(matchingSemver, versionSpec)
         ) {
           return dependency;
         } else {
@@ -134,6 +139,7 @@ export class Package extends nijs.NixASTNode {
     if (dependencies) {
       for (const dependencyName in dependencies) {
         const versionSpec = dependencies[dependencyName];
+
         const parentDependency = this.findMatchingProvidedDependencyByParent(
           dependencyName,
           versionSpec
@@ -177,17 +183,6 @@ export class Package extends nijs.NixASTNode {
       resolvedDependencies,
       this.source.config.peerDependencies
     );
-
-    // if (!this.isTransitive) {
-    //   await this.bundleDependencies(
-    //     resolvedDependencies,
-    //     this.source.config.devDependencies
-    //   );
-    //   await this.bundleDependencies(
-    //     resolvedDependencies,
-    //     this.source.config.peerDependencies
-    //   );
-    // }
 
     for (const dependencyName in resolvedDependencies) {
       const dependency = resolvedDependencies[dependencyName];
@@ -274,20 +269,19 @@ export class Package extends nijs.NixASTNode {
 
     ast.NODE_OPTIONS = new nijs.NixValue('"--preserve-symlinks"');
     ast.passAsFile = new nijs.NixValue(
-      `[ "unpackScript" "configureScript" "buildScript" "installScript" ]`
+      `[ "unpackScript" "buildScript" "installScript" ]`
     );
     ast.unpackScript = new nijs.NixValue(
       `mkUnpackScript { dependencies = dependencies ++ extraDependencies;
          pkgName = "${this.source.config.name}"; }`
     );
-    ast.configureScript = new nijs.NixValue(`mkConfigureScript {}`);
+    // ast.configureScript = new nijs.NixValue(`mkConfigureScript {}`);
     ast.buildScript = new nijs.NixValue(
       `mkBuildScript { inherit dependencies; pkgName = "${this.source.config.name}"; }`
     );
 
     ast.buildPhase = new nijs.NixValue(`''
       source $unpackScriptPath ${gypExtraUnpack}
-      source $configureScriptPath
       runHook preBuild
       if [ -z "$preBuild" ]; then
         runHook preInstall
