@@ -234,8 +234,9 @@ const toPackageJson = new nijs.NixValue(`{ jsnixDeps ? {} }:
     in lib.strings.escapeNixString
       (builtins.toJSON (safePkgNix // { dependencies = prodDeps; name = pkgName; }))`);
 
-const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
-    let skipUnpackFor = if (builtins.hasAttr "skipUnpackFor" drv)
+const jsnixDrvOverrides = new nijs.NixValue(`{ drv_, jsnixDeps}:
+    let drv = drv_ (pkgs // { inherit nodejs copyNodeModules linkNodeModules gitignoreSource jsnixDeps nodeModules getNodeDep; });
+        skipUnpackFor = if (builtins.hasAttr "skipUnpackFor" drv)
                         then drv.skipUnpackFor else [];
         copyUnpackFor = if (builtins.hasAttr "copyUnpackFor" drv)
                         then drv.copyUnpackFor else [];
@@ -302,7 +303,7 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv, jsnixDeps ? {} }:
       dontStrip = true;
       doUnpack = true;
       NODE_PATH = "./node_modules";
-      buildInputs = [ nodejs ] ++ lib.optionals (builtins.hasAttr "buildInputs" drv) drv.buildInputs;
+      buildInputs = [ nodejs jq ] ++ lib.optionals (builtins.hasAttr "buildInputs" drv) drv.buildInputs;
 
       configurePhase = ''
         ln -s \${nodeModules}/lib/node_modules node_modules
@@ -494,21 +495,8 @@ export class NixExpression extends OutputExpression {
           "${packageNix.name}": new nijs.NixFunInvocation({
             funExpr: new nijs.NixExpression("jsnixDrvOverrides"),
             paramExpr: {
+              drv_: new nijs.NixExpression("packageNix.packageDerivation"),
               jsnixDeps: new nijs.NixInherit(),
-              drv: new nijs.NixFunInvocation({
-                funExpr: new nijs.NixExpression("packageNix.packageDerivation"),
-                paramExpr: new nijs.NixMergeAttrs({
-                  left: new nijs.NixExpression("pkgs"),
-                  right: {
-                    nodejs: new nijs.NixInherit(),
-                    copyNodeModules: new nijs.NixInherit(),
-                    linkNodeModules: new nijs.NixInherit(),
-                    gitignoreSource: new nijs.NixInherit(),
-                    jsnixDeps: new nijs.NixInherit(),
-                    getNodeDep: new nijs.NixInherit(),
-                  },
-                }),
-              }),
             },
           }),
         },

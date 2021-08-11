@@ -179,10 +179,10 @@ export class Package extends nijs.NixASTNode {
       );
     }
 
-    await this.bundleDependencies(
-      resolvedDependencies,
-      this.source.config.peerDependencies
-    );
+    // await this.bundleDependencies(
+    //   resolvedDependencies,
+    //   this.source.config.peerDependencies
+    // );
 
     for (const dependencyName in resolvedDependencies) {
       const dependency = resolvedDependencies[dependencyName];

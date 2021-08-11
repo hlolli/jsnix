@@ -46,6 +46,7 @@ export const resolveCompat = ({
     const compat = allCompatabilityPkgs[maybeCompat];
 
     const [compatName, compatVer] = R.splitAt(compat.lastIndexOf("@"), compat);
+    // console.log(compatName, compatVer);
     return { versionSpec: compatVer.replace("@", ""), name: compatName };
   } else {
     return { versionSpec, name };
