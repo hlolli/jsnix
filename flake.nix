@@ -34,6 +34,17 @@
             rootDir__ = if (builtins.pathExists (rootDir_ + ("/flake.nix")))
                         then rootDir_
                         else throw "first argument of mkWorkspace must point to a directory which contains flake.nix";
+
+            getWorkspaceImports = nixpkgs.lib.foldr (p: l:
+              if ((builtins.pathExists (rootDir__ + ("/" + p + "/package.nix"))) &&
+                  (builtins.pathExists (rootDir__ + ("/" + p + "/package-lock.nix"))))
+              then
+                let pkg = import (rootDir__ + ("/" + p + "/package.nix"));
+                    pkgLock = import (rootDir__ + ("/" + p + "/package-lock.nix")) paramPkgs;
+                in (l // (nixpkgs.lib.optionalAttrs ((builtins.hasAttr "name" pkg) && (builtins.hasAttr pkg.name pkgLock)))
+                  { "${pkg.name}" = pkgLock.${pkg.name} ; })
+              else l) {};
+
             getWorkspaceOverlays = nixpkgs.lib.foldr (p: l:
               (l ++ (nixpkgs.lib.optionals (builtins.pathExists (rootDir__ + ("/" + p + "/overlay.nix"))))
                 [ (import (rootDir__ + ("/" + p + "/overlay.nix"))) ])) [];
@@ -62,6 +73,7 @@
             ) ""
               (getWorkspacePkgs__internal workspaces pkgs));
           in {
+            packages = (getWorkspaceImports workspaces);
             overlays = (getWorkspaceOverlays workspaces);
             topLevelPackages = (getWorkspacePkgs paramPkgs);
             devShellHook = (mkDevShellHook paramPkgs);

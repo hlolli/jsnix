@@ -265,7 +265,9 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv_, jsnixDeps}:
                                       (lib.findSingle (px: px == p.packageName) "none" "found" copyUnpackFor) == "found"))
                                 (if (builtins.hasAttr "extraDependencies" drv) then drv.extraDependencies else []));
          buildDepDep = lib.lists.unique (lib.lists.concatMap (d: d.buildInputs) (linkDeps ++ copyDeps));
-         nodeModules = runCommandCC "\${sanitizeName packageNix.name}_node_modules" { buildInputs = buildDepDep; } ''
+         nodeModules = runCommandCC "\${sanitizeName packageNix.name}_node_modules"
+           { buildInputs = buildDepDep;
+             version = builtins.hashString "sha512" (lib.strings.concatStrings (linkDeps ++ copyDeps ++ extraLinkDeps ++ extraCopyDeps)); } ''
            echo 'unpack, dedupe and flatten dependencies...'
            mkdir -p $out/lib/node_modules
            cd $out/lib
@@ -283,10 +285,11 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv_, jsnixDeps}:
                 dependencies = extraCopyDeps;
                 stripScripts = true;
            }}
-           \${linkNodeModules {
+           \${copyNodeModules {
                 dependencies = extraLinkDeps;
            }}
            \${lib.optionalString (builtins.hasAttr "nodeModulesUnpack" drv) drv.nodeModulesUnpack}
+           patchShebangsAuto
         '';
     in stdenv.mkDerivation (drv // {
       passthru = { inherit nodeModules pkgJsonFile; };
