@@ -277,15 +277,15 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv_, jsnixDeps}:
                 dependencies = copyDeps;
                 extraDependencies = (lib.optionals (builtins.hasAttr "extraDependencies" drv) drv.extraDependencies);
            }}
+           chmod -R +rw node_modules
+           \${flattenScript}
            \${copyNodeModules {
                 dependencies = extraCopyDeps;
                 stripScripts = true;
            }}
-           \${copyNodeModules {
+           \${linkNodeModules {
                 dependencies = extraLinkDeps;
            }}
-           chmod -R +rw node_modules
-           \${flattenScript}
            \${lib.optionalString (builtins.hasAttr "nodeModulesUnpack" drv) drv.nodeModulesUnpack}
         '';
     in stdenv.mkDerivation (drv // {

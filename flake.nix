@@ -60,7 +60,7 @@
               "${acc}\n(cd ${path}; rm -rf node_modules; rm -f package.json;" +
               "mkdir node_modules; ln -s ${drv.nodeModules}/lib/node_modules/* node_modules; ln -s ${drv.pkgJsonFile} package.json)\n"
             ) ""
-              (getWorkspacePkgs__internal workspaces pkgs)) + "\nexport NODE_OPTIONS='--preserve-symlinks'\n";
+              (getWorkspacePkgs__internal workspaces pkgs));
           in {
             overlays = (getWorkspaceOverlays workspaces);
             topLevelPackages = (getWorkspacePkgs paramPkgs);
