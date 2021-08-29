@@ -170,37 +170,37 @@ const nodeSources = new nijs.NixValue(`runCommand "node-sources" {} ''
     mv node-* $out
   ''`);
 
-const goFlatten = new nijs.NixValue(`pkgs.buildGoModule {
-  pname = "flatten";
-  version = "0.0.0";
-  vendorSha256 = null;
-  src = pkgs.fetchFromGitHub {
-    owner = "hlolli";
-    repo = "jsnix";
-    rev = "4525c28d576085d7a2151b0a5da666d887734e32";
-    sha256 = "sha256-OmRHha60JYgVSlrsqm5hCaVeoqN7Suvf0xoG+HLbpUs=";
-  };
-  preBuild = ''
-    cd go
-  '';
-}`);
-
 // const goFlatten = new nijs.NixValue(`pkgs.buildGoModule {
 //   pname = "flatten";
 //   version = "0.0.0";
 //   vendorSha256 = null;
-//   src = /Users/hlodversigurdsson/forks/jsnix/go;
+//   src = pkgs.fetchFromGitHub {
+//     owner = "hlolli";
+//     repo = "jsnix";
+//     rev = "4525c28d576085d7a2151b0a5da666d887734e32";
+//     sha256 = "sha256-OmRHha60JYgVSlrsqm5hCaVeoqN7Suvf0xoG+HLbpUs=";
+//   };
 //   preBuild = ''
-//     ls
-//     mkdir -p go
-//     mv flatten* go
-//     chmod -R +rw .
-//     mv vendor go
-//     mv go.mod go
-//     mkdir -p .git
 //     cd go
 //   '';
 // }`);
+
+const goFlatten = new nijs.NixValue(`pkgs.buildGoModule {
+  pname = "flatten";
+  version = "0.0.0";
+  vendorSha256 = null;
+  src = /Users/hlodversigurdsson/forks/jsnix/go;
+  preBuild = ''
+    ls
+    mkdir -p go
+    mv flatten* go
+    chmod -R +rw .
+    mv vendor go
+    mv go.mod go
+    mkdir -p .git
+    cd go
+  '';
+}`);
 
 const sanitizeName = new nijs.NixValue(`nm: lib.strings.sanitizeDerivationName
     (builtins.replaceStrings [ "@" "/" ] [ "_at_" "_" ] nm)`);

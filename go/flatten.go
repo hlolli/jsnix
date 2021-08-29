@@ -132,19 +132,22 @@ func NodeModuleDirs(root string, sys fs.FS) ([]string, []string, error) {
 	nodeModP := regexp.MustCompile("node_modules")
 
 
-	err := fs.WalkDir(sys, root, func(path string, de fs.DirEntry, err error) error {
+	err := fs.WalkDir(sys, root, func(walkPath string, de fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		// nodeModPM := nodeModP.FindAllStringIndex(path, -1)
-		if countMatches(path, nodeModP) > 1 && !strings.HasSuffix(path, "node_modules") && !strings.HasSuffix(path, ".bin") {
-			var scopedResult = scopedModuleRe.MatchString(path)
+		if countMatches(walkPath, nodeModP) > 1 &&
+			!strings.HasSuffix(walkPath, "node_modules") &&
+			!strings.HasSuffix(walkPath, ".bin") &&
+			PathExists(path.Join(walkPath, "package.json")) {
+			var scopedResult = scopedModuleRe.MatchString(walkPath)
 			if  scopedResult {
-				scoped = append(scoped, path)
+				scoped = append(scoped, walkPath)
 			}
 
-			if stdModuleRe.MatchString(path) {
-				standard = append(standard, path)
+			if stdModuleRe.MatchString(walkPath) {
+				standard = append(standard, walkPath)
 			}
 		}
 		return nil
