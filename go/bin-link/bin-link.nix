@@ -1,0 +1,16 @@
+{ pkgs, buildGoModule }:
+
+buildGoModule rec {
+  pname = "bin-link";
+  version = "0.0.0";
+  vendorSha256 = pkgs.lib.fakeSha256; # "sha256-pQpattmS9VmO3ZIQUFn66az8GSmB4IvYhTTCFn6SUmo="; # pkgs.lib.fakeSha256;
+  src = /Users/hlodversigurdsson/forks/jsnix/go/bin-link;
+  preBuild = ''
+    mkdir -p go
+    mv flatten* go
+    mv go.mod go
+    mkdir -p .git
+    cd go
+  '';
+
+}

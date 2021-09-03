@@ -14,6 +14,3 @@ github.com/goccy/go-json/internal/encoder/vm_color_indent
 github.com/goccy/go-json/internal/encoder/vm_indent
 github.com/goccy/go-json/internal/errors
 github.com/goccy/go-json/internal/runtime
-# github.com/otiai10/copy v1.6.0
-## explicit
-github.com/otiai10/copy

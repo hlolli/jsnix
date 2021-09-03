@@ -56,7 +56,7 @@ const copyNodeModulesExpr = `{dependencies ? [], extraDependencies ? [], stripSc
        mkdir -p "node_modules/\${pkgName}"
        cp -rLT "\${dep}/lib/node_modules/\${pkgName}" "node_modules/\${pkgName}"
        chmod -R +rw "node_modules/\${pkgName}"
-       \${lib.optionalString stripScripts "cat <<< $(jq 'del(.scripts,.bin)' \\"node_modules/\${pkgName}/package.json\\") > \\"node_modules/\${pkgName}/package.json\\""}
+       \${lib.optionalString stripScripts "cat <<< $(jq 'del(.scripts)' \\"node_modules/\${pkgName}/package.json\\") > \\"node_modules/\${pkgName}/package.json\\""}
        \${lib.optionalString (builtins.hasAttr "dependencies" dep)
          "(cd node_modules/\${dep.packageName}; \${copyNodeModules { inherit (dep) dependencies; inherit extraDependencies stripScripts; }})"}
      fi
@@ -76,7 +76,6 @@ const transitiveDepInstallPhase = `{dependencies ? [], pkgName}: ''
     mkdir -p $out/lib/node_modules/\${pkgName}
     cd $out/lib/node_modules/\${pkgName}
     cp -rfT "$packageDir" "$(pwd)"
-    mkdir -p node_modules/.bin
     \${copyNodeModules { inherit dependencies; }} ''`;
 
 const mkPhaseBan = new nijs.NixValue(`phaseName: usrDrv:
@@ -185,6 +184,23 @@ const goFlatten = new nijs.NixValue(`pkgs.buildGoModule {
   '';
 }`);
 
+const goBinLink = new nijs.NixValue(`pkgs.buildGoModule {
+  pname = "bin-link";
+  version = "0.0.1";
+  vendorSha256 = null;
+  src = /Users/hlodversigurdsson/forks/jsnix/go/bin-link;
+  preBuild = ''
+    ls
+    mkdir -p go
+    mv bin* go
+    chmod -R +rw .
+    mv vendor go
+    mv go.mod go
+    mkdir -p .git
+    cd go
+  '';
+}`);
+
 // const goFlatten = new nijs.NixValue(`pkgs.buildGoModule {
 //   pname = "flatten";
 //   version = "0.0.0";
@@ -205,11 +221,16 @@ const goFlatten = new nijs.NixValue(`pkgs.buildGoModule {
 const sanitizeName = new nijs.NixValue(`nm: lib.strings.sanitizeDerivationName
     (builtins.replaceStrings [ "@" "/" ] [ "_at_" "_" ] nm)`);
 
+
+const linkBins = new nijs.NixValue(`''
+    \${goBinLink}/bin/bin-link
+''`);
+
 const flattenScript = new nijs.NixValue(`''
     \${goFlatten}/bin/flatten
 ''`);
 
-const toPackageJson = new nijs.NixValue(`{ jsnixDeps ? {} }:
+const toPackageJson = new nijs.NixValue(`{ jsnixDeps ? {}, extraDeps ? [] }:
     let
       main = if (builtins.hasAttr "main" packageNix) then packageNix else throw "package.nix is missing main attribute";
       pkgName = if (builtins.hasAttr "packageName" packageNix)
@@ -217,15 +238,17 @@ const toPackageJson = new nijs.NixValue(`{ jsnixDeps ? {} }:
       packageNixDeps = if (builtins.hasAttr "dependencies" packageNix)
                        then packageNix.dependencies
                        else {};
+      extraDeps_ = lib.lists.foldr (dep: acc: { "\${dep.packageName}" = dep; } // acc) {} extraDeps;
+      allDeps = extraDeps_ // packageNixDeps;
       prodDeps = lib.lists.foldr
         (depName: acc: acc // {
-          "\${depName}" = (if ((builtins.typeOf packageNixDeps."\${depName}") == "string")
-                          then packageNixDeps."\${depName}"
+          "\${depName}" = (if ((builtins.typeOf allDeps."\${depName}") == "string")
+                          then allDeps."\${depName}"
                           else
-                            if (((builtins.typeOf packageNixDeps."\${depName}") == "set") &&
-                                ((builtins.typeOf packageNixDeps."\${depName}".version) == "string"))
-                          then packageNixDeps."\${depName}".version
-                          else "latest");}) {} (builtins.attrNames packageNixDeps);
+                            if (((builtins.typeOf allDeps."\${depName}") == "set") &&
+                                ((builtins.typeOf allDeps."\${depName}".version) == "string"))
+                          then allDeps."\${depName}".version
+                          else "latest");}) {} (builtins.attrNames allDeps);
       safePkgNix = lib.lists.foldr (key: acc:
         if ((builtins.typeOf packageNix."\${key}") != "lambda")
         then (acc // { "\${key}" =  packageNix."\${key}"; })
@@ -241,7 +264,7 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv_, jsnixDeps}:
         copyUnpackFor = if (builtins.hasAttr "copyUnpackFor" drv)
                         then drv.copyUnpackFor else [];
         pkgJsonFile = runCommand "package.json" { buildInputs = [jq]; } ''
-          echo \${toPackageJson { inherit jsnixDeps; }} > $out
+          echo \${toPackageJson { inherit jsnixDeps; extraDeps = (if (builtins.hasAttr "extraDependencies" drv) then drv.extraDependencies else []); }} > $out
           cat <<< $(cat $out | jq) > $out
         '';
         linkDeps = (builtins.filter
@@ -267,6 +290,7 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv_, jsnixDeps}:
          buildDepDep = lib.lists.unique (lib.lists.concatMap (d: d.buildInputs) (linkDeps ++ copyDeps));
          nodeModules = runCommandCC "\${sanitizeName packageNix.name}_node_modules"
            { buildInputs = buildDepDep;
+             doFixup = false;
              version = builtins.hashString "sha512" (lib.strings.concatStrings (linkDeps ++ copyDeps ++ extraLinkDeps ++ extraCopyDeps)); } ''
            echo 'unpack, dedupe and flatten dependencies...'
            mkdir -p $out/lib/node_modules
@@ -289,7 +313,6 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv_, jsnixDeps}:
                 dependencies = extraLinkDeps;
            }}
            \${lib.optionalString (builtins.hasAttr "nodeModulesUnpack" drv) drv.nodeModulesUnpack}
-           patchShebangsAuto
         '';
     in stdenv.mkDerivation (drv // {
       passthru = { inherit nodeModules pkgJsonFile; };
@@ -322,6 +345,9 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv_, jsnixDeps}:
           mkdir -p $out/lib/node_modules/\${packageNix.name}
           cp -rfT ./ $out/lib/node_modules/\${packageNix.name}
           runHook postInstall
+       '';
+       fixupPhase = ''
+         \${linkBins}
        '';
   })`);
 
@@ -370,6 +396,7 @@ class OutputExpression extends nijs.NixASTNode {
           transitiveDepUnpackPhase: new nijs.NixValue(transitiveDepUnpackPhase),
           getNodeDep: new nijs.NixValue(getNodeDep),
           nodeSources,
+          linkBins,
           flattenScript,
           sanitizeName,
           jsnixDrvOverrides,
@@ -382,6 +409,7 @@ class OutputExpression extends nijs.NixASTNode {
           mkBuildScript,
           mkInstallScript,
           goFlatten,
+          goBinLink,
           sources: this.sourcesCache,
         },
       }),
@@ -406,8 +434,8 @@ export class NixExpression extends OutputExpression {
 
           const identifier =
             versionSpec == "*" || versionSpec == "latest"
-              ? (identifier = dependencyName)
-              : (identifier = dependencyName + "-" + versionSpec);
+              ? dependencyName
+              : (dependencyName + "-" + versionSpec);
 
           this.packages[identifier] = new Package(
             jsnixConfig,

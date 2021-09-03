@@ -152,7 +152,7 @@ export class Source extends nijs.NixASTNode {
 
               patchPhase: new nijs.NixValue(`''
                 if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts,.bin)' package.json) > package.json
+                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
                 fi${gypPatches}
                 ${
                   this.config.name.startsWith("node-gyp")
