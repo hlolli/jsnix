@@ -75,13 +75,16 @@ func IsSyml(fi fs.FileInfo) bool {
 	}
 }
 
-func IsDir(fi fs.FileInfo) bool {
-	if fi.Mode().IsDir() {
-		return true
-	} else {
-		return false
-	}
-}
+// func IsDir(p string) bool {
+// 	fileInfo, err := os.Stat(p)
+// 	if err != nil {
+// 		return false
+// 	} else if fileInfo.IsDir() {
+// 		return true
+// 	} else {
+// 		return false
+// 	}
+// }
 
 func PathExists(filename string) bool {
 	if _, err := os.Stat(filename); os.IsNotExist(err) {

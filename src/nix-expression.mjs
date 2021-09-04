@@ -180,32 +180,47 @@ const goFlatten = new nijs.NixValue(`pkgs.buildGoModule {
     sha256 = "8XDytn6IGNnt7QEK/muf+P2Yh1mlIa0JwrSx+r94Etw=";
   };
   preBuild = ''
-    cd go
+    cd go/flatten
   '';
 }`);
 
 const goBinLink = new nijs.NixValue(`pkgs.buildGoModule {
   pname = "bin-link";
-  version = "0.0.1";
+  version = "0.0.0";
   vendorSha256 = null;
-  src = /Users/hlodversigurdsson/forks/jsnix/go/bin-link;
+  src = pkgs.fetchFromGitHub {
+    owner = "hlolli";
+    repo = "jsnix";
+    rev = "de47b4b1ae9533dec283d00e6835c4becedbfebf";
+    sha256 = "8XDytn6IGNnt7QEK/muf+P2Yh1mlIa0JwrSx+r94Etw=";
+  };
   preBuild = ''
-    ls
-    mkdir -p go
-    mv bin* go
-    chmod -R +rw .
-    mv vendor go
-    mv go.mod go
-    mkdir -p .git
-    cd go
+    cd go/bin-link
   '';
 }`);
+
+// const goBinLink = new nijs.NixValue(`pkgs.buildGoModule {
+//   pname = "bin-link";
+//   version = "0.0.1";
+//   vendorSha256 = null;
+//   src = /Users/hlodversigurdsson/forks/jsnix/go/bin-link;
+//   preBuild = ''
+//     ls
+//     mkdir -p go
+//     mv bin* go
+//     chmod -R +rw .
+//     mv vendor go
+//     mv go.mod go
+//     mkdir -p .git
+//     cd go
+//   '';
+// }`);
 
 // const goFlatten = new nijs.NixValue(`pkgs.buildGoModule {
 //   pname = "flatten";
 //   version = "0.0.0";
 //   vendorSha256 = null;
-//   src = /Users/hlodversigurdsson/forks/jsnix/go;
+//   src = /Users/hlodversigurdsson/forks/jsnix/go/flatten;
 //   preBuild = ''
 //     ls
 //     mkdir -p go
@@ -220,7 +235,6 @@ const goBinLink = new nijs.NixValue(`pkgs.buildGoModule {
 
 const sanitizeName = new nijs.NixValue(`nm: lib.strings.sanitizeDerivationName
     (builtins.replaceStrings [ "@" "/" ] [ "_at_" "_" ] nm)`);
-
 
 const linkBins = new nijs.NixValue(`''
     \${goBinLink}/bin/bin-link
@@ -290,7 +304,9 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv_, jsnixDeps}:
          buildDepDep = lib.lists.unique (lib.lists.concatMap (d: d.buildInputs) (linkDeps ++ copyDeps));
          nodeModules = runCommandCC "\${sanitizeName packageNix.name}_node_modules"
            { buildInputs = buildDepDep;
-             doFixup = false;
+             fixupPhase = "true";
+             doCheck = false;
+             doInstallCheck = false;
              version = builtins.hashString "sha512" (lib.strings.concatStrings (linkDeps ++ copyDeps ++ extraLinkDeps ++ extraCopyDeps)); } ''
            echo 'unpack, dedupe and flatten dependencies...'
            mkdir -p $out/lib/node_modules
@@ -313,6 +329,8 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv_, jsnixDeps}:
                 dependencies = extraLinkDeps;
            }}
            \${lib.optionalString (builtins.hasAttr "nodeModulesUnpack" drv) drv.nodeModulesUnpack}
+           echo 'fixup and link bin...'
+           \${linkBins}
         '';
     in stdenv.mkDerivation (drv // {
       passthru = { inherit nodeModules pkgJsonFile; };
@@ -326,7 +344,8 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv_, jsnixDeps}:
       postConfigureBan_ = mkPhaseBan "postConfigure" drv;
       src = if (builtins.hasAttr "src" packageNix) then packageNix.src else gitignoreSource ./.;
       packageName = packageNix.name;
-      dontStrip = true;
+      doStrip = false;
+      doFixup = false;
       doUnpack = true;
       NODE_PATH = "./node_modules";
       buildInputs = [ nodejs jq ] ++ lib.optionals (builtins.hasAttr "buildInputs" drv) drv.buildInputs;
@@ -345,9 +364,6 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv_, jsnixDeps}:
           mkdir -p $out/lib/node_modules/\${packageNix.name}
           cp -rfT ./ $out/lib/node_modules/\${packageNix.name}
           runHook postInstall
-       '';
-       fixupPhase = ''
-         \${linkBins}
        '';
   })`);
 
@@ -435,7 +451,7 @@ export class NixExpression extends OutputExpression {
           const identifier =
             versionSpec == "*" || versionSpec == "latest"
               ? dependencyName
-              : (dependencyName + "-" + versionSpec);
+              : dependencyName + "-" + versionSpec;
 
           this.packages[identifier] = new Package(
             jsnixConfig,

@@ -259,7 +259,8 @@ export class Package extends nijs.NixASTNode {
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ${gypBuildDeps.darwinBuildInputs}]) ++
          (mkExtraBuildInputs (pkgs // { inherit jsnixDeps dependencies; }) { pkgName = "${this.source.config.name}"; })`
     );
-    ast.dontStrip = new nijs.NixValue("true"); // it's just too slow atm with node_modules
+    ast.doFixup = new nijs.NixValue("false");
+    ast.doStrip = new nijs.NixValue("false"); // it's just too slow atm with node_modules
     // ast.preUnpackBan_ = new nijs.NixValue(`mkPhaseBan "preUnpack" drv`);
     // ast.unpackBan_ = new nijs.NixValue(`mkPhaseBan "unpackPhase" drv`);
     // ast.postUnpackBan_ = new nijs.NixValue(`mkPhaseBan "postUnpack" drv`);
@@ -326,7 +327,7 @@ export class Package extends nijs.NixASTNode {
     ast.postBuild = new nijs.NixValue(
       `(mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "postBuild"; pkgName = "${this.source.config.name}"; })`
     );
-    ast.doInstallCheck = true;
+    ast.fixupPhase = new nijs.NixValue(`"true"`);
     ast.installCheckPhase = new nijs.NixValue(
       `(mkPhase (pkgs // { inherit jsnixDeps nodejs dependencies; }) { phase = "installCheckPhase"; pkgName = "${this.source.config.name}"; })`
     );
