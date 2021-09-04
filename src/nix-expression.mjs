@@ -176,8 +176,8 @@ const goFlatten = new nijs.NixValue(`pkgs.buildGoModule {
   src = pkgs.fetchFromGitHub {
     owner = "hlolli";
     repo = "jsnix";
-    rev = "de47b4b1ae9533dec283d00e6835c4becedbfebf";
-    sha256 = "8XDytn6IGNnt7QEK/muf+P2Yh1mlIa0JwrSx+r94Etw=";
+    rev = "10c54ea11519e7e2023915822c70e8de87bf3a1a";
+    sha256 = "9OGx7UW6GVTL1dajENXftzmT/4sFTPA9c765ZXAap70=";
   };
   preBuild = ''
     cd go/flatten
@@ -191,8 +191,8 @@ const goBinLink = new nijs.NixValue(`pkgs.buildGoModule {
   src = pkgs.fetchFromGitHub {
     owner = "hlolli";
     repo = "jsnix";
-    rev = "de47b4b1ae9533dec283d00e6835c4becedbfebf";
-    sha256 = "8XDytn6IGNnt7QEK/muf+P2Yh1mlIa0JwrSx+r94Etw=";
+    rev = "10c54ea11519e7e2023915822c70e8de87bf3a1a";
+    sha256 = "9OGx7UW6GVTL1dajENXftzmT/4sFTPA9c765ZXAap70=";
   };
   preBuild = ''
     cd go/bin-link
