@@ -112,6 +112,16 @@ func stringInSlice(a string, list []string) bool {
     return false
 }
 
+func pkgIsSpecified(a string, list []string) bool {
+	for _, b := range list {
+		if strings.HasPrefix(a, "node_modules/" + b) {
+			return true
+		}
+	}
+	return false
+}
+
+
 func countMatches(s string, re *regexp.Regexp) int {
     total := 0
     for start := 0; start < len(s); {
@@ -133,17 +143,19 @@ func NodeModuleDirs(root string, sys fs.FS) ([]string, []string, error) {
 	var scoped []string
 	var standard []string
 	nodeModP := regexp.MustCompile("node_modules")
-
+	argsWithoutProg := os.Args[1:]
 
 	err := fs.WalkDir(sys, root, func(walkPath string, de fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		// nodeModPM := nodeModP.FindAllStringIndex(path, -1)
-		if countMatches(walkPath, nodeModP) > 1 &&
+		if PathExists(path.Join(walkPath, "package.json")) &&
+			pkgIsSpecified(walkPath, argsWithoutProg) &&
+			countMatches(walkPath, nodeModP) > 1 &&
 			!strings.HasSuffix(walkPath, "node_modules") &&
-			!strings.HasSuffix(walkPath, ".bin") &&
-			PathExists(path.Join(walkPath, "package.json")) {
+			!strings.HasSuffix(walkPath, ".bin") {
+
 			var scopedResult = scopedModuleRe.MatchString(walkPath)
 			if  scopedResult {
 				scoped = append(scoped, walkPath)

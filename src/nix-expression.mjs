@@ -18,36 +18,12 @@ const getNodeDep = `packageName: dependencies:
     in (builtins.head
         (builtins.filter (p: p.packageName == packageName) depList)))`;
 
-const linkNodeModulesExpr = `{dependencies ? [], extraDependencies ? []}:
+const copyNodeModulesExpr = `{dependencies ? [] }:
     (lib.lists.foldr (dep: acc:
       let pkgName = if (builtins.hasAttr "packageName" dep)
                     then dep.packageName else dep.name;
-      in (acc + (lib.optionalString
-      ((lib.findSingle (px: px.packageName == dep.packageName) "none" "found" extraDependencies) == "none")
-      ''
-      if [[ ! -f "node_modules/\${pkgName}" && \\
-            ! -d "node_modules/\${pkgName}" && \\
-            ! -L "node_modules/\${pkgName}" && \\
-            ! -e "node_modules/\${pkgName}" ]]
-     then
-       mkdir -p "node_modules/\${pkgName}"
-       ln -s "\${dep}/lib/node_modules/\${pkgName}"/* "node_modules/\${pkgName}"
-       \${lib.optionalString (builtins.hasAttr "dependencies" dep)
-         ''
-         rm -rf "node_modules/\${pkgName}/node_modules"
-         (cd node_modules/\${dep.packageName}; \${linkNodeModules { inherit (dep) dependencies; inherit extraDependencies;}})
-         ''}
-     fi
-     '')))
-     "" dependencies)`;
-
-const copyNodeModulesExpr = `{dependencies ? [], extraDependencies ? [], stripScripts ? false }:
-    (lib.lists.foldr (dep: acc:
-      let pkgName = if (builtins.hasAttr "packageName" dep)
-                    then dep.packageName else dep.name;
-      in (acc + (lib.optionalString
-      ((lib.findSingle (px: px.packageName == dep.packageName) "none" "found" extraDependencies) == "none")
-      ''
+      in
+      acc + ''
       if [[ ! -f "node_modules/\${pkgName}" && \\
             ! -d "node_modules/\${pkgName}" && \\
             ! -L "node_modules/\${pkgName}" && \\
@@ -56,12 +32,12 @@ const copyNodeModulesExpr = `{dependencies ? [], extraDependencies ? [], stripSc
        mkdir -p "node_modules/\${pkgName}"
        cp -rLT "\${dep}/lib/node_modules/\${pkgName}" "node_modules/\${pkgName}"
        chmod -R +rw "node_modules/\${pkgName}"
-       \${lib.optionalString stripScripts "cat <<< $(jq 'del(.scripts)' \\"node_modules/\${pkgName}/package.json\\") > \\"node_modules/\${pkgName}/package.json\\""}
-       \${lib.optionalString (builtins.hasAttr "dependencies" dep)
-         "(cd node_modules/\${dep.packageName}; \${copyNodeModules { inherit (dep) dependencies; inherit extraDependencies stripScripts; }})"}
      fi
-     '')))
+     '')
      "" dependencies)`;
+
+// \${lib.optionalString (builtins.hasAttr "dependencies" dep)
+//   "(cd node_modules/\${pkgName}; \${copyNodeModules { inherit (dep) dependencies; }})"}
 
 const transitiveDepUnpackPhase = `{dependencies ? [], pkgName}: ''
      unpackFile "$src";
@@ -122,7 +98,7 @@ const mkUnpackScript = new nijs.NixValue(`{ dependencies ? [], extraDependencies
            (packageNix.dependencies."\${pkgName}"."copyNodeDependencies" == true))
        then true else false;
      in ''
-      \${copyNodeModules { inherit dependencies extraDependencies; }}
+      \${copyNodeModules { dependencies = dependencies ++ extraDependencies; }}
       chmod -R +rw $(pwd)
     ''`);
 
@@ -240,9 +216,9 @@ const linkBins = new nijs.NixValue(`''
     \${goBinLink}/bin/bin-link
 ''`);
 
-const flattenScript = new nijs.NixValue(`''
-    \${goFlatten}/bin/flatten
-''`);
+const flattenScript = new nijs.NixValue(
+  `args: '' \${goFlatten}/bin/flatten \${args}''`
+);
 
 const toPackageJson = new nijs.NixValue(`{ jsnixDeps ? {}, extraDeps ? [] }:
     let
@@ -272,7 +248,7 @@ const toPackageJson = new nijs.NixValue(`{ jsnixDeps ? {}, extraDeps ? [] }:
       (builtins.toJSON (safePkgNix // { dependencies = prodDeps; name = pkgName; }))`);
 
 const jsnixDrvOverrides = new nijs.NixValue(`{ drv_, jsnixDeps}:
-    let drv = drv_ (pkgs // { inherit nodejs copyNodeModules linkNodeModules gitignoreSource jsnixDeps nodeModules getNodeDep; });
+    let drv = drv_ (pkgs // { inherit nodejs copyNodeModules gitignoreSource jsnixDeps nodeModules getNodeDep; });
         skipUnpackFor = if (builtins.hasAttr "skipUnpackFor" drv)
                         then drv.skipUnpackFor else [];
         copyUnpackFor = if (builtins.hasAttr "copyUnpackFor" drv)
@@ -281,53 +257,33 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv_, jsnixDeps}:
           echo \${toPackageJson { inherit jsnixDeps; extraDeps = (if (builtins.hasAttr "extraDependencies" drv) then drv.extraDependencies else []); }} > $out
           cat <<< $(cat $out | jq) > $out
         '';
-        linkDeps = (builtins.filter
-                                (p: (((lib.findSingle (px: px == p.packageName) "none" "found" skipUnpackFor) == "none") &&
-                                      (lib.findSingle (px: px == p.packageName) "none" "found" copyUnpackFor) == "none"))
-                              (builtins.map
-                              (dep: jsnixDeps."\${dep}")
-                              (builtins.attrNames packageNix.dependencies)));
-         copyDeps = (builtins.filter
-                                (p: (((lib.findSingle (px: px == p.packageName) "none" "found" skipUnpackFor) == "none") &&
-                                      (lib.findSingle (px: px == p.packageName) "none" "found" copyUnpackFor) == "found"))
-                                (builtins.map
-                                    (dep: jsnixDeps."\${dep}")
-                                    (builtins.attrNames packageNix.dependencies)));
-         extraLinkDeps = (builtins.filter
-                                (p: (((lib.findSingle (px: px == p.packageName) "none" "found" skipUnpackFor) == "none") &&
-                                      (lib.findSingle (px: px == p.packageName) "none" "found" copyUnpackFor) == "none"))
-                                (if (builtins.hasAttr "extraDependencies" drv) then drv.extraDependencies else []));
-         extraCopyDeps = (builtins.filter
-                                (p: (((lib.findSingle (px: px == p.packageName) "none" "found" skipUnpackFor) == "none") &&
-                                      (lib.findSingle (px: px == p.packageName) "none" "found" copyUnpackFor) == "found"))
-                                (if (builtins.hasAttr "extraDependencies" drv) then drv.extraDependencies else []));
-         buildDepDep = lib.lists.unique (lib.lists.concatMap (d: d.buildInputs) (linkDeps ++ copyDeps));
+         copyDeps = (builtins.map
+                      (dep: jsnixDeps."\${dep}")
+                      (builtins.attrNames packageNix.dependencies));
+         copyDepsStr = builtins.concatStringsSep " " (builtins.map (dep: if (builtins.hasAttr "packageName" dep) then dep.packageName else dep.name) copyDeps);
+         extraDepsStr = builtins.concatStringsSep " " (builtins.map (dep: if (builtins.hasAttr "packageName" dep) then dep.packageName else dep.name)
+                                                        (lib.optionals (builtins.hasAttr "extraDependencies" drv) drv.extraDependencies));
+         buildDepDep = lib.lists.unique (lib.lists.concatMap (d: d.buildInputs)
+                        (copyDeps ++ (lib.optionals (builtins.hasAttr "extraDependencies" drv) drv.extraDependencies)));
          nodeModules = runCommandCC "\${sanitizeName packageNix.name}_node_modules"
            { buildInputs = buildDepDep;
              fixupPhase = "true";
              doCheck = false;
              doInstallCheck = false;
-             version = builtins.hashString "sha512" (lib.strings.concatStrings (linkDeps ++ copyDeps ++ extraLinkDeps ++ extraCopyDeps)); } ''
+             version = builtins.hashString "sha512" (lib.strings.concatStrings copyDeps); }
+         ''
            echo 'unpack, dedupe and flatten dependencies...'
            mkdir -p $out/lib/node_modules
            cd $out/lib
            \${copyNodeModules {
-                dependencies = linkDeps;
-                extraDependencies = (lib.optionals (builtins.hasAttr "extraDependencies" drv) drv.extraDependencies);
-           }}
-           \${copyNodeModules {
                 dependencies = copyDeps;
-                extraDependencies = (lib.optionals (builtins.hasAttr "extraDependencies" drv) drv.extraDependencies);
            }}
            chmod -R +rw node_modules
-           \${flattenScript}
+           \${flattenScript copyDepsStr}
            \${copyNodeModules {
-                dependencies = extraCopyDeps;
-                stripScripts = true;
+                dependencies = (lib.optionals (builtins.hasAttr "extraDependencies" drv) drv.extraDependencies);
            }}
-           \${copyNodeModules {
-                dependencies = extraLinkDeps;
-           }}
+           \${flattenScript extraDepsStr}
            \${lib.optionalString (builtins.hasAttr "nodeModulesUnpack" drv) drv.nodeModulesUnpack}
            echo 'fixup and link bin...'
            \${linkBins}
@@ -403,7 +359,6 @@ class OutputExpression extends nijs.NixASTNode {
           packageNix: new nijs.NixImport(
             new nijs.NixFile({ value: "./package.nix" })
           ),
-          linkNodeModules: new nijs.NixValue(linkNodeModulesExpr),
           copyNodeModules: new nijs.NixValue(copyNodeModulesExpr),
           gitignoreSource: new nijs.NixValue(gitignoreSource),
           transitiveDepInstallPhase: new nijs.NixValue(
