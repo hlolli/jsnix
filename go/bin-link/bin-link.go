@@ -15,7 +15,8 @@ var nodejsPath = Which("node")
 
 func InstallBin(outDir string, binName string, binPath string) {
 	outBinDir := path.Join(outDir, "bin")
-	if PathExists(binPath) {
+
+	if PathExists(binPath) && !IsDir(binPath) {
 		read, err := ioutil.ReadFile(binPath)
 		if err != nil {
 			log.Fatal(err)
@@ -41,23 +42,21 @@ func ResolveBins(outDir string, pkgPath string, pkgJson string) {
 	}
 	pkgName := string(v.GetStringBytes("name"))
 	maybeBin := v.Get("bin")
+	pwd, _ := os.Getwd()
+
+	binPathSuffix := path.Join(pkgPath, string(v.GetStringBytes()))
 
 	if maybeBin != nil {
 		if maybeBin.Type().String() == "string" {
-			InstallBin(outDir, pkgName, path.Join(pkgPath, string(v.GetStringBytes("bin"))))
+			InstallBin(outDir, pkgName, path.Join(pwd, path.Join(pkgPath, string(v.GetStringBytes("bin")))))
 		} else if (maybeBin.Type().String() == "object") {
-			v.GetObject("bin").Visit(func(k []byte, v *fastjson.Value) {
-				if (v.Type().String() == "string") {
-					InstallBin(outDir, string(k), path.Join(pkgPath, string(v.GetStringBytes())))
+			v.GetObject("bin").Visit(func(k []byte, vv *fastjson.Value) {
+				if (vv.Type().String() == "string") {
+					InstallBin(outDir, string(k), path.Join(path.Join(pwd, binPathSuffix), string(vv.GetStringBytes())))
 				}
 			})
 		}
 	}
-
-	// Visit will call the callback for each item in v.foods.
-	// v.GetObject("foods").Visit(func(foodName []byte, foodValue *fastjson.Value) {
-	//     fmt.Printf("%s = %s\n", foodName, foodValue)
-	// })
 }
 
 func Which(bin string) string {
