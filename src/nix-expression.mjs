@@ -167,8 +167,8 @@ const goBinLink = new nijs.NixValue(`pkgs.buildGoModule {
   src = pkgs.fetchFromGitHub {
     owner = "hlolli";
     repo = "jsnix";
-    rev = "10c54ea11519e7e2023915822c70e8de87bf3a1a";
-    sha256 = "9OGx7UW6GVTL1dajENXftzmT/4sFTPA9c765ZXAap70=";
+    rev = "5408f77872b7a1b9f865c1c68ea104cd95441743";
+    sha256 = "inUZm4XTqeeDDXIA8qMcvuqWlStJWoGvXv/BCD3gYEs=";
   };
   preBuild = ''
     cd go/bin-link
