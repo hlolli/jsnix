@@ -119,6 +119,29 @@ export class NPMRegistrySource extends Source {
       true
     );
 
+    // sometimes npm respondes with higher version than exists in cache
+    // let's rule that one out
+    if (!resolvedVersion) {
+      try {
+        const data2 = await npmFetch.json(
+          url,
+          R.mergeAll([npmFetchOpts, { preferOnline: true, offline: false }])
+        );
+        const versionIdentifiers2 = Object.keys(data2.versions);
+        const version2 = semver.validRange(this.versionSpec, true)
+          ? this.versionSpec
+          : data["dist-tags"][this.versionSpec];
+        resolvedVersion = semver.maxSatisfying(
+          versionIdentifiers2,
+          version2,
+          true
+        );
+        if (resolvedVersion2) {
+          data = data2;
+        }
+      } catch {}
+    }
+
     // if (data._id === "iconv-lite") {
     //   console.log("versionIds", versionIdentifiers);
     //   console.log("versionSpec", this.versionSpec);
@@ -130,7 +153,7 @@ export class NPMRegistrySource extends Source {
     //   console.log("OK3", Object.keys(this.parent.source));
     // }
 
-    if (!resolvedVersion) {
+    if (!resolvedVersion && version.includes(".")) {
       console.error(
         "Cannot resolve version: " +
           this.dependencyName +
