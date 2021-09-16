@@ -219,6 +219,11 @@ export async function fromFile(userPath) {
 
   await fsPromise.writeFile(tmpPath, srcJsonRaw1);
   const [srcJsonRaw2, err2] = await evalNixExpr(tmpPath, true);
-  const json = JSON.parse(srcJsonRaw2);
+  let json;
+  try {
+    json = JSON.parse(srcJsonRaw2);
+  } catch (error) {
+    console.error(`Error parsing package.nix\n`, err1);
+  }
   return json;
 }
