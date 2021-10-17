@@ -12,6 +12,7 @@ import "strings"
 import "syscall"
 import "github.com/goccy/go-json"
 import "github.com/blang/semver"
+import "github.com/karrick/godirwalk"
 
 var scopedModuleRe,_ = regexp.Compile(`node_modules/@([^/])*/([^/])*$`)
 var stdModuleRe,_ = regexp.Compile(`node_modules/[^@^/]*$`)
@@ -139,33 +140,39 @@ func countMatches(s string, re *regexp.Regexp) int {
 }
 
 
-func NodeModuleDirs(root string, sys fs.FS) ([]string, []string, error) {
+func NodeModuleDirs(root string) ([]string, []string, error) {
 	var scoped []string
 	var standard []string
 	nodeModP := regexp.MustCompile("node_modules")
 	argsWithoutProg := os.Args[1:]
 
-	err := fs.WalkDir(sys, root, func(walkPath string, de fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		// nodeModPM := nodeModP.FindAllStringIndex(path, -1)
-		if PathExists(path.Join(walkPath, "package.json")) &&
-			pkgIsSpecified(walkPath, argsWithoutProg) &&
-			countMatches(walkPath, nodeModP) > 1 &&
-			!strings.HasSuffix(walkPath, "node_modules") &&
-			!strings.HasSuffix(walkPath, ".bin") {
-
+	err := godirwalk.Walk(root, &godirwalk.Options{
+		Callback: func(walkPath string, de *godirwalk.Dirent) error {
+			if strings.Contains(walkPath, ".git") || strings.Contains(walkPath, ".bin") {
+				return godirwalk.SkipThis
+			}
 			var scopedResult = scopedModuleRe.MatchString(walkPath)
-			if  scopedResult {
-				scoped = append(scoped, walkPath)
+			var stdModuleResult = stdModuleRe.MatchString(walkPath)
+			if !pkgIsSpecified(walkPath, argsWithoutProg) ||
+				(!scopedResult && !stdModuleResult && !strings.HasSuffix(walkPath, "node_modules")) {
+				return godirwalk.SkipThis
 			}
 
-			if stdModuleRe.MatchString(walkPath) {
-				standard = append(standard, walkPath)
+			if PathExists(path.Join(walkPath, "package.json")) &&
+				countMatches(walkPath, nodeModP) > 1 &&
+				!strings.HasSuffix(walkPath, "node_modules") {
+
+				if scopedResult {
+					scoped = append(scoped, walkPath)
+				}
+
+				if stdModuleResult {
+					standard = append(standard, walkPath)
+				}
 			}
-		}
-		return nil
+			return nil
+		},
+		Unsorted: true,
 	})
 
 	return scoped, standard, err
@@ -173,9 +180,11 @@ func NodeModuleDirs(root string, sys fs.FS) ([]string, []string, error) {
 
 
 func main() {
+
 	if PathExists("node_modules") {
 		var topLevelDeps []string
 		topLevelDepsInfo, lsErr := ioutil.ReadDir("node_modules")
+
 		if lsErr != nil {
 			log.Fatal(lsErr)
 		}
@@ -183,10 +192,8 @@ func main() {
 		for _, topFile := range topLevelDepsInfo {
 			topLevelDeps = append(topLevelDeps, topFile.Name())
 		}
-		pwd, _ := os.Getwd()
-		nfs := os.DirFS(pwd)
-		scoped, standard, _ := NodeModuleDirs("node_modules", nfs)
 
+		scoped, standard, _ := NodeModuleDirs("node_modules")
 
 		for _, stdFile := range standard {
 			dirName := path.Base(stdFile)
@@ -203,6 +210,7 @@ func main() {
 			}
 
 		}
+
 		for _, scopedFile := range scoped {
 			dirName := path.Base(scopedFile)
 			scopeName := path.Base(path.Dir(scopedFile))

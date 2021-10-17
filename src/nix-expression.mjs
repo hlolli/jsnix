@@ -89,7 +89,8 @@ const mkExtraDependencies = new nijs.NixValue(`pkgs_: {pkgName}:
        else
          (packageNix.dependencies."\${pkgName}"."extraDependencies" (pkgs_ // { inherit getNodeDep copyNodeModules; })))`);
 
-const mkUnpackScript = new nijs.NixValue(`{ dependencies ? [], extraDependencies ? [], pkgName }:
+const mkUnpackScript =
+  new nijs.NixValue(`{ dependencies ? [], extraDependencies ? [], pkgName }:
      let copyNodeDependencies =
        if ((builtins.hasAttr "\${pkgName}" packageNix.dependencies) &&
            (builtins.typeOf packageNix.dependencies."\${pkgName}" == "set") &&

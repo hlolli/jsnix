@@ -178,6 +178,10 @@ export class NPMRegistrySource extends Source {
 
     this.config = data.versions[resolvedVersion];
 
+    if (!this.config) {
+      console.error(this);
+    }
+
     this.config.name = this.npmProtocolPath
       ? this.dependencyName
       : this.config.name;
