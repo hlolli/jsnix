@@ -1,64 +1,58 @@
 package main
 
 import "fmt"
-import "io"
 import "io/ioutil"
 import "io/fs"
 import "log"
 import "os"
 import "path"
 import "regexp"
+import "sort"
 import "strings"
 import "syscall"
-import "github.com/goccy/go-json"
+import "github.com/otiai10/copy"
 import "github.com/blang/semver"
 import "github.com/karrick/godirwalk"
+import "github.com/valyala/fastjson"
 
 var scopedModuleRe,_ = regexp.Compile(`node_modules/@([^/])*/([^/])*$`)
 var stdModuleRe,_ = regexp.Compile(`node_modules/[^@^/]*$`)
+var fwdSlash = regexp.MustCompile("/")
 
-func semverFits(pkgJson1 string, pkgJson2 string) int {
+// 1 = pkgjson1 is greater than pkgjson2
+// -1 = pkgjson2 is greater than pkgjson1
+func semverCompare(pkgJson1 string, pkgJson2 string) int {
+
 	pkgJsonBytes1, err1 := ioutil.ReadFile(pkgJson1)
 
 	if err1 != nil {
-		fmt.Print(err1)
+		return 0
 	}
 
 	pkgJsonBytes2, err2 := ioutil.ReadFile(pkgJson2)
 
 	if err2 != nil {
-		fmt.Print(err2)
+		return 0
 	}
 
 	type PackageJson struct {
 		version string
 	}
+	var p1 fastjson.Parser
 
-	dec1 := json.NewDecoder(strings.NewReader(string(pkgJsonBytes1)))
-	var ver1 = "0.0.0"
-	for {
-		var pkg1 PackageJson
-		if err := dec1.Decode(&pkg1); err == io.EOF {
-			break
-		} else if err != nil {
-			log.Fatal(err)
-		}
-
-		ver1 = pkg1.version
+	pv1, jerr1 := p1.Parse(string(pkgJsonBytes1))
+	if jerr1 != nil {
+		return 0
 	}
+	ver1 := string(pv1.GetStringBytes("version"))
 
-	dec2 := json.NewDecoder(strings.NewReader(string(pkgJsonBytes2)))
-	var ver2 = "0.0.0"
-	for {
-		var pkg2 PackageJson
-		if err := dec2.Decode(&pkg2); err == io.EOF {
-			break
-		} else if err != nil {
-			log.Fatal(err)
-		}
+	var p2 fastjson.Parser
 
-		ver2 = pkg2.version
+	pv2, jerr2 := p2.Parse(string(pkgJsonBytes2))
+	if jerr2 != nil {
+		return 0
 	}
+	ver2 := string(pv2.GetStringBytes("version"))
 
 	v1, err1 := semver.Make(ver1)
 	v2, err2 := semver.Make(ver2)
@@ -147,21 +141,32 @@ func NodeModuleDirs(root string) ([]string, []string, error) {
 	argsWithoutProg := os.Args[1:]
 
 	err := godirwalk.Walk(root, &godirwalk.Options{
-		Callback: func(walkPath string, de *godirwalk.Dirent) error {
-			if strings.Contains(walkPath, ".git") || strings.Contains(walkPath, ".bin") {
+		Callback: func(walkPath string, dirent *godirwalk.Dirent) error {
+			if walkPath == root {
+				return nil
+			}
+
+			if strings.HasPrefix(walkPath, "node_modules/@") &&
+				len(fwdSlash.FindAllStringIndex(walkPath, -1)) < 3 {
+				return nil
+			}
+
+			if strings.Contains(walkPath, ".git") ||
+				strings.Contains(walkPath, "/test/") ||
+				strings.Contains(walkPath, ".bin") {
 				return godirwalk.SkipThis
 			}
+
 			var scopedResult = scopedModuleRe.MatchString(walkPath)
 			var stdModuleResult = stdModuleRe.MatchString(walkPath)
-			if !pkgIsSpecified(walkPath, argsWithoutProg) ||
-				(!scopedResult && !stdModuleResult && !strings.HasSuffix(walkPath, "node_modules")) {
+
+			if !pkgIsSpecified(walkPath, argsWithoutProg) {
 				return godirwalk.SkipThis
 			}
 
 			if PathExists(path.Join(walkPath, "package.json")) &&
 				countMatches(walkPath, nodeModP) > 1 &&
 				!strings.HasSuffix(walkPath, "node_modules") {
-
 				if scopedResult {
 					scoped = append(scoped, walkPath)
 				}
@@ -172,14 +177,30 @@ func NodeModuleDirs(root string) ([]string, []string, error) {
 			}
 			return nil
 		},
-		Unsorted: true,
+		FollowSymbolicLinks: true,
+		Unsorted: false,
 	})
+
+	// sort.Slice(scoped, func(i, j int) bool {
+	// 	return len(fwdSlash.FindAllStringIndex(scoped[i], -1)) >
+	// 		len(fwdSlash.FindAllStringIndex(scoped[j], -1))
+	// })
+
+	// sort.Slice(standard, func(i, j int) bool {
+	// 	return len(fwdSlash.FindAllStringIndex(standard[i], -1)) >
+	// 		len(fwdSlash.FindAllStringIndex(standard[j], -1))
+	// })
 
 	return scoped, standard, err
 }
 
+type MovementTuple struct {
+    target, src string
+}
+
 
 func main() {
+	movement := make(map[string]string)
 
 	if PathExists("node_modules") {
 		var topLevelDeps []string
@@ -195,35 +216,81 @@ func main() {
 
 		scoped, standard, _ := NodeModuleDirs("node_modules")
 
-		for _, stdFile := range standard {
-			dirName := path.Base(stdFile)
-			if _, err := os.Stat(path.Join("./node_modules", dirName)); err == nil {
-				// path exists
-
-			} else if os.IsNotExist(err) {
-				// path does *not* exist
-				os.Rename(stdFile, path.Join("./node_modules", dirName))
-
-			} else {
-				// strangeness
-				fmt.Println(err)
-			}
-
-		}
-
 		for _, scopedFile := range scoped {
 			dirName := path.Base(scopedFile)
 			scopeName := path.Base(path.Dir(scopedFile))
 			pName := path.Join(scopeName, dirName)
 			os.MkdirAll(path.Join("./node_modules", scopeName), 0755)
-			if _, err := os.Stat(path.Join("./node_modules", pName)); err == nil {
+
+			if _, err := os.Stat(path.Join("node_modules", pName)); err == nil {
 				// path exists
 			} else if os.IsNotExist(err) {
 				// path does *not* exist
-				os.Rename(scopedFile, path.Join("./node_modules", pName))
+				target := path.Join("./node_modules", pName)
+				_, ok := movement[target]
+
+
+				if ok && len(fwdSlash.FindAllStringIndex(scopedFile, -1)) <=
+					len(fwdSlash.FindAllStringIndex(movement[target], -1)) &&
+					(semverCompare(scopedFile + "/package.json", movement[target] + "/package.json") > 0) {
+					// higher semver, put the old one back from where it came from
+					movement[target] = scopedFile
+				} else if !ok {
+					movement[target] = scopedFile
+				}
 			} else {
 				// strangeness
 				fmt.Println(err)
+			}
+		}
+
+
+		for _, stdFile := range standard {
+			dirName := path.Base(stdFile)
+			if _, err := os.Stat(path.Join("./node_modules", dirName)); err == nil {
+				// path exists
+			} else if os.IsNotExist(err) {
+				// path does *not* exist
+				target := path.Join("./node_modules", dirName)
+				_, ok := movement[target]
+
+				if ok && len(fwdSlash.FindAllStringIndex(stdFile, -1)) <=
+					len(fwdSlash.FindAllStringIndex(movement[target], -1)) &&
+					(semverCompare(stdFile + "/package.json", movement[target] + "/package.json") > 0) {
+					// higher semver, put the old one back from where it came from
+					movement[target] = stdFile
+				} else if !ok {
+					movement[target] = stdFile
+				}
+
+			} else {
+				// strangeness
+				fmt.Println(err)
+			}
+		}
+
+		var movementTarget []MovementTuple
+
+		for src, target := range movement {
+			tuple := MovementTuple{target, src}
+			movementTarget = append(movementTarget, tuple)
+		}
+
+		sort.Slice(movementTarget, func(i, j int) bool {
+			return len(fwdSlash.FindAllStringIndex(movementTarget[i].target, -1)) >
+				len(fwdSlash.FindAllStringIndex(movementTarget[j].target, -1))
+		})
+
+
+		for _, tuple := range movementTarget {
+			target := tuple.target
+			src := tuple.src
+			os.Chmod(target, 0755)
+			err := os.Rename(target, src)
+
+			if err != nil {
+				copy.Copy(target, src, copy.Options{OnSymlink: func(string) copy.SymlinkAction { return copy.Deep }})
+				os.Remove(target)
 			}
 		}
 

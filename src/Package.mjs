@@ -11,6 +11,28 @@ import { NPMRegistrySource } from "./sources/NPMRegistrySource.mjs";
 import { LocalSource } from "./sources/LocalSource.mjs";
 import { resolveCompat } from "../compat/index.mjs";
 
+function parseSemver(pkgVersion) {
+  const semverParsed = pkgVersion.match(/\d+\.\d+\.\d+/);
+  let pkgSemver = (semverParsed ? semverParsed[0] : pkgVersion).replace(
+    /^\^/,
+    ""
+  );
+
+  if (/\|\|/.test(pkgSemver)) {
+    pkgSemver = R.last(pkgSemver.split("||").sort());
+  }
+  if (/^\d$/.test(pkgSemver)) {
+    pkgSemver = `${pkgSemver}.0.0`;
+  } else if (/^\d\.\d$/.test(pkgSemver)) {
+    pkgSemver = `${pkgSemver}.0`;
+  }
+  return pkgSemver;
+}
+
+// works to prevent cyclical deps
+// from looping indefinitely as well
+const dedupeMap = new Map();
+
 export class Package extends nijs.NixASTNode {
   constructor(
     jsnixConfig,
@@ -54,7 +76,16 @@ export class Package extends nijs.NixASTNode {
   }
 
   findMatchingProvidedDependencyByParent(name, versionSpec) {
-    if (!this.parent) {
+    const [v, pkg_] = (dedupeMap.get(name) &&
+      dedupeMap
+        .get(name)
+        .find(([v]) => semver.satisfies(v, parseSemver(versionSpec)))) || [
+      null,
+      null,
+    ];
+    if (pkg_) {
+      return pkg_;
+    } else if (!this.parent) {
       // If there is no parent, then we can also not provide a dependency
       return null;
     } else {
@@ -107,16 +138,11 @@ export class Package extends nijs.NixASTNode {
     return false;
   }
 
-  getDepth(pkg) {
-    let depth = 0;
-    while (pkg.parent) {
-      depth += 1;
-      pkg = pkg.parent;
-    }
-    return depth;
-  }
-
   bundleDependency(dependencyName, pkg) {
+    const pkgName = pkg.name;
+    const pkgVersion = pkg.versionSpec;
+    const pkgSemver = parseSemver(pkgVersion);
+
     this.requiredDependencies[dependencyName] = pkg;
 
     // flatten
@@ -132,8 +158,72 @@ export class Package extends nijs.NixASTNode {
     } else {
       pkg.parent = this;
       this.providedDependencies[dependencyName] = pkg;
+      dedupeMap.set(
+        pkgName,
+        R.append([pkgSemver, this], dedupeMap.get(pkgName) || [])
+      );
     }
   }
+
+  // bundleDependency(dependencyName, pkg) {
+  //   if (
+  //     !dedupeMap.get(pkgName) ||
+  //     !dedupeMap.get(pkgName).some(([v]) => semver.satisfies(v, pkgSemver))
+  //   ) {
+  //     dedupeMap.set(
+  //       pkgName,
+  //       R.append([pkgSemver, this], dedupeMap.get(pkgName) || [])
+  //     );
+
+  //     if (this.parent && dependencyName === this.parent.name) {
+  //       pkg.parent = this;
+  //       return undefined;
+  //     }
+  //     if (
+  //       this.parent &&
+  //       !this.parent.providedDependencies[dependencyName] &&
+  //       !this.parent.requiredDependencies[dependencyName] &&
+  //       dependencyName !== this.parent.name &&
+  //       !dedupeMap.get(pkgName).some(([v]) => semver.satisfies(v, pkgSemver))
+  //     ) {
+  //       this.requiredDependencies[dependencyName] = pkg;
+  //       this.parent.bundleDependency(dependencyName, pkg);
+  //     } else if (
+  //       !pkg.parent.name ||
+  //       !dedupeMap.get(pkg.parent.name) ||
+  //       !dedupeMap
+  //         .get(pkg.parent.name)
+  //         .some(([v]) =>
+  //           semver.satisfies(v, parseSemver(pkg.parent.versionSpec))
+  //         )
+  //     ) {
+  //       this.providedDependencies[dependencyName] = pkg;
+  //     }
+  //   } else {
+  //     if (["latest", "*"].includes(pkgSemver)) {
+  //       dedupeMap.set(
+  //         [pkgName, this],
+  //         R.append(pkgSemver, dedupeMap.get(pkgName) || [])
+  //       );
+  //     } else if (
+  //       dedupeMap.get(pkgName).some(([v]) => semver.satisfies(v, pkgSemver))
+  //     ) {
+  //       const matchingSemver = dedupeMap
+  //         .get(pkgName)
+  //         .find(([v]) => semver.satisfies(v, pkgSemver));
+  //       if (semver.gt(pkgSemver, matchingSemver)) {
+  //         dedupeMap.set(
+  //           [pkgName, this],
+  //           R.append(
+  //             pkgSemver,
+  //             R.reject(R.equals(matchingSemver), dedupeMap.get(pkgName))
+  //           )
+  //         );
+  //       }
+  //     }
+  //     return undefined;
+  //   }
+  // }
 
   async bundleDependencies(resolvedDependencies, dependencies) {
     if (dependencies) {

@@ -262,8 +262,9 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv_, jsnixDeps}:
                       (dep: jsnixDeps."\${dep}")
                       (builtins.attrNames packageNix.dependencies));
          copyDepsStr = builtins.concatStringsSep " " (builtins.map (dep: if (builtins.hasAttr "packageName" dep) then dep.packageName else dep.name) copyDeps);
-         extraDepsStr = builtins.concatStringsSep " " (builtins.map (dep: if (builtins.hasAttr "packageName" dep) then dep.packageName else dep.name)
-                                                        (lib.optionals (builtins.hasAttr "extraDependencies" drv) drv.extraDependencies));
+         extraDeps = (builtins.map (dep: if (builtins.hasAttr "packageName" dep) then dep.packageName else dep.name)
+                       (lib.optionals (builtins.hasAttr "extraDependencies" drv) drv.extraDependencies));
+         extraDepsStr = builtins.concatStringsSep " " extraDeps;
          buildDepDep = lib.lists.unique (lib.lists.concatMap (d: d.buildInputs)
                         (copyDeps ++ (lib.optionals (builtins.hasAttr "extraDependencies" drv) drv.extraDependencies)));
          nodeModules = runCommandCC "\${sanitizeName packageNix.name}_node_modules"
@@ -284,7 +285,7 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv_, jsnixDeps}:
            \${copyNodeModules {
                 dependencies = (lib.optionals (builtins.hasAttr "extraDependencies" drv) drv.extraDependencies);
            }}
-           \${flattenScript extraDepsStr}
+           \${(lib.optionalString ((builtins.length extraDeps) > 0)) (flattenScript extraDepsStr)}
            \${lib.optionalString (builtins.hasAttr "nodeModulesUnpack" drv) drv.nodeModulesUnpack}
            echo 'fixup and link bin...'
            \${linkBins}
