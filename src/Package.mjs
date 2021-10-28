@@ -76,41 +76,24 @@ export class Package extends nijs.NixASTNode {
   }
 
   findMatchingProvidedDependencyByParent(name, versionSpec) {
-    const [v, pkg_] = (dedupeMap.get(name) &&
-      dedupeMap
-        .get(name)
-        .find(([v]) => semver.satisfies(v, parseSemver(versionSpec)))) || [
-      null,
-      null,
-    ];
-    if (pkg_) {
-      return pkg_;
-    } else if (!this.parent) {
+    if (!this.parent) {
       // If there is no parent, then we can also not provide a dependency
       return null;
     } else {
-      var dependency = this.parent.providedDependencies[name];
+      const dependency = this.parent.providedDependencies[name];
 
       if (dependency === undefined) {
         return this.parent.findMatchingProvidedDependencyByParent(
           name,
           versionSpec
         ); // If the parent does not provide the dependency, try the parent's parent
-      }
-      if (!dependency || !dependency.source || !dependency.source.config) {
-        // If we have encountered a bundled dependency with the same name, consider it a conflict
-        // (is not a perfect resolution, but does not result in an error)
-        return null;
+      } else if (dependency === null) {
+        return null; // If we have encountered a bundled dependency with the same name, consider it a conflict (is not a perfect resolution, but does not result in an error)
       } else {
-        const semverParsed = dependency.versionSpec.match(/\d\.\d\.\d/);
-        const matchingSemver = semverParsed
-          ? semverParsed[0]
-          : dependency.source.config.version;
         if (
-          // If we found a dependency with the same name, see if the version fits
-
-          semver.satisfies(matchingSemver, versionSpec)
+          semver.satisfies(dependency.source.config.version, versionSpec, true)
         ) {
+          // If we found a dependency with the same name, see if the version fits
           return dependency;
         } else {
           return null; // If there is a version mismatch, then a conflicting version has been encountered
@@ -118,6 +101,7 @@ export class Package extends nijs.NixASTNode {
       }
     }
   }
+
   isBundledDependency(dependencyName) {
     // Check the bundledDependencies option
     if (Array.isArray(this.source.config.bundledDependencies)) {
@@ -138,92 +122,28 @@ export class Package extends nijs.NixASTNode {
     return false;
   }
 
-  bundleDependency(dependencyName, pkg) {
-    const pkgName = pkg.name;
-    const pkgVersion = pkg.versionSpec;
-    const pkgSemver = parseSemver(pkgVersion);
-
+  bundleDependency = function (dependencyName, pkg) {
     this.requiredDependencies[dependencyName] = pkg;
-
-    // flatten
-    if (this.parent && dependencyName === this.parent.name) {
-      return undefined;
-    } else if (
-      this.parent &&
-      !this.parent.providedDependencies[dependencyName] &&
-      !this.parent.requiredDependencies[dependencyName] &&
-      dependencyName !== this.parent.name
-    ) {
-      this.parent.bundleDependency(dependencyName, pkg);
-    } else {
-      pkg.parent = this;
-      this.providedDependencies[dependencyName] = pkg;
-      dedupeMap.set(
-        pkgName,
-        R.append([pkgSemver, this], dedupeMap.get(pkgName) || [])
-      );
+    if (this.parent) {
+      this.parent.providedDependencies = this.parent.providedDependencies || {};
     }
-  }
 
-  // bundleDependency(dependencyName, pkg) {
-  //   if (
-  //     !dedupeMap.get(pkgName) ||
-  //     !dedupeMap.get(pkgName).some(([v]) => semver.satisfies(v, pkgSemver))
-  //   ) {
-  //     dedupeMap.set(
-  //       pkgName,
-  //       R.append([pkgSemver, this], dedupeMap.get(pkgName) || [])
-  //     );
-
-  //     if (this.parent && dependencyName === this.parent.name) {
-  //       pkg.parent = this;
-  //       return undefined;
-  //     }
-  //     if (
-  //       this.parent &&
-  //       !this.parent.providedDependencies[dependencyName] &&
-  //       !this.parent.requiredDependencies[dependencyName] &&
-  //       dependencyName !== this.parent.name &&
-  //       !dedupeMap.get(pkgName).some(([v]) => semver.satisfies(v, pkgSemver))
-  //     ) {
-  //       this.requiredDependencies[dependencyName] = pkg;
-  //       this.parent.bundleDependency(dependencyName, pkg);
-  //     } else if (
-  //       !pkg.parent.name ||
-  //       !dedupeMap.get(pkg.parent.name) ||
-  //       !dedupeMap
-  //         .get(pkg.parent.name)
-  //         .some(([v]) =>
-  //           semver.satisfies(v, parseSemver(pkg.parent.versionSpec))
-  //         )
-  //     ) {
-  //       this.providedDependencies[dependencyName] = pkg;
-  //     }
-  //   } else {
-  //     if (["latest", "*"].includes(pkgSemver)) {
-  //       dedupeMap.set(
-  //         [pkgName, this],
-  //         R.append(pkgSemver, dedupeMap.get(pkgName) || [])
-  //       );
-  //     } else if (
-  //       dedupeMap.get(pkgName).some(([v]) => semver.satisfies(v, pkgSemver))
-  //     ) {
-  //       const matchingSemver = dedupeMap
-  //         .get(pkgName)
-  //         .find(([v]) => semver.satisfies(v, pkgSemver));
-  //       if (semver.gt(pkgSemver, matchingSemver)) {
-  //         dedupeMap.set(
-  //           [pkgName, this],
-  //           R.append(
-  //             pkgSemver,
-  //             R.reject(R.equals(matchingSemver), dedupeMap.get(pkgName))
-  //           )
-  //         );
-  //       }
-  //     }
-  //     return undefined;
-  //   }
-  // }
+    if (true) {
+      // In flatten mode, bundle dependency with the highest parent where it is not conflicting
+      if (
+        this.parent &&
+        this.parent.providedDependencies[dependencyName] === undefined &&
+        this.parent.requiredDependencies[dependencyName] === undefined
+      ) {
+        this.parent.bundleDependency(dependencyName, pkg);
+      } else {
+        pkg.parent = this;
+        this.providedDependencies[dependencyName] = pkg;
+      }
+    } else {
+      this.providedDependencies[dependencyName] = pkg; // Bundle the dependency with the package
+    }
+  };
 
   async bundleDependencies(resolvedDependencies, dependencies) {
     if (dependencies) {

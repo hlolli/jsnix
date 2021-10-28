@@ -103,10 +103,6 @@ const mkUnpackScript =
       chmod -R +rw $(pwd)
     ''`);
 
-// const mkConfigureScript = new nijs.NixValue(`{}: ''
-//     \${flattenScript}
-// ''`);
-
 const mkBuildScript = new nijs.NixValue(`{ dependencies ? [], pkgName }:
     let extraNpmFlags =
       if ((builtins.hasAttr "\${pkgName}" packageNix.dependencies) &&
@@ -146,20 +142,20 @@ const nodeSources = new nijs.NixValue(`runCommand "node-sources" {} ''
     mv node-* $out
   ''`);
 
-const goFlatten = new nijs.NixValue(`pkgs.buildGoModule {
-  pname = "flatten";
-  version = "0.0.0";
-  vendorSha256 = null;
-  src = pkgs.fetchFromGitHub {
-    owner = "hlolli";
-    repo = "jsnix";
-    rev = "eb8403c05e72bccf49cc6d0d8ae97d8ed2463b61";
-    sha256 = "P4d2A0i3CUtYm7xH1s6YYnYY8r2u2icBvzSpp1Gcy5Y=";
-  };
-  preBuild = ''
-    cd go/flatten
-  '';
-}`);
+// const goFlatten = new nijs.NixValue(`pkgs.buildGoModule {
+//   pname = "flatten";
+//   version = "0.0.0";
+//   vendorSha256 = null;
+//   src = pkgs.fetchFromGitHub {
+//     owner = "hlolli";
+//     repo = "jsnix";
+//     rev = "a66cf91ad49833ef3d84064c1037d942c97838bb";
+//     sha256 = "AvDZXUSxuJa5lZ7zRdXWIDYTYfbH2VfpuHbvZBrT9f0=";
+//   };
+//   preBuild = ''
+//     cd go/flatten
+//   '';
+// }`);
 
 const goBinLink = new nijs.NixValue(`pkgs.buildGoModule {
   pname = "bin-link";
@@ -168,8 +164,8 @@ const goBinLink = new nijs.NixValue(`pkgs.buildGoModule {
   src = pkgs.fetchFromGitHub {
     owner = "hlolli";
     repo = "jsnix";
-    rev = "eb8403c05e72bccf49cc6d0d8ae97d8ed2463b61";
-    sha256 = "P4d2A0i3CUtYm7xH1s6YYnYY8r2u2icBvzSpp1Gcy5Y=";
+    rev = "a66cf91ad49833ef3d84064c1037d942c97838bb";
+    sha256 = "AvDZXUSxuJa5lZ7zRdXWIDYTYfbH2VfpuHbvZBrT9f0=";
   };
   preBuild = ''
     cd go/bin-link
@@ -217,9 +213,9 @@ const linkBins = new nijs.NixValue(`''
     \${goBinLink}/bin/bin-link
 ''`);
 
-const flattenScript = new nijs.NixValue(
-  `args: '' \${goFlatten}/bin/flatten \${args}''`
-);
+// const flattenScript = new nijs.NixValue(
+//   `args: '' \${goFlatten}/bin/flatten \${args}''`
+// );
 
 const toPackageJson = new nijs.NixValue(`{ jsnixDeps ? {}, extraDeps ? [] }:
     let
@@ -274,20 +270,18 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv_, jsnixDeps}:
              doInstallCheck = false;
              version = builtins.hashString "sha512" (lib.strings.concatStrings copyDeps); }
          ''
-           echo 'unpack, dedupe and flatten dependencies...'
+           echo 'unpack dependencies...'
            mkdir -p $out/lib/node_modules
            cd $out/lib
            \${copyNodeModules {
                 dependencies = copyDeps;
            }}
            chmod -R +rw node_modules
-           \${flattenScript copyDepsStr}
            \${copyNodeModules {
                 dependencies = (lib.optionals (builtins.hasAttr "extraDependencies" drv) drv.extraDependencies);
            }}
-           \${(lib.optionalString ((builtins.length extraDeps) > 0)) (flattenScript extraDepsStr)}
            \${lib.optionalString (builtins.hasAttr "nodeModulesUnpack" drv) drv.nodeModulesUnpack}
-           echo 'fixup and link bin...'
+           echo 'link nodejs bins to out-dir...'
            \${linkBins}
         '';
     in stdenv.mkDerivation (drv // {
@@ -370,7 +364,6 @@ class OutputExpression extends nijs.NixASTNode {
           getNodeDep: new nijs.NixValue(getNodeDep),
           nodeSources,
           linkBins,
-          flattenScript,
           sanitizeName,
           jsnixDrvOverrides,
           toPackageJson,
@@ -381,7 +374,6 @@ class OutputExpression extends nijs.NixASTNode {
           mkUnpackScript,
           mkBuildScript,
           mkInstallScript,
-          goFlatten,
           goBinLink,
           sources: this.sourcesCache,
         },
