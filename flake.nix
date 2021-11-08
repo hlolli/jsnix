@@ -32,6 +32,65 @@
                 done
               '';
 
+              # just to spare my syntax highligher :)
+              escapeMadnessPrefix = ''\"\n\\\\033[1;96m'';
+              escapeMadnessPostfix = ''\n\\\\033[0m\"'';
+              doubleQuote = ''\"'';
+
+              bashGetOpt = progname: ''
+                # usage function
+                function usage() {
+                    echo "JSNIX development script for ${progname}"
+                    echo ""
+                    echo "Usage: ${progname} [--link PROJECT_ID] [--sidebuild PROJECT_ID] [--sidebuild-action ACTION_PATH]"
+                    echo ""
+                    echo "optional arguments:"
+                    echo "-h, --help                         show this help message and exit"
+                    echo "-l, --link PROJECT_ID              build a given projects scripts.build and symlink it"
+                    echo "-b, --sidebuild PROJECT_ID         starts a watcher on given build of a given project scripts .build"
+                    echo "-a, --sidebuild-action ACTION_PATH speficies"
+                    echo ""
+                }
+                _watchexec_ps=
+                link=
+                sidebuild=
+                sidebuild_action=
+                opts="hlba"
+                long_opts="help,link:,sidebuild:,sidebuild-action"
+
+                while [[ ! -z "$1" ]]; do
+                  getopt -o "$opts" -l "$long_opts" > /dev/null
+                  case "$1" in
+                    -h | --help ) usage; exit; ;;
+                    -l | --link ) link="$2"; shift 2 ;;
+                    -b | --sidebuild ) sidebuild="$2"; shift 2 ;;
+                    -a | --sidebuild-action ) sidebuild_action="$2"; shift 2 ;;
+                    -- ) shift; break ;;
+                    * ) break ;;
+                  esac
+                done
+
+                if [[ ! -z "$sidebuild" ]]; then
+                  case "$sidebuild" in
+                  ${builtins.concatStringsSep "\n"
+                    (builtins.map
+                      (k: ''${k} ) ${
+                        if (builtins.hasAttr "scripts" workspaces.${k})
+                        then
+                          if (builtins.hasAttr "build" workspaces.${k}.scripts)
+                          then ("( ${pkgs.watchexec}/bin/watchexec -w ${workspaces.${k}.projectDir} " +
+                                "-r \"echo -e ${escapeMadnessPrefix}JSNIX sidebuild hook called ${workspaces.${k}.projectDir}...${escapeMadnessPostfix}" +
+                                " ; ${k}-build\" & ) ; export _watchexec_ps=\"$!\" \n ;;")
+                          else "echo \"No build target was defined in scripts for ${k}\" \n ;;"
+                        else "echo \"${k} has no script targets whatsoever\" \n ;;"}
+                        ''
+                      )
+                      (builtins.attrNames workspaces))}
+                    * ) echo "no project in workspace: $sidebuild" ;;
+                  esac
+                fi
+              '';
+
               workspaceImports = nixpkgs.lib.foldr (pName: l:
                 let pForm = builtins.getAttr pName workspaces;
                     pPath = (builtins.toPath (flakePath + ("/" + (builtins.getAttr "projectDir" pForm))));
@@ -56,19 +115,18 @@
                 (l ++ (nixpkgs.lib.optionals (builtins.pathExists (flakePath + (p + "/package.nix"))))
                   [ { name = (import (p + "/package.nix")).name; path = p; } ])) [];
 
+              getWorkspacePkgName = path:
+                if (builtins.pathExists (flakePath + ("/" + path + "/package.nix")))
+                then (import (flakePath + ("/" + path + "/package.nix"))).name
+                else builtins.throw "Tried linking a package under ${path} but didn't find package.nix there";
+
               getWorkspacePkgs = pkgs: builtins.map
                 ({ name, path }: (if (builtins.hasAttr "${name}" pkgs)
                                   then pkgs."${name}"
                                   else if (builtins.hasAttr "${name}" pkgs)
-                                  then (import (path + "/package-lock.nix"))
+                                  then (import (flakePath ("/" + path + "/package-lock.nix")))
                                   else builtins.throw "package ${name} was not found in ${path}, did you remember to run `jsnix install` beforehand?"))
                 (getWorkspacePkgNames workspaces);
-
-              getWorkspacePkgs__internal = wspaces: builtins.map
-                ({ name, path }: (if builtins.hasAttr "${name}" pkgs
-                                  then { inherit name path; drv = pkgs."${name}"; }
-                                  else { inherit name path; drv = (import (path + "/package-lock.nix")); } ))
-                (getWorkspacePkgNames wspaces);
 
               scriptWithAttrs =
                 (pkgs.lib.attrsets.filterAttrs (k: v: (builtins.length v) > 0)
@@ -78,7 +136,8 @@
                       then (builtins.attrValues
                         (pkgs.lib.attrsets.mapAttrs (sk: sv:
                           let text = ''
-                            #!${pkgs.runtimeShell}
+                            #!${pkgs.bash}/bin/bash
+                            ${bashGetOpt "${k}-${sk}"}
                             ${bashFindUp}
                             cd $ROOT_DIR
                             cd ${v.projectDir}
@@ -89,17 +148,19 @@
                           '';
                           in (pkgs.runCommand "${k}-${sk}" {
                             buildInputs = if (builtins.hasAttr k workspaceImports)
-                                          then ([workspaceImports.${k}.nodeModules] ++
+                                          then ([pkgs.getopt workspaceImports.${k}.nodeModules] ++
                                                 (pkgs.lib.optionals (builtins.hasAttr "buildInputs" workspaceImports.${k})
                                                   workspaceImports.${k}.buildInputs))
-                                          else [];
+                                          else [pkgs.getopt];
                           }
                             ''
                               mkdir -p $out/bin
                               echo '${text}' > "$out/bin/${k}-${sk}"
                               echo PATH=$PATH:\$PATH >> "$out/bin/${k}-${sk}"
                               echo NODE_PATH=$NODE_PATH:\$NODE_PATH >> "$out/bin/${k}-${sk}"
-                              echo '${sv}' >> "$out/bin/${k}-${sk}"
+                              echo '(${sv}); ret="$?";' >> "$out/bin/${k}-${sk}"
+                              echo '[[ ! -z $_watchexec_ps ]] && kill -9 $_watchexec_ps || true;' >> "$out/bin/${k}-${sk}"
+                              echo '[[ ! -z "$ret" ]] && exit $ret;' >> "$out/bin/${k}-${sk}"
                               chmod +x "$out/bin/${k}-${sk}"
                             ''
                           )) v.scripts))
@@ -115,13 +176,8 @@
                   (scriptName: "     \\033[1;30m${scriptGroup}-${scriptName}\\033[0m")
                   (builtins.attrNames workspaces.${scriptGroup}.scripts));
 
-              mkDevShellHook = pkgs: (nixpkgs.lib.foldr ({ name, path, drv }: acc:
+              mkDevShellHook = pkgs: (
                 ''
-                 ${acc}
-                 (cd $ROOT_DIR; cd ${path}; rm -rf node_modules; rm -f package.json;
-                 mkdir node_modules; ln -s ${drv.nodeModules}/lib/node_modules/* node_modules; ln -s ${drv.pkgJsonFile} package.json)
-               ''
-              ) ''
                   ${bashFindUp}
                   export PATH=$PATH:${builtins.concatStringsSep ":" (builtins.map (s: s + "/bin") scripts)}
                   echo -e "\n"
@@ -137,10 +193,35 @@
                             echo -e "${toString (getScriptNames s)}"'')
                       (builtins.attrNames scriptWithAttrs)))}
                   echo -e "\n"
-                ''
-                (getWorkspacePkgs__internal
-                  (builtins.map (p: p.projectDir)
-                    (builtins.attrValues workspaces))));
+                '' + # pkgs.lib.foldr ({ name, path, drv }: acc:
+                (builtins.concatStringsSep "\n"
+                  (builtins.attrValues
+                    (pkgs.lib.attrsets.mapAttrs (name: xform:
+                      let pkgName = getWorkspacePkgName xform.projectDir;
+                      in ''
+                         (cd ${xform.projectDir}; rm -rf node_modules > /dev/null; rm -f package.json > /dev/null;
+                          mkdir node_modules; ln -s ${pkgs.${pkgName}.nodeModules}/lib/node_modules/* node_modules/;
+                          ln -s ${pkgs.${pkgName}.pkgJsonFile} package.json;
+                          ${pkgs.lib.strings.optionalString (builtins.hasAttr "links" workspaces.${name})
+                            (builtins.concatStringsSep "\n"
+                              (builtins.map (link:
+                                if (builtins.hasAttr link workspaces)
+                                then let lp = getWorkspacePkgName workspaces.${link}.projectDir; in ''
+                                  __root_link=$(echo '${lp}' | sed 's|/.*||g')
+                                  rm -f node_modules/$__root_link > /dev/null 2>&1
+                                  mkdir -p node_modules/$__root_link
+                                  ln -s "$(${pkgs.coreutils}/bin/realpath --relative-to="$ROOT_DIR/${xform.projectDir}/node_modules/$__root_link" \
+                                  "$ROOT_DIR/${workspaces.${link}.projectDir}")" node_modules/${lp}
+                                ''
+                                else builtins.throw "A linked project ${name}->${link} is not declared!" )
+                              workspaces.${name}.links))}
+                          )
+                        ''
+                    )
+                      workspaces))));
+              # (getWorkspacePkgs__internal
+              #   (builtins.map (p: p.projectDir)
+              #     (builtins.attrValues workspaces)))));
 
             in {
               apps = pkgs.lib.attrsets.mapAttrs (_: v: { type = "app"; program = v; }) scriptWithAttrs;
