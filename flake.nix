@@ -208,14 +208,38 @@
                               (builtins.map (link:
                                 if (builtins.hasAttr link workspaces)
                                 then let lp = getWorkspacePkgName workspaces.${link}.projectDir; in ''
-                                  __root_link=$(echo '${lp}' | sed 's|/.*||g')
-                                  rm -f node_modules/$__root_link > /dev/null 2>&1
+                                  __root_link=
+                                  if [[ "${lp}" =~ "/" ]]
+                                  then
+                                    __root_link=$(echo '${lp}' | sed 's|/.*||g')
+                                    __sub_link=$(echo '${lp}' | sed 's|.*/||g')
+                                    if [[ -L "node_modules/$__root_link" ]]
+                                    then
+                                      mv node_modules/$__root_link node_modules/__tmp
+                                      mkdir -p node_modules/${lp}
+                                      for f in node_modules/__tmp/*; do [ "$(basename "$f")" != "$__sub_link" ] && \
+                                        ln -s "$(${pkgs.coreutils}/bin/realpath -P $f)" \
+                                        "node_modules/$__root_link/$(basename "$f")"; done;
+                                      rm -rf node_modules/__tmp
+                                    else
+                                      rm -f node_modules/${lp} > /dev/null 2>&1
+                                    fi
+                                  else
+                                    __root_link=${lp}
+                                    rm -f node_modules/${lp} > /dev/null 2>&1
+                                  fi
                                   mkdir -p node_modules/${lp}
 
-                                  _relp=${pkgs.coreutils}/bin/realpath \
-                                    --relative-to="$ROOT_DIR/${xform.projectDir}/node_modules/$__root_link" \
-                                    "$ROOT_DIR/${workspaces.${link}.projectDir}"
-                                  for f in $_relp/*; do [ "$f" != "node_modules" ] && ln -s "$f" "node_modules/${lp}/$f"; done
+                                  _relp=$(${pkgs.coreutils}/bin/realpath --canonicalize-missing \
+                                    --relative-to="$ROOT_DIR/${xform.projectDir}" \
+                                    "$ROOT_DIR/${workspaces.${link}.projectDir}")
+
+                                  __relp=$(${pkgs.coreutils}/bin/realpath --canonicalize-missing \
+                                    --relative-to="$ROOT_DIR/${xform.projectDir}/node_modules/${lp}" \
+                                    "$ROOT_DIR/${workspaces.${link}.projectDir}")
+
+                                  for f in $_relp/*; do [ "$(basename "$f")" != "node_modules" ] && \
+                                    ln -s "$__relp/$(basename "$f")" "node_modules/${lp}/$(basename "$f")"; done
                                   if [[ -d "${pkgs.${pkgName}.nodeModules}/lib/node_modules/${lp}/node_modules" ]]
                                   then
                                     ln -s ${pkgs.${pkgName}.nodeModules}/lib/node_modules/${lp}/node_modules \
