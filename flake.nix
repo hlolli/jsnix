@@ -209,9 +209,20 @@
                                 then let lp = getWorkspacePkgName workspaces.${link}.projectDir; in ''
                                   __root_link=$(echo '${lp}' | sed 's|/.*||g')
                                   rm -f node_modules/$__root_link > /dev/null 2>&1
-                                  mkdir -p node_modules/$__root_link
-                                  ln -s "$(${pkgs.coreutils}/bin/realpath --relative-to="$ROOT_DIR/${xform.projectDir}/node_modules/$__root_link" \
-                                  "$ROOT_DIR/${workspaces.${link}.projectDir}")" node_modules/${lp}
+                                  mkdir -p node_modules/${lp}
+
+                                  _relp=${pkgs.coreutils}/bin/realpath \
+                                    --relative-to="$ROOT_DIR/${xform.projectDir}/node_modules/$__root_link" \
+                                    "$ROOT_DIR/${workspaces.${link}.projectDir}"
+                                  for f in $_relp/*; do [ "$f" != "node_modules" ] && ln -s "$f" "node_modules/${lp}/$f"; done
+                                  if [[ -d "${pkgs.${pkgName}.nodeModules}/lib/node_modules/${lp}/node_modules" ]]
+                                  then
+                                    ln -s ${pkgs.${pkgName}.nodeModules}/lib/node_modules/${lp}/node_modules \
+                                      $ROOT_DIR/${xform.projectDir}/node_modules/${lp}/node_modules
+                                  elif [[ -d "$_relp/node_modules" ]]
+                                  then
+                                    ln -s "$_relp/node_modules" "$ROOT_DIR/${xform.projectDir}/node_modules/${lp}/node_modules"
+                                  fi
                                 ''
                                 else builtins.throw "A linked project ${name}->${link} is not declared!" )
                               workspaces.${name}.links))}
