@@ -80,7 +80,8 @@
                           if (builtins.hasAttr "build" workspaces.${k}.scripts)
                           then ("( ${pkgs.watchexec}/bin/watchexec -w ${workspaces.${k}.projectDir} " +
                                 "-r \"echo -e ${escapeMadnessPrefix}JSNIX sidebuild hook called ${workspaces.${k}.projectDir}...${escapeMadnessPostfix}" +
-                                " ; ${k}-build\" & ) ; export _watchexec_ps=\"$!\" \n ;;")
+                                " ; ${k}-build\" & ) ; export _watchexec_ps=\"$!\"; " +
+                                "trap on_sigint SIGINT; on_sigint() { ( pgrep -f \".*JSNIX sidebuild.*\" | xargs kill -1 \$1 || true); }; \n ;;")
                           else "echo \"No build target was defined in scripts for ${k}\" \n ;;"
                         else "echo \"${k} has no script targets whatsoever\" \n ;;"}
                         ''
@@ -159,7 +160,7 @@
                               echo PATH=$PATH:\$PATH >> "$out/bin/${k}-${sk}"
                               echo NODE_PATH=$NODE_PATH:\$NODE_PATH >> "$out/bin/${k}-${sk}"
                               echo '(${sv}); ret="$?";' >> "$out/bin/${k}-${sk}"
-                              echo '[[ ! -z $_watchexec_ps ]] && kill -9 $_watchexec_ps || true;' >> "$out/bin/${k}-${sk}"
+                              echo '[[ ! -z $_watchexec_ps ]] && pgrep -f \".*JSNIX sidebuild.*\" | xargs kill -1 \$1 || true;' >> "$out/bin/${k}-${sk}"
                               echo '[[ ! -z "$ret" ]] && exit $ret;' >> "$out/bin/${k}-${sk}"
                               chmod +x "$out/bin/${k}-${sk}"
                             ''
