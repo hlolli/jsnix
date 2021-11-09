@@ -130,44 +130,43 @@
                 (getWorkspacePkgNames workspaces);
 
               scriptWithAttrs =
-                (pkgs.lib.attrsets.filterAttrs (k: v: (builtins.length v) > 0)
                   (pkgs.lib.attrsets.mapAttrs
                     (k: v: (
                       if (builtins.hasAttr "scripts" v)
-                      then (builtins.attrValues
-                        (pkgs.lib.attrsets.mapAttrs (sk: sv:
-                          let text = ''
-                            #!${pkgs.bash}/bin/bash
-                            ${bashGetOpt "${k}-${sk}"}
-                            ${bashFindUp}
-                            cd $ROOT_DIR
-                            cd ${v.projectDir}
-                            if [[ ! -e "./node_modules" ]]; then
-                              mkdir -p node_modules
-                              ln -s ${workspaceImports.${k}.nodeModules}/lib/node_modules/* ./node_modules
-                            fi
-                          '';
-                          in (pkgs.runCommand "${k}-${sk}" {
-                            buildInputs = if (builtins.hasAttr k workspaceImports)
-                                          then ([pkgs.getopt workspaceImports.${k}.nodeModules] ++
-                                                (pkgs.lib.optionals (builtins.hasAttr "buildInputs" workspaceImports.${k})
-                                                  workspaceImports.${k}.buildInputs))
-                                          else [pkgs.getopt];
-                          }
-                            ''
-                              mkdir -p $out/bin
-                              echo '${text}' > "$out/bin/${k}-${sk}"
-                              echo PATH=$PATH:\$PATH >> "$out/bin/${k}-${sk}"
-                              echo NODE_PATH=$NODE_PATH:\$NODE_PATH >> "$out/bin/${k}-${sk}"
-                              echo '(${sv}); ret="$?";' >> "$out/bin/${k}-${sk}"
-                              echo '[[ ! -z $_watchexec_ps ]] && pgrep -f \".*JSNIX sidebuild.*\" | xargs kill -1 \$1 || true;' >> "$out/bin/${k}-${sk}"
-                              echo '[[ ! -z "$ret" ]] && exit $ret;' >> "$out/bin/${k}-${sk}"
-                              chmod +x "$out/bin/${k}-${sk}"
-                            ''
-                          )) v.scripts))
-                      else []
-                    ))
-                    workspaces));
+                      then
+                        (builtins.attrValues
+                          (pkgs.lib.attrsets.mapAttrs (sk: sv:
+                            let text = ''
+                              #!${pkgs.bash}/bin/bash
+                              ${bashGetOpt "${k}-${sk}"}
+                              ${bashFindUp}
+                              cd $ROOT_DIR
+                              cd ${v.projectDir}
+                              if [[ ! -e "./node_modules" ]]; then
+                                mkdir -p node_modules
+                                ln -s ${workspaceImports.${k}.nodeModules}/lib/node_modules/* ./node_modules
+                              fi
+                            '';
+                            in ((pkgs.runCommand "${k}-${sk}" {
+                              buildInputs = if (builtins.hasAttr k workspaceImports)
+                                            then ([pkgs.getopt workspaceImports.${k}.nodeModules] ++
+                                                  (pkgs.lib.optionals (builtins.hasAttr "buildInputs" workspaceImports.${k})
+                                                    workspaceImports.${k}.buildInputs))
+                                            else [pkgs.getopt];
+                            }
+                              ''
+                                mkdir -p $out/bin
+                                echo '${text}' > "$out/bin/${k}-${sk}"
+                                echo PATH=$PATH:\$PATH >> "$out/bin/${k}-${sk}"
+                                echo NODE_PATH=$NODE_PATH:\$NODE_PATH >> "$out/bin/${k}-${sk}"
+                                echo '(${sv}); ret="$?";' >> "$out/bin/${k}-${sk}"
+                                echo '[[ ! -z $_watchexec_ps ]] && pgrep -f \".*JSNIX sidebuild.*\" | xargs kill -1 \$1 || true;' >> "$out/bin/${k}-${sk}"
+                                echo '[[ ! -z "$ret" ]] && exit $ret;' >> "$out/bin/${k}-${sk}"
+                                chmod +x "$out/bin/${k}-${sk}"
+                              '')
+                            )) v.scripts))
+                        else [] ))
+                      workspaces);
 
               scripts = (pkgs.lib.lists.flatten
                 (builtins.attrValues scriptWithAttrs));
@@ -250,17 +249,32 @@
                                   fi
                                 ''
                                 else builtins.throw "A linked project ${name}->${link} is not declared!" )
-                              workspaces.${name}.links))}
+                                workspaces.${name}.links))}
                           )
                         ''
                     )
                       workspaces))));
               # (getWorkspacePkgs__internal
               #   (builtins.map (p: p.projectDir)
-              #     (builtins.attrValues workspaces)))));
+              #     (builtins.attrValues workspaces)))));  { type = "app"; program = vv; }
 
             in {
-              apps = pkgs.lib.attrsets.mapAttrs (_: v: { type = "app"; program = v; }) scriptWithAttrs;
+              apps = (pkgs.lib.foldr
+                (v: a:
+                  (a //
+                   (pkgs.lib.foldr (m: a: (a // m)) {}
+                     (builtins.map (vv: {
+                       ${vv.name} = {
+                         type = "app";
+                         program = vv.outPath;
+                       };
+                     }) v)
+                   )))
+                {}
+                (builtins.attrValues scriptWithAttrs));
+              # (builtins.foldl' (m: a: (a // m)) {} (pkgs.lib.lists.flatten scriptWithAttrs))
+
+              # apps = builtins.map (v: { type = "app"; program = v; }) scriptWithAttrs;
               scripts = scriptWithAttrs;
               packages = flake-utils.lib.flattenTree workspaceImports;
               overlays = (getWorkspaceOverlays (builtins.attrValues workspaces));
