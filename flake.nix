@@ -129,7 +129,7 @@
                                   else builtins.throw "package ${name} was not found in ${path}, did you remember to run `jsnix install` beforehand?"))
                 (getWorkspacePkgNames workspaces);
 
-              scriptWithAttrs =
+              scriptWithAttrs_ =
                   (pkgs.lib.attrsets.mapAttrs
                     (k: v: (
                       if (builtins.hasAttr "scripts" v)
@@ -168,18 +168,28 @@
                         else [] ))
                       workspaces);
 
-              scripts = (pkgs.lib.lists.flatten
-                (builtins.attrValues scriptWithAttrs));
+              scriptWithAttrs = (pkgs.lib.foldr
+                (v: a:
+                  (a //
+                   (pkgs.lib.foldr (m: a: (a // m)) {}
+                     (builtins.map (vv: {
+                       ${vv.name} = {
+                         type = "app";
+                         program = vv.outPath + "/bin/" + vv.name;
+                       };
+                     }) v)
+                   )))
+                {}
+                (builtins.attrValues scriptWithAttrs_));
 
-              getScriptNames = scriptGroup: builtins.concatStringsSep "\n"
-                (builtins.map
-                  (scriptName: "     \\033[1;30m${scriptGroup}-${scriptName}\\033[0m")
-                  (builtins.attrNames workspaces.${scriptGroup}.scripts));
+              scripts = (builtins.map (s: s.program)
+                (builtins.attrValues scriptWithAttrs));
 
               mkDevShellHook = pkgs: (
                 ''
                   ${bashFindUp}
-                  export PATH=$PATH:${builtins.concatStringsSep ":" (builtins.map (s: s + "/bin") scripts)}
+                  export PATH=$PATH:${builtins.concatStringsSep ":"
+                    (builtins.map (bin: builtins.dirOf bin) scripts)}
                   echo -e "\n"
                   echo -e "     \\033[1;96mJSNIX workspace devShellHook\\033[0m"
                   echo -e "${
@@ -188,10 +198,15 @@
                     else "     \\033[0;33mno devShellHook scripts were found\\033[0m\""
                   }
                   ${(builtins.concatStringsSep "\n"
-                    (builtins.map
-                      (s: ''echo -e "  •  \\033[1;95m${s}\\033[0m"
-                            echo -e "${toString (getScriptNames s)}"'')
-                      (builtins.attrNames scriptWithAttrs)))}
+                    (pkgs.lib.lists.flatten
+                      (builtins.map
+                        (proj: [ ''echo -e "  •  \\033[1;95m${proj}\\033[0m"'' ] ++
+                            (pkgs.lib.optionals (builtins.hasAttr "scripts" workspaces.${proj})
+                              (builtins.map (s:
+                                ''
+                                  echo -e "     ${proj}-${s}"'')
+                                (builtins.attrNames workspaces.${proj}.scripts))))
+                        (builtins.attrNames workspaces))))}
                   echo -e "\n"
                 '' + # pkgs.lib.foldr ({ name, path, drv }: acc:
                 (builtins.concatStringsSep "\n"
@@ -259,23 +274,8 @@
               #     (builtins.attrValues workspaces)))));  { type = "app"; program = vv; }
 
             in {
-              apps = (pkgs.lib.foldr
-                (v: a:
-                  (a //
-                   (pkgs.lib.foldr (m: a: (a // m)) {}
-                     (builtins.map (vv: {
-                       ${vv.name} = {
-                         type = "app";
-                         program = vv.outPath;
-                       };
-                     }) v)
-                   )))
-                {}
-                (builtins.attrValues scriptWithAttrs));
-              # (builtins.foldl' (m: a: (a // m)) {} (pkgs.lib.lists.flatten scriptWithAttrs))
-
-              # apps = builtins.map (v: { type = "app"; program = v; }) scriptWithAttrs;
-              scripts = scriptWithAttrs;
+              inherit scripts;
+              apps = scriptWithAttrs;
               packages = flake-utils.lib.flattenTree workspaceImports;
               overlays = (getWorkspaceOverlays (builtins.attrValues workspaces));
               topLevelPackages = (getWorkspacePkgs pkgs);
