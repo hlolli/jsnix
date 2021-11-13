@@ -129,14 +129,36 @@
                                   else builtins.throw "package ${name} was not found in ${path}, did you remember to run `jsnix install` beforehand?"))
                 (getWorkspacePkgNames workspaces);
 
+              linkScripts =
+                (pkgs.lib.attrsets.mapAttrs
+                  (k: v: (
+                    if (builtins.hasAttr "links" v)
+                    then
+                      let text = ''
+                        #!${pkgs.bash}/bin/bash
+                        ${bashFindUp}
+                        cd $ROOT_DIR
+                        ${linkProject k workspaces.${k}.projectDir}
+                      '';
+                      in pkgs.runCommand "${k}-link" {}
+                        ''
+                          mkdir -p $out/bin
+                          echo '${text}' > "$out/bin/${k}-link"
+                          echo PATH=$PATH:\$PATH >> "$out/bin/${k}-link"
+                          echo NODE_PATH=$NODE_PATH:\$NODE_PATH >> "$out/bin/${k}-link"
+                          chmod +x "$out/bin/${k}-link"
+                        ''
+                    else null ))
+                  workspaces);
+
               scriptWithAttrs_ =
-                  (pkgs.lib.attrsets.mapAttrs
-                    (k: v: (
-                      if (builtins.hasAttr "scripts" v)
-                      then
-                        (builtins.attrValues
-                          (pkgs.lib.attrsets.mapAttrs (sk: sv:
-                            let text = ''
+                (pkgs.lib.attrsets.mapAttrs
+                  (k: v: (
+                    if (builtins.hasAttr "scripts" v)
+                    then
+                      (builtins.attrValues
+                        (pkgs.lib.attrsets.mapAttrs (sk: sv:
+                          let text = ''
                               #!${pkgs.bash}/bin/bash
                               ${bashGetOpt "${k}-${sk}"}
                               ${bashFindUp}
@@ -147,14 +169,14 @@
                                 ln -s ${workspaceImports.${k}.nodeModules}/lib/node_modules/* ./node_modules
                               fi
                             '';
-                            in ((pkgs.runCommand "${k}-${sk}" {
-                              buildInputs = if (builtins.hasAttr k workspaceImports)
-                                            then ([pkgs.getopt workspaceImports.${k}.nodeModules] ++
-                                                  (pkgs.lib.optionals (builtins.hasAttr "buildInputs" workspaceImports.${k})
-                                                    workspaceImports.${k}.buildInputs))
-                                            else [pkgs.getopt];
-                            }
-                              ''
+                          in ((pkgs.runCommand "${k}-${sk}" {
+                            buildInputs = if (builtins.hasAttr k workspaceImports)
+                                          then ([pkgs.getopt workspaceImports.${k}.nodeModules] ++
+                                                (pkgs.lib.optionals (builtins.hasAttr "buildInputs" workspaceImports.${k})
+                                                  workspaceImports.${k}.buildInputs))
+                                          else [pkgs.getopt];
+                          }
+                            ''
                                 mkdir -p $out/bin
                                 echo '${text}' > "$out/bin/${k}-${sk}"
                                 echo PATH=$PATH:\$PATH >> "$out/bin/${k}-${sk}"
@@ -164,9 +186,9 @@
                                 echo '[[ ! -z "$ret" ]] && exit $ret;' >> "$out/bin/${k}-${sk}"
                                 chmod +x "$out/bin/${k}-${sk}"
                               '')
-                            )) v.scripts))
-                        else [] ))
-                      workspaces);
+                          )) v.scripts))
+                    else [] ))
+                  workspaces);
 
               scriptWithAttrs = (pkgs.lib.foldr
                 (v: a:
@@ -180,10 +202,76 @@
                      }) v)
                    )))
                 {}
-                (builtins.attrValues scriptWithAttrs_));
+                (builtins.attrValues scriptWithAttrs_)) //
+              (pkgs.lib.foldr (m: a: (a // m)) {}
+                (builtins.attrValues
+                  (pkgs.lib.attrsets.mapAttrs
+                    (n: v: {
+                      "${n}-link" = {
+                        type = "app";
+                        program = v.outPath + "/bin/${n}-link";
+                      };
+                    })
+                    (pkgs.lib.attrsets.filterAttrs
+                      (n: e: (builtins.typeOf e) != "null")
+                      linkScripts))));
 
               scripts = (builtins.map (s: s.program)
                 (builtins.attrValues scriptWithAttrs));
+
+              linkProject = projectName: projectDir:
+                pkgs.lib.strings.optionalString (builtins.hasAttr "links" workspaces.${projectName})
+                  (builtins.concatStringsSep "\n"
+                    (builtins.map (link:
+                      if (builtins.hasAttr link workspaces)
+                      then
+                        let lp = getWorkspacePkgName workspaces.${link}.projectDir;
+                            pkgName = getWorkspacePkgName projectDir;
+                        in ''
+                          __root_link=
+                          if [[ "${lp}" =~ "/" ]]
+                          then
+                            __root_link=$(echo "${lp}" | sed "s|/.*||g")
+                            __sub_link=$(echo "${lp}" | sed "s|.*/||g")
+                            if [[ -L "node_modules/$__root_link" ]]
+                            then
+                              mv node_modules/$__root_link node_modules/__tmp
+                              mkdir -p node_modules/${lp}
+                              for f in node_modules/__tmp/*; do [ "$(basename "$f")" != "$__sub_link" ] && \
+                                ln -s "$(${pkgs.coreutils}/bin/realpath -P $f)" \
+                                  "node_modules/$__root_link/$(basename "$f")"; done;
+                            else
+                              rm -f node_modules/${lp} > /dev/null 2>&1
+                            fi
+                            else
+                              __root_link=${lp}
+                              rm -f node_modules/${lp} > /dev/null 2>&1
+                            fi
+                              rm -rf node_modules/__tmp > /dev/null 2>&1
+                              mkdir -p node_modules/${lp}
+
+                            _relp=$(${pkgs.coreutils}/bin/realpath --canonicalize-missing \
+                              --relative-to="$ROOT_DIR/${projectDir}" \
+                              "$ROOT_DIR/${workspaces.${link}.projectDir}")
+
+                            __relp=$(${pkgs.coreutils}/bin/realpath --canonicalize-missing \
+                              --relative-to="$ROOT_DIR/${projectDir}/node_modules/${lp}" \
+                              "$ROOT_DIR/${workspaces.${link}.projectDir}")
+
+                            for f in $_relp/*; do [ "$(basename "$f")" != "node_modules" ] && [ "$(basename "$f")" != "*" ] && \
+                              ln -s "$__relp/$(basename "$f")" "node_modules/${lp}/$(basename "$f")"; done
+                            rm -f $ROOT_DIR/${projectDir}/node_modules/${lp}/node_modules > /dev/null
+                            if [[ -d "${pkgs.${pkgName}.nodeModules}/lib/node_modules/${lp}/node_modules" ]]
+                            then
+                              ln -s ${pkgs.${pkgName}.nodeModules}/lib/node_modules/${lp}/node_modules \
+                                $ROOT_DIR/${projectDir}/node_modules/${lp}/node_modules
+                            elif [[ -d "$_relp/node_modules" ]]
+                            then
+                              ln -s "$_relp/node_modules" "$ROOT_DIR/${projectDir}/node_modules/${lp}/node_modules"
+                            fi
+                          ''
+                      else builtins.throw "A linked project ${projectName}->${link} is not declared!" )
+                      workspaces.${projectName}.links));
 
               mkDevShellHook = pkgs: (
                 ''
@@ -217,54 +305,7 @@
                          (cd ${xform.projectDir}; rm -rf node_modules > /dev/null; rm -f package.json > /dev/null;
                           mkdir node_modules; ln -s ${pkgs.${pkgName}.nodeModules}/lib/node_modules/* node_modules/;
                           ln -s ${pkgs.${pkgName}.pkgJsonFile} package.json;
-                          ${pkgs.lib.strings.optionalString (builtins.hasAttr "links" workspaces.${name})
-                            (builtins.concatStringsSep "\n"
-                              (builtins.map (link:
-                                if (builtins.hasAttr link workspaces)
-                                then let lp = getWorkspacePkgName workspaces.${link}.projectDir; in ''
-                                  __root_link=
-                                  if [[ "${lp}" =~ "/" ]]
-                                  then
-                                    __root_link=$(echo '${lp}' | sed 's|/.*||g')
-                                    __sub_link=$(echo '${lp}' | sed 's|.*/||g')
-                                    if [[ -L "node_modules/$__root_link" ]]
-                                    then
-                                      mv node_modules/$__root_link node_modules/__tmp
-                                      mkdir -p node_modules/${lp}
-                                      for f in node_modules/__tmp/*; do [ "$(basename "$f")" != "$__sub_link" ] && \
-                                        ln -s "$(${pkgs.coreutils}/bin/realpath -P $f)" \
-                                        "node_modules/$__root_link/$(basename "$f")"; done;
-                                      rm -rf node_modules/__tmp
-                                    else
-                                      rm -f node_modules/${lp} > /dev/null 2>&1
-                                    fi
-                                  else
-                                    __root_link=${lp}
-                                    rm -f node_modules/${lp} > /dev/null 2>&1
-                                  fi
-                                  mkdir -p node_modules/${lp}
-
-                                  _relp=$(${pkgs.coreutils}/bin/realpath --canonicalize-missing \
-                                    --relative-to="$ROOT_DIR/${xform.projectDir}" \
-                                    "$ROOT_DIR/${workspaces.${link}.projectDir}")
-
-                                  __relp=$(${pkgs.coreutils}/bin/realpath --canonicalize-missing \
-                                    --relative-to="$ROOT_DIR/${xform.projectDir}/node_modules/${lp}" \
-                                    "$ROOT_DIR/${workspaces.${link}.projectDir}")
-
-                                  for f in $_relp/*; do [ "$(basename "$f")" != "node_modules" ] && \
-                                    ln -s "$__relp/$(basename "$f")" "node_modules/${lp}/$(basename "$f")"; done
-                                  if [[ -d "${pkgs.${pkgName}.nodeModules}/lib/node_modules/${lp}/node_modules" ]]
-                                  then
-                                    ln -s ${pkgs.${pkgName}.nodeModules}/lib/node_modules/${lp}/node_modules \
-                                      $ROOT_DIR/${xform.projectDir}/node_modules/${lp}/node_modules
-                                  elif [[ -d "$_relp/node_modules" ]]
-                                  then
-                                    ln -s "$_relp/node_modules" "$ROOT_DIR/${xform.projectDir}/node_modules/${lp}/node_modules"
-                                  fi
-                                ''
-                                else builtins.throw "A linked project ${name}->${link} is not declared!" )
-                                workspaces.${name}.links))}
+                          ${linkProject name xform.projectDir}
                           )
                         ''
                     )
