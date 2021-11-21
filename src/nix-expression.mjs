@@ -7,8 +7,8 @@ const gitignoreSource = `
     (import (fetchFromGitHub {
       owner = "hercules-ci";
       repo = "gitignore.nix";
-      rev = "211907489e9f198594c0eb0ca9256a1949c9d412";
-      sha256 = "sha256-qHu3uZ/o9jBHiA3MEKHJ06k7w4heOhA+4HCSIvflRxo=";
+      rev = "5b9e0ff9d3b551234b4f3eb3983744fa354b17f1";
+      sha256 = "o/BdVjNwcB6jOmzZjOH703BesSkkS5O7ej3xhyO8hAY=";
     }) { inherit lib; }).gitignoreSource`;
 
 const getNodeDep = `packageName: dependencies:

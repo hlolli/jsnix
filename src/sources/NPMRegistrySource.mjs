@@ -179,13 +179,12 @@ export class NPMRegistrySource extends Source {
     this.config = data.versions[resolvedVersion];
 
     if (!this.config) {
-      console.error(this);
+      this.config = {};
     }
 
     this.config.name = this.npmProtocolPath
       ? this.dependencyName
       : this.config.name;
-
     this.identifier = this.config.name + "-" + this.config.version;
 
     if (
@@ -212,6 +211,7 @@ export class NPMRegistrySource extends Source {
 
     // prevent infinite loop when a package depends on itself
     delete (this.config.dependencies || {})[this.config.name];
+
     if (this.config.dist.integrity) {
       try {
         this.convertIntegrityStringToNixHash(this.config.dist.integrity);
