@@ -173,7 +173,9 @@
                             buildInputs = if (builtins.hasAttr k workspaceImports)
                                           then ([pkgs.getopt workspaceImports.${k}.nodeModules] ++
                                                 (pkgs.lib.optionals (builtins.hasAttr "buildInputs" workspaceImports.${k})
-                                                  workspaceImports.${k}.buildInputs))
+                                                  workspaceImports.${k}.buildInputs) ++
+                                                (pkgs.lib.optionals (builtins.hasAttr "links" v)
+                                                  (builtins.map (vv: workspaceImports.${vv}) v.links)))
                                           else [pkgs.getopt];
                           }
                             ''
@@ -302,10 +304,13 @@
                     (pkgs.lib.attrsets.mapAttrs (name: xform:
                       let pkgName = getWorkspacePkgName xform.projectDir;
                       in ''
-                         (cd ${xform.projectDir}; rm -rf node_modules > /dev/null; rm -f package.json > /dev/null;
-                          mkdir node_modules; ln -s ${pkgs.${pkgName}.nodeModules}/lib/node_modules/* node_modules/;
+                         (cd ${xform.projectDir}; rm -rf node_modules > /dev/null 2>&1 && rm -f package.json > /dev/null 2>&1 && true ||
+                          (echo "Unable to clean ${xform.projectDir}/node_modules!"
+                           echo -e "Check its permissions and do \033[0;33msudo rm -rf ${xform.projectDir}/node_modules\033[0m if it's persitent"
+                           false) && \
+                         (mkdir node_modules; ln -s ${pkgs.${pkgName}.nodeModules}/lib/node_modules/* node_modules/;
                           ln -s ${pkgs.${pkgName}.pkgJsonFile} package.json;
-                          ${linkProject name xform.projectDir}
+                          ${linkProject name xform.projectDir} )
                           )
                         ''
                     )
