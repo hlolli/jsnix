@@ -212,7 +212,7 @@ export class NPMRegistrySource extends Source {
     // prevent infinite loop when a package depends on itself
     delete (this.config.dependencies || {})[this.config.name];
 
-    if (this.config.dist.integrity) {
+    if (this.config && this.config.dist && this.config.dist.integrity) {
       try {
         this.convertIntegrityStringToNixHash(this.config.dist.integrity);
       } catch (error) {

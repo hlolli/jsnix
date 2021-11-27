@@ -275,7 +275,7 @@
                       else builtins.throw "A linked project ${projectName}->${link} is not declared!" )
                       workspaces.${projectName}.links));
 
-              mkDevShellHook = pkgs: (
+              mkDevShellHook = workspaces_: pkgs: (
                 ''
                   ${bashFindUp}
                   export PATH=$PATH:${builtins.concatStringsSep ":"
@@ -296,7 +296,7 @@
                                 ''
                                   echo -e "     ${proj}-${s}"'')
                                 (builtins.attrNames workspaces.${proj}.scripts))))
-                        (builtins.attrNames workspaces))))}
+                        (builtins.attrNames workspaces_))))}
                   echo -e "\n"
                 '' + # pkgs.lib.foldr ({ name, path, drv }: acc:
                 (builtins.concatStringsSep "\n"
@@ -314,7 +314,7 @@
                           )
                         ''
                     )
-                      workspaces))));
+                      workspaces_))));
               # (getWorkspacePkgs__internal
               #   (builtins.map (p: p.projectDir)
               #     (builtins.attrValues workspaces)))));  { type = "app"; program = vv; }
@@ -325,7 +325,8 @@
               packages = flake-utils.lib.flattenTree workspaceImports;
               overlays = (getWorkspaceOverlays (builtins.attrValues workspaces));
               topLevelPackages = (getWorkspacePkgs pkgs);
-              devShellHook = (mkDevShellHook pkgs);
+              devShellHook = (mkDevShellHook workspaces pkgs);
+              devShellHookFor = projects: (mkDevShellHook (pkgs.lib.foldr (p: a: (a // { "${p}" = (builtins.getAttr p workspaces);})) {}  projects) pkgs);
             };
         };
       }
