@@ -555,9 +555,10 @@ export class NixExpression extends OutputExpression {
         allPackages[pkgName] = { resolved, applied: false };
       } else if (!rootVersion && groupKeys.length > 1) {
         let redundantRoot = R.last(Object.values(groups)[0].sort());
-
         try {
-          redundantRoot = R.last(semverSort(Object.values(groups)[0]));
+          const maxGroup = groups[R.last(groupKeys.sort())];
+          redundantRoot = maxGroup[0];
+          redundantRoot = R.last(semverSort(maxGroup));
         } catch {}
 
         allPackages[pkgName] = { redundantRoot, applied: false };
