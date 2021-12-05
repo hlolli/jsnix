@@ -41,7 +41,8 @@ export class Package extends nijs.NixASTNode {
     versionSpec,
     baseDir,
     sourcesCache,
-    isTransitive
+    isTransitive,
+    isolate
   ) {
     super();
     this.jsnixConfig = jsnixConfig;
@@ -54,8 +55,9 @@ export class Package extends nijs.NixASTNode {
     this.name = compat.name;
     this.versionSpec = compat.versionSpec;
     this.sourcesCache = sourcesCache;
-
     this.isTransitive = isTransitive;
+    this.isolate = isolate || false;
+
     const newSrc = new Source(baseDir, compat.name, compat.versionSpec);
     newSrc.jsnixConfig = jsnixConfig;
 

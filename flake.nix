@@ -129,7 +129,7 @@
                                   else builtins.throw "package ${name} was not found in ${path}, did you remember to run `jsnix install` beforehand?"))
                 (getWorkspacePkgNames workspaces);
 
-              linkScripts =
+              linkScripts = workspaces_:
                 (pkgs.lib.attrsets.mapAttrs
                   (k: v: (
                     if (builtins.hasAttr "links" v)
@@ -138,7 +138,7 @@
                         #!${pkgs.bash}/bin/bash
                         ${bashFindUp}
                         cd $ROOT_DIR
-                        ${linkProject k workspaces.${k}.projectDir}
+                        ${linkProject workspaces k workspaces.${k}.projectDir}
                       '';
                       in pkgs.runCommand "${k}-link" {}
                         ''
@@ -149,9 +149,9 @@
                           chmod +x "$out/bin/${k}-link"
                         ''
                     else null ))
-                  workspaces);
+                  workspaces_);
 
-              scriptWithAttrs_ =
+              scriptWithAttrs_ = workspaces_:
                 (pkgs.lib.attrsets.mapAttrs
                   (k: v: (
                     if (builtins.hasAttr "scripts" v)
@@ -190,9 +190,9 @@
                               '')
                           )) v.scripts))
                     else [] ))
-                  workspaces);
+                  workspaces_);
 
-              scriptWithAttrs = (pkgs.lib.foldr
+              scriptWithAttrs = workspaces_: (pkgs.lib.foldr
                 (v: a:
                   (a //
                    (pkgs.lib.foldr (m: a: (a // m)) {}
@@ -204,7 +204,7 @@
                      }) v)
                    )))
                 {}
-                (builtins.attrValues scriptWithAttrs_)) //
+                (builtins.attrValues (scriptWithAttrs_ workspaces_))) //
               (pkgs.lib.foldr (m: a: (a // m)) {}
                 (builtins.attrValues
                   (pkgs.lib.attrsets.mapAttrs
@@ -216,12 +216,13 @@
                     })
                     (pkgs.lib.attrsets.filterAttrs
                       (n: e: (builtins.typeOf e) != "null")
-                      linkScripts))));
+                      (linkScripts workspaces_)))));
 
-              scripts = (builtins.map (s: s.program)
-                (builtins.attrValues scriptWithAttrs));
+              scripts = workspaces_:
+                (builtins.map (s: s.program)
+                  (builtins.attrValues (scriptWithAttrs workspaces_)));
 
-              linkProject = projectName: projectDir:
+              linkProject = workspaces_: projectName: projectDir:
                 pkgs.lib.strings.optionalString (builtins.hasAttr "links" workspaces.${projectName})
                   (builtins.concatStringsSep "\n"
                     (builtins.map (link:
@@ -273,17 +274,17 @@
                             fi
                           ''
                       else builtins.throw "A linked project ${projectName}->${link} is not declared!" )
-                      workspaces.${projectName}.links));
+                      workspaces_.${projectName}.links));
 
               mkDevShellHook = workspaces_: pkgs: (
                 ''
                   ${bashFindUp}
                   export PATH=$PATH:${builtins.concatStringsSep ":"
-                    (builtins.map (bin: builtins.dirOf bin) scripts)}
+                    (builtins.map (bin: builtins.dirOf bin) (scripts workspaces_))}
                   echo -e "\n"
                   echo -e "     \\033[1;96mJSNIX workspace devShellHook\\033[0m"
                   echo -e "${
-                    if ((builtins.length (builtins.attrValues scriptWithAttrs)) > 0)
+                    if ((builtins.length (builtins.attrValues (scriptWithAttrs workspaces_))) > 0)
                     then "     \\033[1;30mthe following commands are available\\033[0m\n\""
                     else "     \\033[0;33mno devShellHook scripts were found\\033[0m\""
                   }
@@ -310,7 +311,7 @@
                            false) && \
                          (mkdir node_modules; ln -s ${pkgs.${pkgName}.nodeModules}/lib/node_modules/* node_modules/;
                           ln -s ${pkgs.${pkgName}.pkgJsonFile} package.json;
-                          ${linkProject name xform.projectDir} )
+                          ${linkProject workspaces_ name xform.projectDir} )
                           )
                         ''
                     )
@@ -320,8 +321,7 @@
               #     (builtins.attrValues workspaces)))));  { type = "app"; program = vv; }
 
             in {
-              inherit scripts;
-              apps = scriptWithAttrs;
+              apps = (scriptWithAttrs workspaces);
               packages = flake-utils.lib.flattenTree workspaceImports;
               overlays = (getWorkspaceOverlays (builtins.attrValues workspaces));
               topLevelPackages = (getWorkspacePkgs pkgs);

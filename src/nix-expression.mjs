@@ -173,6 +173,7 @@ const goFlatten = new nijs.NixValue(`pkgs.buildGoModule {
   pname = "flatten";
   version = "0.0.0";
   vendorSha256 = null;
+  buildInputs = [ pkgs.nodejs ];
   src = pkgs.fetchFromGitHub {
     owner = "hlolli";
     repo = "jsnix";
@@ -188,6 +189,7 @@ const goBinLink = new nijs.NixValue(`pkgs.buildGoModule {
   pname = "bin-link";
   version = "0.0.0";
   vendorSha256 = null;
+  buildInputs = [ pkgs.nodejs ];
   src = pkgs.fetchFromGitHub {
     owner = "hlolli";
     repo = "jsnix";
@@ -271,7 +273,8 @@ const toPackageJson = new nijs.NixValue(`{ jsnixDeps ? {}, extraDeps ? [] }:
     in lib.strings.escapeNixString
       (builtins.toJSON (safePkgNix // { dependencies = prodDeps; name = pkgName; }))`);
 
-const jsnixDrvOverrides = new nijs.NixValue(`{ drv_, jsnixDeps, dedupedDeps }:
+const jsnixDrvOverrides =
+  new nijs.NixValue(`{ drv_, jsnixDeps, dedupedDeps, isolateDeps }:
     let drv = drv_ (pkgs // { inherit nodejs copyNodeModules gitignoreSource jsnixDeps nodeModules getNodeDep; });
         skipUnpackFor = if (builtins.hasAttr "skipUnpackFor" drv)
                         then drv.skipUnpackFor else [];
@@ -281,23 +284,24 @@ const jsnixDrvOverrides = new nijs.NixValue(`{ drv_, jsnixDeps, dedupedDeps }:
           echo \${toPackageJson { inherit jsnixDeps; extraDeps = (if (builtins.hasAttr "extraDependencies" drv) then drv.extraDependencies else []); }} > $out
           cat <<< $(cat $out | jq) > $out
         '';
-         copyDeps = builtins.attrValues jsnixDeps;
-         copyDepsStr = builtins.concatStringsSep " " (builtins.map (dep: if (builtins.hasAttr "packageName" dep) then dep.packageName else dep.name) copyDeps);
-         extraDeps = (builtins.map (dep: if (builtins.hasAttr "packageName" dep) then dep.packageName else dep.name)
-                       (lib.optionals (builtins.hasAttr "extraDependencies" drv) drv.extraDependencies));
-         extraDepsStr = builtins.concatStringsSep " " extraDeps;
-         buildDepDep = lib.lists.unique (lib.lists.concatMap (d: d.buildInputs)
+        copyDeps = builtins.attrValues jsnixDeps;
+        copyDepsStr = builtins.concatStringsSep " " (builtins.map (dep: if (builtins.hasAttr "packageName" dep) then dep.packageName else dep.name) copyDeps);
+        extraDeps = (builtins.map (dep: if (builtins.hasAttr "packageName" dep) then dep.packageName else dep.name)
+                      (lib.optionals (builtins.hasAttr "extraDependencies" drv) drv.extraDependencies));
+        extraDepsStr = builtins.concatStringsSep " " extraDeps;
+        buildDepDep = lib.lists.unique (lib.lists.concatMap (d: d.buildInputs)
                         (copyDeps ++ (lib.optionals (builtins.hasAttr "extraDependencies" drv) drv.extraDependencies)));
-         nodeModules = runCommandCC "\${sanitizeName packageNix.name}_node_modules"
-           { buildInputs = buildDepDep;
-             fixupPhase = "true";
-             doCheck = false;
-             doInstallCheck = false;
-             version = builtins.hashString "sha512" (lib.strings.concatStrings copyDeps); }
+        nodeModules = runCommandCC "\${sanitizeName packageNix.name}_node_modules"
+          { buildInputs = [nodejs] ++ buildDepDep;
+            fixupPhase = "true";
+            doCheck = false;
+            doInstallCheck = false;
+            version = builtins.hashString "sha512" (lib.strings.concatStrings copyDeps); }
          ''
            echo 'unpack dependencies...'
            mkdir -p $out/lib/node_modules
            cd $out/lib
+           \${linkNodeModules { dependencies = builtins.attrValues isolateDeps; }}
            \${copyNodeModules {
                 dependencies = copyDeps;
            }}
@@ -386,7 +390,7 @@ class OutputExpression extends nijs.NixASTNode {
             new nijs.NixFile({ value: "./package.nix" })
           ),
           copyNodeModules: new nijs.NixValue(copyNodeModulesExpr),
-          // linkNodeModules: new nijs.NixValue(linkNodeModulesExpr),
+          linkNodeModules: new nijs.NixValue(linkNodeModulesExpr),
           gitignoreSource: new nijs.NixValue(gitignoreSource),
           transitiveDepInstallPhase: new nijs.NixValue(
             transitiveDepInstallPhase
@@ -442,16 +446,19 @@ export class NixExpression extends OutputExpression {
             versionSpec,
             baseDir,
             this.sourcesCache,
+            false,
             false
           );
         }
       }
     } else if (dependencies && dependencies instanceof Object) {
       for (const dependencyName in dependencies) {
-        const depData = dependencies[dependencyName];
-        const version =
-          (typeof depData === "string" ? depData : depData["version"]) ||
-          "latest";
+        const depData_ = dependencies[dependencyName];
+        const depData =
+          typeof depData_ === "string" ? { version: depData_ } : depData_;
+        const version = depData["version"];
+        const isolate = depData["isolate"] || false;
+
         this.packages[dependencyName] = new Package(
           jsnixConfig,
           undefined,
@@ -459,7 +466,8 @@ export class NixExpression extends OutputExpression {
           version,
           baseDir,
           this.sourcesCache,
-          false
+          false,
+          isolate
         );
       }
     } else {
@@ -491,6 +499,8 @@ export class NixExpression extends OutputExpression {
 
     const packagesExpr = {};
 
+    const isolatePkgs = {};
+
     const dedupedPackagesExpr = {};
 
     const resolvedDependencies = {};
@@ -500,12 +510,22 @@ export class NixExpression extends OutputExpression {
     // store AST tree for further analysis
     for (const identifier in this.packages) {
       const pkg = this.packages[identifier];
-      resolvedDependencies[pkg.name] = {
-        pkg,
-        pkgName: pkg.name,
-        identifier,
-        dependencies: pkg.generateDependencyAST(),
-      };
+
+      if (!pkg.isolate) {
+        resolvedDependencies[pkg.name] = {
+          pkg,
+          pkgName: pkg.name,
+          identifier,
+          dependencies: pkg.generateDependencyAST(),
+        };
+      } else {
+        isolatePkgs[pkg.name] = {
+          pkg,
+          pkgName: pkg.name,
+          identifier,
+          dependencies: pkg.generateDependencyAST(),
+        };
+      }
     }
 
     // organize all unique packages
@@ -554,11 +574,12 @@ export class NixExpression extends OutputExpression {
 
         allPackages[pkgName] = { resolved, applied: false };
       } else if (!rootVersion && groupKeys.length > 1) {
-        let redundantRoot = R.last(Object.values(groups)[0].sort());
+        // pick lowest version for best compatability
+        let redundantRoot = R.head(Object.values(groups)[0].sort());
         try {
-          const maxGroup = groups[R.last(groupKeys.sort())];
-          redundantRoot = maxGroup[0];
-          redundantRoot = R.last(semverSort(maxGroup));
+          const firstGroup = groups[R.head(groupKeys.sort())];
+          redundantRoot = firstGroup[0];
+          redundantRoot = R.last(semverSort(firstGroup));
         } catch {}
 
         allPackages[pkgName] = { redundantRoot, applied: false };
@@ -638,8 +659,31 @@ export class NixExpression extends OutputExpression {
       }
     }
 
+    const isolatePkgsExpr = {};
+
+    // same for isolatePkgs to group them seperately (can be done more DRY)
+    for (const pkgMeta of Object.values(isolatePkgs)) {
+      const { pkg, pkgName, identifier, dependencies } = pkgMeta;
+      if (pkgName && identifier) {
+        isolatePkgsExpr[identifier] = new nijs.NixLet({
+          value: {
+            dependencies,
+            extraDependencies: new nijs.NixValue(`[] ++
+            mkExtraDependencies
+             (pkgs // { inherit jsnixDeps dependencies; })
+             { pkgName = "${pkgName}"; }`),
+          },
+          body: new nijs.NixFunInvocation({
+            funExpr: new nijs.NixExpression("stdenv.mkDerivation"),
+            paramExpr: pkg,
+          }),
+        });
+      }
+    }
+
     ast.body.value.jsnixDeps = packagesExpr;
     ast.body.value.dedupedDeps = dedupedPackagesExpr;
+    ast.body.value.isolateDeps = isolatePkgsExpr;
 
     ast.body.body = new nijs.NixMergeAttrs({
       left: new nijs.NixExpression("jsnixDeps"),
@@ -655,6 +699,7 @@ export class NixExpression extends OutputExpression {
               drv_: new nijs.NixExpression("packageNix.packageDerivation"),
               dedupedDeps: new nijs.NixInherit(),
               jsnixDeps: new nijs.NixInherit(),
+              isolateDeps: new nijs.NixInherit(),
             },
           }),
         },

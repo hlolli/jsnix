@@ -43,10 +43,6 @@ const debug = new Command("debug");
 
 const pkgJsonCommand = new Command("package-json");
 
-const pkgNix = fs.readFileSync(path.resolve("./package.nix"), {
-  encoding: "utf-8",
-});
-
 program.addCommand(install);
 program.addCommand(debug);
 program.addCommand(pkgJsonCommand);
@@ -61,13 +57,16 @@ debug
 const options = program.opts();
 
 async function main() {
-  const pkgJson = await nix2json.fromString(pkgNix);
+  pkgJsonCommand.action(async (opts) => {
+    const pkgNix = fs.readFileSync(path.resolve("./package.nix"), {
+      encoding: "utf-8",
+    });
 
-  pkgJsonCommand.action((opts) =>
-    console.log(JSON.stringify(generatePackageJson(pkgJson), null, 2))
-  );
+    const pkgJson = await nix2json.fromString(pkgNix);
+    console.log(JSON.stringify(generatePackageJson(pkgJson), null, 2));
+  });
 
-  program.version(pkgJson.version);
+  // program.version(pkgJson.version);
 
   const result = await program.parseAsync(process.argv);
 }
