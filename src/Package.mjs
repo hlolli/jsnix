@@ -206,8 +206,9 @@ export class Package extends nijs.NixASTNode {
   }
 
   generateDependencyAST() {
-    // var self = this;
     const dependencies = [];
+    const trimPackages = this.jsnixConfig.trimPackages || [];
+
     for (const dependencyName of Object.keys(
       this.providedDependencies
     ).sort()) {
@@ -221,6 +222,8 @@ export class Package extends nijs.NixASTNode {
         }),
         paramExpr: { dependencies: [] },
       });
+      ref.dependencyName = dependencyName;
+      ref.version = dependency.source.versionSpec;
 
       const transitiveDependencies = dependency.generateDependencyAST();
       const dependencyExpr = ref;

@@ -1,3 +1,4 @@
+import micromatch from "micromatch";
 import nijs from "nijs";
 import semverMajor from "semver/functions/major.js";
 import semverSort from "semver/functions/sort.js";
@@ -507,23 +508,35 @@ export class NixExpression extends OutputExpression {
 
     const allPackages = {};
 
+    const trimPackages = this.jsnixConfig.trimPackages || [];
+
     // store AST tree for further analysis
     for (const identifier in this.packages) {
       const pkg = this.packages[identifier];
+
+      const dependencies = pkg.generateDependencyAST().filter((dep) => {
+        const depName = dep.dependencyName;
+        if (micromatch.isMatch(depName, trimPackages, { contains: true })) {
+          delete this.sourcesCache.sources[dep.funExpr.refExpr];
+          return false;
+        } else {
+          return true;
+        }
+      });
 
       if (!pkg.isolate) {
         resolvedDependencies[pkg.name] = {
           pkg,
           pkgName: pkg.name,
           identifier,
-          dependencies: pkg.generateDependencyAST(),
+          dependencies,
         };
       } else {
         isolatePkgs[pkg.name] = {
           pkg,
           pkgName: pkg.name,
           identifier,
-          dependencies: pkg.generateDependencyAST(),
+          dependencies,
         };
       }
     }
@@ -532,17 +545,22 @@ export class NixExpression extends OutputExpression {
     for (const pkgMeta of Object.entries(resolvedDependencies).sort(
       (x, y) => x[0].charCodeAt(0) - y[0].charCodeAt(0)
     )) {
-      const { dependencies, pkgName, pkg } = pkgMeta[1];
+      const { dependencies: depz, pkgName, pkg } = pkgMeta[1];
+
+      const dependencies = depz.filter((dep) => {
+        const depName = dep.dependencyName;
+        return !micromatch.isMatch(depName, trimPackages, { contains: true });
+      });
+      pkgMeta[1].dependencies = dependencies;
+
       if (!allPackages[pkgName]) {
         allPackages[pkgName] = { rootVersion: pkg.versionSpec, groups: {} };
       } else {
         allPackages[pkgName]["rootVersion"] = pkg.versionSpec;
       }
       for (const dep of dependencies) {
-        const refName = dep.funExpr.refExpr;
-        const split = refName.split("-");
-        const version = R.last(split);
-        const depName = R.dropLast(1, split).join("-");
+        const version = dep.version;
+        const depName = dep.dependencyName;
 
         let majorVer = version;
         try {
@@ -610,14 +628,16 @@ export class NixExpression extends OutputExpression {
     for (const pkgName of Object.keys(resolvedDependencies)) {
       resolvedDependencies[pkgName].dependencies = resolvedDependencies[
         pkgName
-      ].dependencies.reduce((acc, dep) => {
-        const refName = dep.funExpr.refExpr;
-        const split = refName.split("-");
-        const version = R.last(split);
-        const depName = R.dropLast(1, split).join("-");
+      ].dependencies.reduce((acc, dep, index) => {
+        const version = dep.version;
+        const depName = dep.dependencyName;
         const action = allPackages[depName];
 
-        if (action.skip || (action.redundantRoot && action.applied)) {
+        if (
+          !action ||
+          action.skip ||
+          (action.redundantRoot && action.applied)
+        ) {
           return acc;
         }
 
@@ -642,6 +662,7 @@ export class NixExpression extends OutputExpression {
     // Generate sub expression for all the packages in the collection
     for (const pkgMeta of Object.values(resolvedDependencies)) {
       const { pkg, pkgName, identifier, dependencies } = pkgMeta;
+
       if (pkgName && identifier) {
         packagesExpr[identifier] = new nijs.NixLet({
           value: {
@@ -664,6 +685,7 @@ export class NixExpression extends OutputExpression {
     // same for isolatePkgs to group them seperately (can be done more DRY)
     for (const pkgMeta of Object.values(isolatePkgs)) {
       const { pkg, pkgName, identifier, dependencies } = pkgMeta;
+
       if (pkgName && identifier) {
         isolatePkgsExpr[identifier] = new nijs.NixLet({
           value: {
