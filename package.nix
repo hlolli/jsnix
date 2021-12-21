@@ -20,32 +20,35 @@ rec {
     commander = "8.x";
     findit = "2.0.x";
     fs-extra = "10.x";
-    git-url-parse = "11.5.x";
+    git-url-parse = "11.6.x";
     micromatch = "^4.0.4";
     nijs = "0.0.25";
-    npm-registry-fetch = "11.0.x";
+    npm-registry-fetch = "12.0.x";
     npmconf = "2.1.x";
-    npmlog = "4.1.x";
+    npmlog = "6.0.x";
     optparse = "1.0.x";
-    rambda = "^6.7.0";
+    rambda = "^6.9.0";
     semver = "7.3.x";
     spdx-license-ids = "3.0.x";
     tar = "6.1.x";
     web-tree-sitter = "0.19.4";
   };
-  packageDerivation = { lib, jsnixDeps, ... }@pkgs: {
+  packageDerivation = { lib, nodeModules, ... }@pkgs: {
     name = "jsnix";
     nativeBuildInputs = with pkgs; [
       makeWrapper
     ];
     dontStrip = true;
 
+    nodeModulesUnpack = ''
+      sed -i -e 's|return mkdirp(p)|const pr = mkdirp(p); if(!pr) return; pr|g' \
+        $out/lib/node_modules/cacache/lib/util/fix-owner.js
+    '';
+
     postInstall = ''
-      mkdir -p $out/lib/node_modules/jsnix
-      cp -rfT "$(pwd)" $out/lib/node_modules/jsnix
       mkdir -p $out/bin
       makeWrapper '${pkgs.nodejs}/bin/node' "$out/bin/jsnix" \
-        --prefix NODE_PATH : "$out/lib/node_modules/jsnix/node_modules" \
+        --prefix NODE_PATH : "${nodeModules}/lib/node_modules" \
         --add-flags "$out/lib/node_modules/jsnix/bin/jsnix.mjs"
     '';
   };

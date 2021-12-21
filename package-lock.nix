@@ -527,12 +527,12 @@ let
         sha512 = "4I7Td01quW/RpocfNayFdFVk1qSuoh0E7JrbRJ16nH01HhKFQ88INq9Sd+nd72zqRySlr9BmDA8xlEJ6vJMrYA==";
       };
     };
-    "ansi-regex-2.1.1" = {dependencies ? []}:
+    "ansi-regex-5.0.1" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "ansi-regex";
       packageName = "ansi-regex";
-      version = "2.1.1";
+      version = "5.0.1";
       extraDependencies = [];
       buildInputs = [
         jq
@@ -553,16 +553,16 @@ let
       doCheck = false;
       doInstallCheck = false;
       src = fetchurl {
-        url = "https://registry.npmjs.org/ansi-regex/-/ansi-regex-2.1.1.tgz";
-        sha1 = "c3b33ab5ee360d86e0e628f0468ae7ef27d654df";
+        url = "https://registry.npmjs.org/ansi-regex/-/ansi-regex-5.0.1.tgz";
+        sha512 = "quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==";
       };
     };
-    "aproba-1.2.0" = {dependencies ? []}:
+    "aproba-2.0.0" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "aproba";
       packageName = "aproba";
-      version = "1.2.0";
+      version = "2.0.0";
       extraDependencies = [];
       buildInputs = [
         jq
@@ -583,16 +583,16 @@ let
       doCheck = false;
       doInstallCheck = false;
       src = fetchurl {
-        url = "https://registry.npmjs.org/aproba/-/aproba-1.2.0.tgz";
-        sha512 = "Y9J6ZjXtoYh8RnXVCMOU/ttDmk1aBjunq9vO0ta5x85WDQiQfUF9sIPBITdbiiIVcBo03Hi3jMxigBtsddlXRw==";
+        url = "https://registry.npmjs.org/aproba/-/aproba-2.0.0.tgz";
+        sha512 = "lYe4Gx7QT+MKGbDsA+Z+he/Wtef0BiwDOlK/XkBrdfsh9J/jPPXbX0tE9x9cl27Tmu5gg3QUbUrQYa/y+KOHPQ==";
       };
     };
-    "are-we-there-yet-1.1.7" = {dependencies ? []}:
+    "are-we-there-yet-2.0.0" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "are-we-there-yet";
       packageName = "are-we-there-yet";
-      version = "1.1.7";
+      version = "2.0.0";
       extraDependencies = [];
       buildInputs = [
         jq
@@ -613,8 +613,8 @@ let
       doCheck = false;
       doInstallCheck = false;
       src = fetchurl {
-        url = "https://registry.npmjs.org/are-we-there-yet/-/are-we-there-yet-1.1.7.tgz";
-        sha512 = "nxwy40TuMiUGqMyRHgCSWZ9FM4VAoRP4xUYSTv5ImRog+h9yISPbVH7H8fASCIzYn9wlEv4zvFL7uKDMCFQm3g==";
+        url = "https://registry.npmjs.org/are-we-there-yet/-/are-we-there-yet-2.0.0.tgz";
+        sha512 = "Ci/qENmwHnsYo9xKIcUJN5LeDKdJ6R1Z1j9V/J5wyq8nh/mYPEpIKJbBZXtZjG04HiK7zV/p6Vs9952MrMeUIw==";
       };
     };
     "balanced-match-1.0.2" = {dependencies ? []}:
@@ -857,19 +857,19 @@ let
         sha512 = "4diC9HaTE+KRAMWhDhrGOECgWZxoevMc5TlkObMqNSsVU62PYzXZ/SMTjzyGAFF1YusgxGcSWTEXBhp0CPwQ1A==";
       };
     };
-    "code-point-at-1.1.0" = {dependencies ? []}:
+    "color-support-1.1.3" = {dependencies ? []}:
 
     stdenv.mkDerivation {
-      name = "code-point-at";
-      packageName = "code-point-at";
-      version = "1.1.0";
+      name = "color-support";
+      packageName = "color-support";
+      version = "1.1.3";
       extraDependencies = [];
       buildInputs = [
         jq
         nodejs
       ];
       NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "code-point-at"; } + '''';
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "color-support"; } + '''';
       patchPhase = ''
                 if [ -f "package.json" ]; then
                   cat <<< $(jq 'del(.scripts)' package.json) > package.json
@@ -879,12 +879,12 @@ let
       configurePhase = "true";
       buildPhase = "true";
       fixupPhase = "true";
-      installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "code-point-at"; };
+      installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "color-support"; };
       doCheck = false;
       doInstallCheck = false;
       src = fetchurl {
-        url = "https://registry.npmjs.org/code-point-at/-/code-point-at-1.1.0.tgz";
-        sha1 = "0d070b4d043a5bea33a2f1a40e2edb3d9a4ccf77";
+        url = "https://registry.npmjs.org/color-support/-/color-support-1.1.3.tgz";
+        sha512 = "qiBjkpbMLO/HL68y+lh4q0/O1MZFj2RX6X/KmMa3+gJD3z+WwI1ZzDHysvqHGS3mP6mznPckpXmw1nI9cJjyRg==";
       };
     };
     "concat-map-0.0.1" = {dependencies ? []}:
@@ -975,36 +975,6 @@ let
       src = fetchurl {
         url = "https://registry.npmjs.org/console-control-strings/-/console-control-strings-1.1.0.tgz";
         sha1 = "3d7cf4464db6446ea644bf4b39507f9851008e8e";
-      };
-    };
-    "core-util-is-1.0.3" = {dependencies ? []}:
-
-    stdenv.mkDerivation {
-      name = "core-util-is";
-      packageName = "core-util-is";
-      version = "1.0.3";
-      extraDependencies = [];
-      buildInputs = [
-        jq
-        nodejs
-      ];
-      NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "core-util-is"; } + '''';
-      patchPhase = ''
-                if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
-                fi
-                
-              '';
-      configurePhase = "true";
-      buildPhase = "true";
-      fixupPhase = "true";
-      installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "core-util-is"; };
-      doCheck = false;
-      doInstallCheck = false;
-      src = fetchurl {
-        url = "https://registry.npmjs.org/core-util-is/-/core-util-is-1.0.3.tgz";
-        sha512 = "ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==";
       };
     };
     "debug-4.3.3" = {dependencies ? []}:
@@ -1125,6 +1095,36 @@ let
       src = fetchurl {
         url = "https://registry.npmjs.org/depd/-/depd-1.1.2.tgz";
         sha1 = "9bcd52e14c097763e749b274c4346ed2e560b5a9";
+      };
+    };
+    "emoji-regex-8.0.0" = {dependencies ? []}:
+
+    stdenv.mkDerivation {
+      name = "emoji-regex";
+      packageName = "emoji-regex";
+      version = "8.0.0";
+      extraDependencies = [];
+      buildInputs = [
+        jq
+        nodejs
+      ];
+      NODE_OPTIONS = "--preserve-symlinks";
+      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "emoji-regex"; } + '''';
+      patchPhase = ''
+                if [ -f "package.json" ]; then
+                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
+                fi
+                
+              '';
+      configurePhase = "true";
+      buildPhase = "true";
+      fixupPhase = "true";
+      installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "emoji-regex"; };
+      doCheck = false;
+      doInstallCheck = false;
+      src = fetchurl {
+        url = "https://registry.npmjs.org/emoji-regex/-/emoji-regex-8.0.0.tgz";
+        sha512 = "MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==";
       };
     };
     "err-code-2.0.3" = {dependencies ? []}:
@@ -1307,12 +1307,12 @@ let
         sha512 = "yIovAzMX49sF8Yl58fSCWJ5svSLuaibPxXQJFLmBObTuCr0Mf1KiPopGM9NiFjiYBCbfaa2Fh6breQ6ANVTI0A==";
       };
     };
-    "gauge-2.7.4" = {dependencies ? []}:
+    "gauge-4.0.0" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "gauge";
       packageName = "gauge";
-      version = "2.7.4";
+      version = "4.0.0";
       extraDependencies = [];
       buildInputs = [
         jq
@@ -1333,8 +1333,8 @@ let
       doCheck = false;
       doInstallCheck = false;
       src = fetchurl {
-        url = "https://registry.npmjs.org/gauge/-/gauge-2.7.4.tgz";
-        sha1 = "2c03405c7538c39d7eb37b317022e325fb018bf7";
+        url = "https://registry.npmjs.org/gauge/-/gauge-4.0.0.tgz";
+        sha512 = "F8sU45yQpjQjxKkm1UOAhf0U/O0aFt//Fl7hsrNVto+patMHjs7dPI9mFOGUKbhrgKm0S3EjW3scMFuQmWSROw==";
       };
     };
     "get-intrinsic-1.1.1" = {dependencies ? []}:
@@ -1907,12 +1907,12 @@ let
         sha1 = "bdded70114290828c0a039e72ef25f5aaec4354a";
       };
     };
-    "is-fullwidth-code-point-1.0.0" = {dependencies ? []}:
+    "is-fullwidth-code-point-3.0.0" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "is-fullwidth-code-point";
       packageName = "is-fullwidth-code-point";
-      version = "1.0.0";
+      version = "3.0.0";
       extraDependencies = [];
       buildInputs = [
         jq
@@ -1933,8 +1933,8 @@ let
       doCheck = false;
       doInstallCheck = false;
       src = fetchurl {
-        url = "https://registry.npmjs.org/is-fullwidth-code-point/-/is-fullwidth-code-point-1.0.0.tgz";
-        sha1 = "ef9e31386f031a7f0d643af82fde50c457ef00cb";
+        url = "https://registry.npmjs.org/is-fullwidth-code-point/-/is-fullwidth-code-point-3.0.0.tgz";
+        sha512 = "zymm5+u+sCsSWyD9qNaejV3DFvhCKclKdizYaJUuHA83RLjb7nSuGnddCHGv0hk+KY7BMAlsWeK4Ueg6EV6XQg==";
       };
     };
     "is-lambda-1.0.1" = {dependencies ? []}:
@@ -2025,36 +2025,6 @@ let
       src = fetchurl {
         url = "https://registry.npmjs.org/is-ssh/-/is-ssh-1.3.3.tgz";
         sha512 = "NKzJmQzJfEEma3w5cJNcUMxoXfDjz0Zj0eyCalHn2E6VOwlzjZo0yuO2fcBSf8zhFuVCL/82/r5gRcoi6aEPVQ==";
-      };
-    };
-    "isarray-1.0.0" = {dependencies ? []}:
-
-    stdenv.mkDerivation {
-      name = "isarray";
-      packageName = "isarray";
-      version = "1.0.0";
-      extraDependencies = [];
-      buildInputs = [
-        jq
-        nodejs
-      ];
-      NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "isarray"; } + '''';
-      patchPhase = ''
-                if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
-                fi
-                
-              '';
-      configurePhase = "true";
-      buildPhase = "true";
-      fixupPhase = "true";
-      installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "isarray"; };
-      doCheck = false;
-      doInstallCheck = false;
-      src = fetchurl {
-        url = "https://registry.npmjs.org/isarray/-/isarray-1.0.0.tgz";
-        sha1 = "bb935d48582cba168c06834957a54a3e07124f11";
       };
     };
     "jsonfile-6.1.0" = {dependencies ? []}:
@@ -2687,66 +2657,6 @@ let
         sha512 = "LhgZrg0n0VgvzVdSm1oiZworPbTxYHUJCgtsJW8mGvlDpxTM1vSJc3m5QZeUkhAHIzbz3VCHd/R4osi1L1Tg/Q==";
       };
     };
-    "number-is-nan-1.0.1" = {dependencies ? []}:
-
-    stdenv.mkDerivation {
-      name = "number-is-nan";
-      packageName = "number-is-nan";
-      version = "1.0.1";
-      extraDependencies = [];
-      buildInputs = [
-        jq
-        nodejs
-      ];
-      NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "number-is-nan"; } + '''';
-      patchPhase = ''
-                if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
-                fi
-                
-              '';
-      configurePhase = "true";
-      buildPhase = "true";
-      fixupPhase = "true";
-      installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "number-is-nan"; };
-      doCheck = false;
-      doInstallCheck = false;
-      src = fetchurl {
-        url = "https://registry.npmjs.org/number-is-nan/-/number-is-nan-1.0.1.tgz";
-        sha1 = "097b602b53422a522c1afb8790318336941a011d";
-      };
-    };
-    "object-assign-4.1.1" = {dependencies ? []}:
-
-    stdenv.mkDerivation {
-      name = "object-assign";
-      packageName = "object-assign";
-      version = "4.1.1";
-      extraDependencies = [];
-      buildInputs = [
-        jq
-        nodejs
-      ];
-      NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "object-assign"; } + '''';
-      patchPhase = ''
-                if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
-                fi
-                
-              '';
-      configurePhase = "true";
-      buildPhase = "true";
-      fixupPhase = "true";
-      installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "object-assign"; };
-      doCheck = false;
-      doInstallCheck = false;
-      src = fetchurl {
-        url = "https://registry.npmjs.org/object-assign/-/object-assign-4.1.1.tgz";
-        sha1 = "2109adc7965887cfc05cbbd442cac8bfbb360863";
-      };
-    };
     "object-inspect-1.11.1" = {dependencies ? []}:
 
     stdenv.mkDerivation {
@@ -3107,36 +3017,6 @@ let
         sha512 = "lY1Q/PiJGC2zOv/z391WOTD+Z02bCgsFfvxoXXf6h7kv9o+WmsmzYqrAwY63sNgOxE4xEdq0WyUnXfKeBrSvYw==";
       };
     };
-    "process-nextick-args-2.0.1" = {dependencies ? []}:
-
-    stdenv.mkDerivation {
-      name = "process-nextick-args";
-      packageName = "process-nextick-args";
-      version = "2.0.1";
-      extraDependencies = [];
-      buildInputs = [
-        jq
-        nodejs
-      ];
-      NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "process-nextick-args"; } + '''';
-      patchPhase = ''
-                if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
-                fi
-                
-              '';
-      configurePhase = "true";
-      buildPhase = "true";
-      fixupPhase = "true";
-      installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "process-nextick-args"; };
-      doCheck = false;
-      doInstallCheck = false;
-      src = fetchurl {
-        url = "https://registry.npmjs.org/process-nextick-args/-/process-nextick-args-2.0.1.tgz";
-        sha512 = "3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==";
-      };
-    };
     "promise-inflight-1.0.1" = {dependencies ? []}:
 
     stdenv.mkDerivation {
@@ -3317,12 +3197,12 @@ let
         sha512 = "XDxAeVmpfu1/6IjyT/gXHOl+S0vQ9owggJ30hhWKdHAsNPOcasn5o9BW0eejZqL2e4vMjhAxoW3jVHcD6mbcYw==";
       };
     };
-    "readable-stream-2.3.7" = {dependencies ? []}:
+    "readable-stream-3.6.0" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "readable-stream";
       packageName = "readable-stream";
-      version = "2.3.7";
+      version = "3.6.0";
       extraDependencies = [];
       buildInputs = [
         jq
@@ -3343,8 +3223,8 @@ let
       doCheck = false;
       doInstallCheck = false;
       src = fetchurl {
-        url = "https://registry.npmjs.org/readable-stream/-/readable-stream-2.3.7.tgz";
-        sha512 = "Ebho8K4jIbHAxnuxi7o42OrZgF/ZTNcsZj6nRKyUmkhLFq8CHItp/fy6hQZuZmP/n3yZ9VBUbp4zz/mX8hmYPw==";
+        url = "https://registry.npmjs.org/readable-stream/-/readable-stream-3.6.0.tgz";
+        sha512 = "BViHy7LKeTz4oNnkcLJ+lVSL6vpiFeX6/d3oSH8zCW7UxP2onchk+vTGB143xuFjHS3deTgkKoXXymXqymiIdA==";
       };
     };
     "retry-0.12.0" = {dependencies ? []}:
@@ -3405,36 +3285,6 @@ let
       src = fetchurl {
         url = "https://registry.npmjs.org/rimraf/-/rimraf-3.0.2.tgz";
         sha512 = "JZkJMZkAGFFPP2YqXZXPbMlMBgsxzE8ILs4lMIX/2o0L9UBw9O/Y3o6wFw/i9YLapcUJWwqbi3kdxIPdC62TIA==";
-      };
-    };
-    "safe-buffer-5.1.2" = {dependencies ? []}:
-
-    stdenv.mkDerivation {
-      name = "safe-buffer";
-      packageName = "safe-buffer";
-      version = "5.1.2";
-      extraDependencies = [];
-      buildInputs = [
-        jq
-        nodejs
-      ];
-      NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "safe-buffer"; } + '''';
-      patchPhase = ''
-                if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
-                fi
-                
-              '';
-      configurePhase = "true";
-      buildPhase = "true";
-      fixupPhase = "true";
-      installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "safe-buffer"; };
-      doCheck = false;
-      doInstallCheck = false;
-      src = fetchurl {
-        url = "https://registry.npmjs.org/safe-buffer/-/safe-buffer-5.1.2.tgz";
-        sha512 = "Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g==";
       };
     };
     "safe-buffer-5.2.1" = {dependencies ? []}:
@@ -3827,12 +3677,12 @@ let
         sha1 = "b9c7330c7042862f6b142dc274bbcc5866ce3546";
       };
     };
-    "string-width-1.0.2" = {dependencies ? []}:
+    "string-width-4.2.3" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "string-width";
       packageName = "string-width";
-      version = "1.0.2";
+      version = "4.2.3";
       extraDependencies = [];
       buildInputs = [
         jq
@@ -3853,16 +3703,16 @@ let
       doCheck = false;
       doInstallCheck = false;
       src = fetchurl {
-        url = "https://registry.npmjs.org/string-width/-/string-width-1.0.2.tgz";
-        sha1 = "118bdf5b8cdc51a2a7e70d211e07e2b0b9b107d3";
+        url = "https://registry.npmjs.org/string-width/-/string-width-4.2.3.tgz";
+        sha512 = "wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==";
       };
     };
-    "string_decoder-1.1.1" = {dependencies ? []}:
+    "string_decoder-1.3.0" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "string_decoder";
       packageName = "string_decoder";
-      version = "1.1.1";
+      version = "1.3.0";
       extraDependencies = [];
       buildInputs = [
         jq
@@ -3883,16 +3733,16 @@ let
       doCheck = false;
       doInstallCheck = false;
       src = fetchurl {
-        url = "https://registry.npmjs.org/string_decoder/-/string_decoder-1.1.1.tgz";
-        sha512 = "n/ShnvDi6FHbbVfviro+WojiFzv+s8MPMHBczVePfUpDJLwoLT0ht1l4YwBCbi8pJAveEEdnkHyPyTP/mzRfwg==";
+        url = "https://registry.npmjs.org/string_decoder/-/string_decoder-1.3.0.tgz";
+        sha512 = "hkRX8U1WjJFd8LsDJ2yQ/wWWxaopEsABU1XfkM8A+j0+85JAGppt16cr1Whg6KIbb4okU6Mql6BOj+uup/wKeA==";
       };
     };
-    "strip-ansi-3.0.1" = {dependencies ? []}:
+    "strip-ansi-6.0.1" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "strip-ansi";
       packageName = "strip-ansi";
-      version = "3.0.1";
+      version = "6.0.1";
       extraDependencies = [];
       buildInputs = [
         jq
@@ -3913,8 +3763,8 @@ let
       doCheck = false;
       doInstallCheck = false;
       src = fetchurl {
-        url = "https://registry.npmjs.org/strip-ansi/-/strip-ansi-3.0.1.tgz";
-        sha1 = "6a385fb8853d952d5ff05d0e8aaf94278dc63dcf";
+        url = "https://registry.npmjs.org/strip-ansi/-/strip-ansi-6.0.1.tgz";
+        sha512 = "Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==";
       };
     };
     "tar-6.1.11" = {dependencies ? []}:
@@ -4600,10 +4450,10 @@ let
       inherit dependencies extraDependencies;
       name = "git-url-parse";
       packageName = "git-url-parse";
-      version = "11.5.0";
+      version = "11.6.0";
       src = fetchurl {
-        url = "https://registry.npmjs.org/git-url-parse/-/git-url-parse-11.5.0.tgz";
-        sha512 = "TZYSMDeM37r71Lqg1mbnMlOqlHd7BSij9qN7XwTkRqSAYFMihGLGhfHwgqQob3GUhEneKnV4nskN9rbQw2KGxA==";
+        url = "https://registry.npmjs.org/git-url-parse/-/git-url-parse-11.6.0.tgz";
+        sha512 = "WWUxvJs5HsyHL6L08wOusa/IXYtMuCAhrMmnTjQPpBU0TTHyDhnOATNH3xNQz7YOQUsqIIPTGr4xiVti1Hsk5g==";
       };
       buildInputs = [ nodejs python3 makeWrapper jq  ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
@@ -4804,10 +4654,10 @@ let
       inherit dependencies extraDependencies;
       name = "npm-registry-fetch";
       packageName = "npm-registry-fetch";
-      version = "11.0.0";
+      version = "12.0.0";
       src = fetchurl {
-        url = "https://registry.npmjs.org/npm-registry-fetch/-/npm-registry-fetch-11.0.0.tgz";
-        sha512 = "jmlgSxoDNuhAtxUIG6pVwwtz840i994dL14FoNVZisrmZW5kWd63IUTNv1m/hyRSGSqWjCUp/YZlS1BJyNp9XA==";
+        url = "https://registry.npmjs.org/npm-registry-fetch/-/npm-registry-fetch-12.0.0.tgz";
+        sha512 = "nd1I90UHoETjgWpo3GbcoM1l2S4JCUpzDcahU4x/GVCiDQ6yRiw2KyDoPVD8+MqODbPtWwHHGiyc4O5sgdEqPQ==";
       };
       buildInputs = [ nodejs python3 makeWrapper jq  ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
@@ -4940,10 +4790,10 @@ let
       inherit dependencies extraDependencies;
       name = "npmlog";
       packageName = "npmlog";
-      version = "4.1.2";
+      version = "6.0.0";
       src = fetchurl {
-        url = "https://registry.npmjs.org/npmlog/-/npmlog-4.1.2.tgz";
-        sha512 = "2uUqazuKlTaSI/dC8AzicUck7+IrEaOnN/e0jd3Xtt1KcGpwx30v50mL7oPyr/h9bL3E4aZccVwpwP+5W9Vjkg==";
+        url = "https://registry.npmjs.org/npmlog/-/npmlog-6.0.0.tgz";
+        sha512 = "03ppFRGlsyUaQFbGC2C8QWJN/C/K7PsfyD9aQdhVKAQIH4sQBc8WASqFBP7O+Ut4d2oo5LoeoboB3cGdBZSp6Q==";
       };
       buildInputs = [ nodejs python3 makeWrapper jq  ] ++
          (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.xcodebuild ]) ++
@@ -5712,49 +5562,37 @@ let
     uid-number = sources."uid-number-0.0.5" {
       dependencies = [];
     };
-    ansi-regex = sources."ansi-regex-2.1.1" {
+    ansi-regex = sources."ansi-regex-5.0.1" {
       dependencies = [];
     };
-    aproba = sources."aproba-1.2.0" {
+    aproba = sources."aproba-2.0.0" {
       dependencies = [];
     };
-    are-we-there-yet = sources."are-we-there-yet-1.1.7" {
+    are-we-there-yet = sources."are-we-there-yet-2.0.0" {
       dependencies = [];
     };
-    code-point-at = sources."code-point-at-1.1.0" {
+    color-support = sources."color-support-1.1.3" {
       dependencies = [];
     };
     console-control-strings = sources."console-control-strings-1.1.0" {
       dependencies = [];
     };
-    core-util-is = sources."core-util-is-1.0.3" {
-      dependencies = [];
-    };
     delegates = sources."delegates-1.0.0" {
       dependencies = [];
     };
-    gauge = sources."gauge-2.7.4" {
+    emoji-regex = sources."emoji-regex-8.0.0" {
+      dependencies = [];
+    };
+    gauge = sources."gauge-4.0.0" {
       dependencies = [];
     };
     has-unicode = sources."has-unicode-2.0.1" {
       dependencies = [];
     };
-    is-fullwidth-code-point = sources."is-fullwidth-code-point-1.0.0" {
+    is-fullwidth-code-point = sources."is-fullwidth-code-point-3.0.0" {
       dependencies = [];
     };
-    isarray = sources."isarray-1.0.0" {
-      dependencies = [];
-    };
-    number-is-nan = sources."number-is-nan-1.0.1" {
-      dependencies = [];
-    };
-    object-assign = sources."object-assign-4.1.1" {
-      dependencies = [];
-    };
-    process-nextick-args = sources."process-nextick-args-2.0.1" {
-      dependencies = [];
-    };
-    readable-stream = sources."readable-stream-2.3.7" {
+    readable-stream = sources."readable-stream-3.6.0" {
       dependencies = [];
     };
     set-blocking = sources."set-blocking-2.0.0" {
@@ -5763,13 +5601,13 @@ let
     signal-exit = sources."signal-exit-3.0.6" {
       dependencies = [];
     };
-    string-width = sources."string-width-1.0.2" {
+    string-width = sources."string-width-4.2.3" {
       dependencies = [];
     };
-    string_decoder = sources."string_decoder-1.1.1" {
+    string_decoder = sources."string_decoder-1.3.0" {
       dependencies = [];
     };
-    strip-ansi = sources."strip-ansi-3.0.1" {
+    strip-ansi = sources."strip-ansi-6.0.1" {
       dependencies = [];
     };
     util-deprecate = sources."util-deprecate-1.0.2" {
