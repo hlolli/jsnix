@@ -21,6 +21,7 @@ rec {
     findit = "2.0.x";
     fs-extra = "10.x";
     git-url-parse = "11.5.x";
+    micromatch = "^4.0.4";
     nijs = "0.0.25";
     npm-registry-fetch = "11.0.x";
     npmconf = "2.1.x";

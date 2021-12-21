@@ -95,7 +95,7 @@ const mkPhase = new nijs.NixValue(`pkgs_: {phase, pkgName}:
        then
          packageNix.dependencies."\${pkgName}"."\${phase}"
        else
-         (packageNix.dependencies."\${pkgName}"."\${phase}" (pkgs_ // { inherit getNodeDep copyNodeModules; })))`);
+         (packageNix.dependencies."\${pkgName}"."\${phase}" (pkgs_ // { inherit getNodeDep; })))`);
 
 const mkExtraBuildInputs = new nijs.NixValue(`pkgs_: {pkgName}:
      lib.optionals ((builtins.hasAttr "\${pkgName}" packageNix.dependencies) &&
@@ -105,7 +105,7 @@ const mkExtraBuildInputs = new nijs.NixValue(`pkgs_: {pkgName}:
        then
          packageNix.dependencies."\${pkgName}"."extraBuildInputs"
        else
-         (packageNix.dependencies."\${pkgName}"."extraBuildInputs" (pkgs_ // { inherit getNodeDep copyNodeModules; })))`);
+         (packageNix.dependencies."\${pkgName}"."extraBuildInputs" (pkgs_ // { inherit getNodeDep; })))`);
 
 const mkExtraDependencies = new nijs.NixValue(`pkgs_: {pkgName}:
      lib.optionals ((builtins.hasAttr "\${pkgName}" packageNix.dependencies) &&
@@ -115,7 +115,7 @@ const mkExtraDependencies = new nijs.NixValue(`pkgs_: {pkgName}:
        then
          packageNix.dependencies."\${pkgName}"."extraDependencies"
        else
-         (packageNix.dependencies."\${pkgName}"."extraDependencies" (pkgs_ // { inherit getNodeDep copyNodeModules; })))`);
+         (packageNix.dependencies."\${pkgName}"."extraDependencies" (pkgs_ // { inherit getNodeDep; })))`);
 
 const mkUnpackScript =
   new nijs.NixValue(`{ dependencies ? [], extraDependencies ? [], pkgName }:
