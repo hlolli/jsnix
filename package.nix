@@ -40,7 +40,7 @@ rec {
     ];
     dontStrip = true;
 
-    installPhase = ''
+    postInstall = ''
       mkdir -p $out/lib/node_modules/jsnix
       cp -rfT "$(pwd)" $out/lib/node_modules/jsnix
       mkdir -p $out/bin
