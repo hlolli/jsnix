@@ -33,17 +33,17 @@ rec {
     tar = "6.1.x";
     web-tree-sitter = "0.19.4";
   };
+
+  resolutions = {
+    "mkdirp@*" = "mkdirp@1.0.4";
+  };
+
   packageDerivation = { lib, nodeModules, ... }@pkgs: {
     name = "jsnix";
     nativeBuildInputs = with pkgs; [
       makeWrapper
     ];
     dontStrip = true;
-
-    nodeModulesUnpack = ''
-      sed -i -e 's|return mkdirp(p)|const pr = mkdirp(p); if(!pr) return; pr|g' \
-        $out/lib/node_modules/cacache/lib/util/fix-owner.js
-    '';
 
     postInstall = ''
       mkdir -p $out/bin

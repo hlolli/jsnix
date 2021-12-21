@@ -2177,36 +2177,6 @@ let
         sha512 = "yJHVQEhyqPLUTgt9B83PXu6W3rx4MvvHvSUvToogpwoGDOUQ+yDrR0HRot+yOCdCO7u4hX3pWft6kWBBcqh0UA==";
       };
     };
-    "minimist-1.2.5" = {dependencies ? []}:
-
-    stdenv.mkDerivation {
-      name = "minimist";
-      packageName = "minimist";
-      version = "1.2.5";
-      extraDependencies = [];
-      buildInputs = [
-        jq
-        nodejs
-      ];
-      NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "minimist"; } + '''';
-      patchPhase = ''
-                if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
-                fi
-                
-              '';
-      configurePhase = "true";
-      buildPhase = "true";
-      fixupPhase = "true";
-      installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "minimist"; };
-      doCheck = false;
-      doInstallCheck = false;
-      src = fetchurl {
-        url = "https://registry.npmjs.org/minimist/-/minimist-1.2.5.tgz";
-        sha512 = "FM9nNUYrRBAELZQT3xeZQ7fmMOBg6nWNmJKTcgsJeaLstP/UODVpGsr5OhXhhXg6f+qtJ8uiZ+PUxkDWcgIXLw==";
-      };
-    };
     "minipass-3.1.6" = {dependencies ? []}:
 
     stdenv.mkDerivation {
@@ -2447,36 +2417,6 @@ let
         sha512 = "bAxsR8BVfj60DWXHE3u30oHzfl4G7khkSuPW+qvpd7jFRHm7dLxOjUk1EHACJ/hxLY8phGJ0YhYHZo7jil7Qdg==";
       };
     };
-    "mkdirp-0.5.5" = {dependencies ? []}:
-
-    stdenv.mkDerivation {
-      name = "mkdirp";
-      packageName = "mkdirp";
-      version = "0.5.5";
-      extraDependencies = [];
-      buildInputs = [
-        jq
-        nodejs
-      ];
-      NODE_OPTIONS = "--preserve-symlinks";
-      unpackPhase = transitiveDepUnpackPhase { inherit dependencies; pkgName = "mkdirp"; } + '''';
-      patchPhase = ''
-                if [ -f "package.json" ]; then
-                  cat <<< $(jq 'del(.scripts)' package.json) > package.json
-                fi
-                
-              '';
-      configurePhase = "true";
-      buildPhase = "true";
-      fixupPhase = "true";
-      installPhase = transitiveDepInstallPhase { inherit dependencies; pkgName = "mkdirp"; };
-      doCheck = false;
-      doInstallCheck = false;
-      src = fetchurl {
-        url = "https://registry.npmjs.org/mkdirp/-/mkdirp-0.5.5.tgz";
-        sha512 = "NKmAlESf6jMGym1++R0Ra7wvhV+wFW63FaSOFPwRahvea0gMUcGUhVeAg/0BC0wiv9ih5NYPB1Wn1UEI1/L+xQ==";
-      };
-    };
     "mkdirp-1.0.4" = {dependencies ? []}:
 
     stdenv.mkDerivation {
@@ -2657,12 +2597,12 @@ let
         sha512 = "LhgZrg0n0VgvzVdSm1oiZworPbTxYHUJCgtsJW8mGvlDpxTM1vSJc3m5QZeUkhAHIzbz3VCHd/R4osi1L1Tg/Q==";
       };
     };
-    "object-inspect-1.11.1" = {dependencies ? []}:
+    "object-inspect-1.12.0" = {dependencies ? []}:
 
     stdenv.mkDerivation {
       name = "object-inspect";
       packageName = "object-inspect";
-      version = "1.11.1";
+      version = "1.12.0";
       extraDependencies = [];
       buildInputs = [
         jq
@@ -2683,8 +2623,8 @@ let
       doCheck = false;
       doInstallCheck = false;
       src = fetchurl {
-        url = "https://registry.npmjs.org/object-inspect/-/object-inspect-1.11.1.tgz";
-        sha512 = "If7BjFlpkzzBeV1cqgT3OSWT3azyoxDGajR+iGnFBfVV2EWyDyWaZZW2ERDjUaY2QM8i5jI3Sj7mhsM4DDAqWA==";
+        url = "https://registry.npmjs.org/object-inspect/-/object-inspect-1.12.0.tgz";
+        sha512 = "Ho2z80bVIvJloH+YzRmpZVQe87+qASmBUKZDWgx9cu+KDrX2ZDH/3tMy+gXbZETVGs2M8YdxObOh7XAtim9Y0g==";
       };
     };
     "once-1.3.3" = {dependencies ? []}:
@@ -5295,7 +5235,7 @@ let
     normalize-url = sources."normalize-url-6.1.0" {
       dependencies = [];
     };
-    object-inspect = sources."object-inspect-1.11.1" {
+    object-inspect = sources."object-inspect-1.12.0" {
       dependencies = [];
     };
     parse-path = sources."parse-path-4.0.3" {
@@ -5469,6 +5409,9 @@ let
     minizlib = sources."minizlib-2.1.2" {
       dependencies = [];
     };
+    mkdirp = sources."mkdirp-1.0.4" {
+      dependencies = [];
+    };
     ms = sources."ms-2.1.2" {
       dependencies = [];
     };
@@ -5533,12 +5476,6 @@ let
       dependencies = [];
     };
     ini = sources."ini-1.3.8" {
-      dependencies = [];
-    };
-    minimist = sources."minimist-1.2.5" {
-      dependencies = [];
-    };
-    mkdirp = sources."mkdirp-0.5.5" {
       dependencies = [];
     };
     nopt = sources."nopt-3.0.6" {
