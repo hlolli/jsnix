@@ -181,7 +181,17 @@ export class NPMRegistrySource extends Source {
     this.config = data.versions[resolvedVersion];
 
     if (!this.config) {
-      this.config = {};
+      const newestVersion = R.last(Object.values(data.versions));
+      console.warn(
+        "Couldn't find version " +
+          resolvedVersion +
+          " for " +
+          newestVersion.name
+      );
+      console.warn(
+        "Falling back to newest version of " + newestVersion.version
+      );
+      this.config = newestVersion;
     }
 
     this.config.name = this.npmProtocolPath
