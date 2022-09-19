@@ -12,8 +12,8 @@ const gitignoreSource = `
     (import (fetchFromGitHub {
       owner = "hercules-ci";
       repo = "gitignore.nix";
-      rev = "5b9e0ff9d3b551234b4f3eb3983744fa354b17f1";
-      sha256 = "o/BdVjNwcB6jOmzZjOH703BesSkkS5O7ej3xhyO8hAY=";
+      rev = "a20de23b925fd8264fd7fad6454652e142fd7f73";
+      sha256 = "sha256-8DFJjXG8zqoONA1vXtgeKXy68KdJL5UaXR8NtVMUbx8=";
     }) { inherit lib; }).gitignoreSource`;
 
 const getNodeDep = `packageName: dependencies:
